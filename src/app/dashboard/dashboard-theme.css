@@ -125,6 +125,27 @@ tbody td{padding:8px 8px;color:var(--text2);overflow:hidden;text-overflow:ellips
 .content .text-slate-500,.content .text-slate-600,.content .text-slate-700{color:var(--text2) !important;} 
 .content .text-rose-600{color:var(--red) !important;} 
 .content .text-emerald-600{color:var(--green) !important;} 
+.content .bg-brand-500{
+  background:var(--surface2) !important;
+  border:0.5px solid var(--border2) !important;
+  color:var(--text1) !important;
+}
+.content .bg-brand-500:hover{
+  background:var(--surface3) !important;
+}
+.content form h2,
+.content form h3{
+  font-size:12px !important;
+  font-weight:500 !important;
+  color:var(--text1) !important;
+}
+.content form{
+  background:transparent !important;
+}
+.content .mt-3,
+.content .mt-4{
+  margin-top:10px !important;
+}
 
 @media (max-width:1200px){
   .modules-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
