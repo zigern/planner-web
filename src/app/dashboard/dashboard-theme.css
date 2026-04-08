@@ -93,7 +93,7 @@
 
 .top-row {
   display: grid;
-  grid-template-columns: 360px 360px 320px minmax(220px, 1fr);
+  grid-template-columns: 300px 320px 280px minmax(220px, 1fr);
   gap: 14px;
   align-items: center;
   margin-bottom: 14px;
@@ -105,7 +105,7 @@
 }
 
 .title-block h1 {
-  font-size: 54px;
+  font-size: 42px;
   line-height: 0.96;
   margin-top: 2px;
   font-weight: 800;
@@ -113,7 +113,7 @@
 
 .balance {
   margin-top: 6px;
-  font-size: 54px;
+  font-size: 48px;
   line-height: 1;
   color: var(--cyan);
   font-weight: 700;
@@ -271,14 +271,14 @@
 
 .card-big {
   margin-top: 8px;
-  font-size: 50px;
+  font-size: 34px;
   line-height: 1;
   font-weight: 700;
 }
 
 .card-num {
   margin-top: 6px;
-  font-size: 50px;
+  font-size: 30px;
   line-height: 1;
   font-weight: 700;
 }
@@ -341,7 +341,7 @@
 
 .goal-top {
   color: var(--cyan);
-  font-size: 34px;
+  font-size: 28px;
   line-height: 1;
   font-weight: 700;
 }
@@ -353,7 +353,7 @@
 
 .goal-value {
   margin-top: 6px;
-  font-size: 26px;
+  font-size: 20px;
   font-weight: 700;
 }
 

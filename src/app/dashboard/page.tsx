@@ -22,14 +22,8 @@ type AssetRow = { asset_type: string; value: string };
 type DebtRow = { total_owed: string; amount_paid: string };
 type IncomeCategoryRow = { category: string; total: string };
 
-function monthIsoList(count: number) {
-  const out: string[] = [];
-  const now = new Date();
-  for (let i = 0; i < count; i += 1) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
-  }
-  return out;
+function monthIsoListForYear(year: number) {
+  return Array.from({ length: 12 }).map((_, i) => `${year}-${String(i + 1).padStart(2, "0")}`);
 }
 
 function parseMonthParam(value: string | string[] | undefined) {
@@ -51,6 +45,19 @@ function dayMonth(v: string | Date) {
   const d = v instanceof Date ? v : new Date(v);
   if (Number.isNaN(d.getTime())) return String(v);
   return d.toLocaleDateString("pt-PT", { day: "2-digit", month: "short" });
+}
+
+function categoryIcon(category: string) {
+  const key = category.toLowerCase();
+  if (key.includes("renda") || key.includes("casa") || key.includes("housing")) return "🏠";
+  if (key.includes("comida") || key.includes("food") || key.includes("rest")) return "🍽️";
+  if (key.includes("transporte") || key.includes("carro") || key.includes("fuel")) return "🚗";
+  if (key.includes("saúde") || key.includes("health")) return "🩺";
+  if (key.includes("lazer") || key.includes("entertain")) return "🎮";
+  if (key.includes("compras") || key.includes("shopping")) return "🛍️";
+  if (key.includes("educação") || key.includes("education")) return "📚";
+  if (key.includes("contas") || key.includes("utilities")) return "💡";
+  return "💸";
 }
 
 function linePath(data: number[], w: number, h: number) {
@@ -105,7 +112,8 @@ export default async function DashboardPage({
 
   const params = await searchParams;
   const selectedMonth = parseMonthParam(params?.month);
-  const monthOptions = monthIsoList(12);
+  const selectedYear = Number(selectedMonth.slice(0, 4));
+  const monthOptions = monthIsoListForYear(selectedYear);
   const db = getDb();
 
   const totalsRows = await safeQueryRows<TotalsRow>(
@@ -308,7 +316,7 @@ export default async function DashboardPage({
               <ul className="spend-list">
                 {spendTop.map((r, i) => (
                   <li key={r.category}>
-                    <span className={`ico i${i + 1}`}>{i === 0 ? "🏠" : i === 1 ? "👥" : "🚗"}</span>
+                    <span className={`ico i${(i % 3) + 1}`}>{categoryIcon(r.category)}</span>
                     <span>{r.category}</span>
                     <b>€{toFixed2(Number(r.total || 0))}</b>
                   </li>

@@ -17,14 +17,8 @@ type AssetRow = { asset_type: string; value: string };
 type MonthSummaryRow = { month: string; income: string; expense: string };
 type BillRow = { name: string; due_day: number; status: "pending" | "paid" };
 
-function monthIsoList(count: number) {
-  const out: string[] = [];
-  const now = new Date();
-  for (let i = 0; i < count; i += 1) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
-  }
-  return out;
+function monthIsoListForYear(year: number) {
+  return Array.from({ length: 12 }).map((_, i) => `${year}-${String(i + 1).padStart(2, "0")}`);
 }
 
 function parseMonthParam(value: string | string[] | undefined) {
@@ -93,7 +87,8 @@ export default async function SpreadsheetPage({
 
   const params = await searchParams;
   const selectedMonth = parseMonthParam(params?.month);
-  const monthOptions = monthIsoList(12);
+  const selectedYear = Number(selectedMonth.slice(0, 4));
+  const monthOptions = monthIsoListForYear(selectedYear);
 
   const db = getDb();
   const txRows = await safeQueryRows<TxRow>(
