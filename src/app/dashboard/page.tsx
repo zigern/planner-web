@@ -42,11 +42,6 @@ function toFixed2(v: number) {
   return v.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function monthShort(monthIso: string) {
-  const [year, month] = monthIso.split("-");
-  return `${month}/${year.slice(2)}`;
-}
-
 function monthName(monthIso: string) {
   const [year, month] = monthIso.split("-").map(Number);
   return new Date(year, month - 1, 1).toLocaleDateString("pt-PT", { month: "short" });
@@ -56,11 +51,6 @@ function dayMonth(v: string | Date) {
   const d = v instanceof Date ? v : new Date(v);
   if (Number.isNaN(d.getTime())) return String(v);
   return d.toLocaleDateString("pt-PT", { day: "2-digit", month: "short" });
-}
-
-function pct(current: number, previous: number) {
-  if (previous <= 0) return 0;
-  return ((current - previous) / previous) * 100;
 }
 
 function linePath(data: number[], w: number, h: number) {
@@ -215,7 +205,6 @@ export default async function DashboardPage({
   const incomeSeries = summary.map((s) => Number(s.income || 0));
   const expenseSeries = summary.map((s) => Number(s.expense || 0));
 
-  const expenseChange = pct(expense, summaryRows[1] ? Number(summaryRows[1].expense || 0) : 0);
   const incomeGoalTarget = Math.max(1, income + expense);
   const incomeGoalPct = Math.min(100, (income / incomeGoalTarget) * 100);
 
