@@ -34,7 +34,6 @@ type RecurringRuleRow = {
 type SpendingBucket = {
   key: "housing" | "personal" | "transportation";
   label: string;
-  icon: string;
   matcher: RegExp;
 };
 
@@ -200,19 +199,16 @@ const spendingBuckets: SpendingBucket[] = [
   {
     key: "housing",
     label: "Housing",
-    icon: "🏠",
     matcher: /(housing|renda|rent|mortgage|casa|home|eletric|electric|agua|water|internet|insurance|luz)/i
   },
   {
     key: "personal",
     label: "Personal",
-    icon: "👥",
     matcher: /(personal|shopping|compras|lazer|saude|saúde|health|beauty|hobby|food|comida)/i
   },
   {
     key: "transportation",
     label: "Transportation",
-    icon: "🚗",
     matcher: /(transport|transporte|car|carro|fuel|gas|uber|bolt|parking|viagem|trip)/i
   }
 ];
@@ -252,6 +248,73 @@ function smoothLinePath(data: number[], w: number, h: number) {
   }
 
   return d;
+}
+
+function buildSeriesMap(rows: MonthSummaryRow[], key: "income" | "expense") {
+  return new Map(rows.map((r) => [r.month, Number(r[key] || 0)]));
+}
+
+function buildMonthlySeries(rows: MonthSummaryRow[], selectedMonth: string, length: number, key: "income" | "expense") {
+  const [year, month] = selectedMonth.split("-").map(Number);
+  const map = buildSeriesMap(rows, key);
+  const out: number[] = [];
+
+  for (let i = length - 1; i >= 0; i -= 1) {
+    const d = new Date(year, month - 1 - i, 1);
+    const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    out.push(map.get(m) ?? 0);
+  }
+
+  const hasAny = out.some((v) => v > 0);
+  if (!hasAny) return Array.from({ length }, (_, i) => (i % 2 === 0 ? 12 : 8));
+  if (out.filter((v) => v > 0).length === 1) {
+    const idx = out.findIndex((v) => v > 0);
+    const val = out[idx];
+    const prev = Math.max(val * 0.65, 1);
+    if (idx > 0) out[idx - 1] = prev;
+    else if (idx < out.length - 1) out[idx + 1] = prev;
+  }
+
+  return out;
+}
+
+function buildMonthLabels(selectedMonth: string, length: number, lang: string) {
+  const [year, month] = selectedMonth.split("-").map(Number);
+  const out: string[] = [];
+  for (let i = length - 1; i >= 0; i -= 1) {
+    const d = new Date(year, month - 1 - i, 1);
+    out.push(d.toLocaleDateString(lang, { month: "short" }));
+  }
+  return out;
+}
+
+function SpendingIcon({ kind }: { kind: SpendingBucket["key"] }) {
+  if (kind === "housing") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 11.5 12 5l8 6.5v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (kind === "personal") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="8" cy="9" r="3" fill="currentColor" />
+        <circle cx="16" cy="9" r="3" fill="currentColor" />
+        <path d="M3 19a5 5 0 0 1 10 0v1H3zM11 20v-1a5 5 0 0 1 10 0v1z" fill="currentColor" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M4 13.5 6.5 8h11l2.5 5.5v5a1 1 0 0 1-1 1h-1.5a2.5 2.5 0 0 1-5 0h-1a2.5 2.5 0 0 1-5 0H5a1 1 0 0 1-1-1z"
+        fill="currentColor"
+      />
+      <circle cx="8.5" cy="18" r="1.3" fill="#0f173f" />
+      <circle cx="15.5" cy="18" r="1.3" fill="#0f173f" />
+    </svg>
+  );
 }
 
 async function safeQueryRows<T>(db: ReturnType<typeof getDb>, sql: string, params: unknown[]): Promise<T[]> {
@@ -456,9 +519,9 @@ export default async function DashboardPage({
   );
   const netWorth = assetsTotal - liabilities + availableBalance;
 
-  const summary = [...summaryRows].reverse();
-  const incomeSeries = summary.map((s) => Number(s.income || 0));
-  const expenseSeries = summary.map((s) => Number(s.expense || 0));
+  const incomeSeries = buildMonthlySeries(summaryRows, selectedMonth, 12, "income");
+  const expenseSeries = buildMonthlySeries(summaryRows, selectedMonth, 12, "expense");
+  const chartMonths = buildMonthLabels(selectedMonth, 12, lang);
 
   const incomeGoalTarget = Math.max(1, income + expense);
   const incomeGoalPct = Math.min(100, (income / incomeGoalTarget) * 100);
@@ -596,7 +659,9 @@ export default async function DashboardPage({
               <ul className="spend-list">
                 {spendingByBucket.map((row, i) => (
                   <li key={row.key}>
-                    <span className={`ico i${(i % 3) + 1}`}>{row.icon}</span>
+                    <span className={`ico i${(i % 3) + 1}`}>
+                      <SpendingIcon kind={row.key} />
+                    </span>
                     <span>{row.label}</span>
                     <b className="expense-number">{formatMoney(row.total, lang, currency)}</b>
                   </li>
@@ -692,8 +757,8 @@ export default async function DashboardPage({
                 <path d={bigExpense} className="line expense" />
               </svg>
               <div className="chart-months">
-                {summary.slice(-12).map((m) => (
-                  <span key={m.month}>{monthName(m.month, lang)}</span>
+                {chartMonths.map((m, idx) => (
+                  <span key={`${m}-${idx}`}>{m}</span>
                 ))}
               </div>
             </article>
