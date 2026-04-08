@@ -93,7 +93,7 @@
 
 .top-row {
   display: grid;
-  grid-template-columns: minmax(430px, 1fr) auto auto auto auto;
+  grid-template-columns: minmax(320px, 1fr) auto auto auto auto;
   gap: 14px;
   align-items: center;
   margin-bottom: 14px;
@@ -105,16 +105,17 @@
 }
 
 .title-block h1 {
-  font-size: 62px;
-  line-height: 0.92;
+  font-size: 52px;
+  line-height: 0.95;
   margin-top: 2px;
   font-weight: 800;
-  white-space: nowrap;
+  white-space: normal;
+  max-width: 520px;
 }
 
 .balance {
   margin-top: 6px;
-  font-size: 56px;
+  font-size: 46px;
   line-height: 1;
   font-weight: 800;
   overflow-wrap: anywhere;
@@ -137,7 +138,7 @@
   color: var(--muted);
   background: transparent;
   border-radius: 9px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   padding: 10px 14px;
   display: inline-flex;
@@ -171,8 +172,8 @@
 }
 
 .date-small {
-  padding: 10px 12px;
-  font-size: 13px;
+  padding: 9px 12px;
+  font-size: 12px;
 }
 
 .profile {
@@ -216,7 +217,7 @@
   color: var(--text);
   padding: 8px 10px;
   font-size: 11px;
-  min-width: 64px;
+  min-width: 60px;
 }
 
 .grid-board {
@@ -270,8 +271,8 @@
 
 .card-notice {
   grid-column: 10 / span 3;
-  grid-row: 2 / span 2;
-  min-height: 366px;
+  grid-row: 2;
+  min-height: 176px;
 }
 
 .card-trend {
@@ -287,6 +288,7 @@
 .card-pets {
   grid-column: 10 / span 3;
   grid-row: 3;
+  min-height: 220px;
 }
 
 .card-recent {
@@ -469,7 +471,7 @@
   background: rgba(0, 0, 0, 0.25);
   padding: 10px;
   border-radius: 8px;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1.15;
 }
@@ -529,7 +531,7 @@
   margin-top: 8px;
   display: grid;
   gap: 6px;
-  max-height: 130px;
+  max-height: 110px;
   overflow: auto;
 }
 
@@ -633,7 +635,9 @@
   border-radius: 16px;
   background: rgba(141, 152, 255, 0.2);
   padding: 14px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
@@ -651,7 +655,7 @@
 }
 
 .pet-emoji {
-  font-size: 90px;
+  font-size: 78px;
   line-height: 1;
 }
 
