@@ -231,6 +231,7 @@
   background: var(--panel);
   border-radius: 18px;
   padding: 18px;
+  align-self: start;
 }
 
 .card-networth {
@@ -294,6 +295,18 @@
 .card-recent {
   grid-column: 1 / span 12;
   grid-row: 4;
+}
+
+/* Do not force equal/tall card heights. Let each block fit its own content. */
+.card-networth,
+.card-spending-spark,
+.card-spending-list,
+.card-goal,
+.card-income-source,
+.card-income-spark,
+.card-notice,
+.card-pets {
+  min-height: 0;
 }
 
 .grad {
