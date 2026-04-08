@@ -181,7 +181,7 @@ export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
             type,
             amount: parsedAmount,
             category: category.trim() || categories[0],
-            description: item,
+            description: "",
             transactionDate: date
           })
         });
@@ -277,16 +277,18 @@ export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
           </select>
         </label>
 
-        <label className="q-field">
-          <span>{text.item}</span>
-          <select value={item} onChange={(e) => setItem(e.target.value)} key={`${type}-${category}`}>
-            {items.map((opt) => (
-              <option key={opt} value={opt}>
-                {categoryLabels[opt as keyof typeof categoryLabels] || opt}
-              </option>
-            ))}
-          </select>
-        </label>
+        {entryMode === "recurring" ? (
+          <label className="q-field">
+            <span>{text.item}</span>
+            <select value={item} onChange={(e) => setItem(e.target.value)} key={`${type}-${category}`}>
+              {items.map((opt) => (
+                <option key={opt} value={opt}>
+                  {categoryLabels[opt as keyof typeof categoryLabels] || opt}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
 
         <label className="q-field">
           <span>{text.amount}</span>
