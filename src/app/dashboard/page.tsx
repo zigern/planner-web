@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "./components/logout-button";
 import { QuickAddForm } from "./components/quick-add-form";
+import { ViewControls } from "./components/view-controls";
 import "./dashboard-theme.css";
 
 type TotalsRow = { income: string | null; expense: string | null };
@@ -21,6 +22,15 @@ type BillRow = { id: number; name: string; amount: string; due_day: number; stat
 type AssetRow = { asset_type: string; value: string };
 type DebtRow = { total_owed: string; amount_paid: string };
 type IncomeCategoryRow = { category: string; total: string };
+type RecurringRuleRow = {
+  id: number;
+  type: "income" | "expense";
+  amount: string;
+  category: string;
+  description: string | null;
+  day_of_month: number;
+  last_applied_month: string | null;
+};
 type SpendingBucket = {
   key: "housing" | "personal" | "transportation";
   label: string;
@@ -38,8 +48,27 @@ function parseMonthParam(value: string | string[] | undefined) {
   return /^\d{4}-\d{2}$/.test(raw) ? raw : new Date().toISOString().slice(0, 7);
 }
 
-function toFixed2(v: number) {
-  return v.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function parseLangParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "pt-PT";
+  const allowed = new Set(["pt-PT", "en-US", "es-ES", "fr-FR"]);
+  return allowed.has(raw) ? raw : "pt-PT";
+}
+
+function parseCurrencyParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "EUR";
+  const allowed = new Set(["EUR", "USD", "GBP", "BRL"]);
+  return allowed.has(raw) ? raw : "EUR";
+}
+
+function formatMoney(value: number, lang: string, currency: string) {
+  return new Intl.NumberFormat(lang, {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
 }
 
 function monthName(monthIso: string) {
@@ -129,10 +158,72 @@ async function safeQueryRows<T>(db: ReturnType<typeof getDb>, sql: string, param
   }
 }
 
+async function applyRecurringRulesForMonth(db: ReturnType<typeof getDb>, userId: number, selectedMonth: string) {
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS recurring_rules (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        user_id BIGINT UNSIGNED NOT NULL,
+        type ENUM('income','expense') NOT NULL,
+        amount DECIMAL(12,2) NOT NULL,
+        category VARCHAR(80) NOT NULL,
+        description VARCHAR(255) NULL,
+        day_of_month TINYINT UNSIGNED NOT NULL DEFAULT 1,
+        is_active TINYINT(1) NOT NULL DEFAULT 1,
+        last_applied_month CHAR(7) NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        KEY idx_recurring_user (user_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    const rules = await safeQueryRows<RecurringRuleRow>(
+      db,
+      `SELECT id, type, amount, category, description, day_of_month, last_applied_month
+       FROM recurring_rules
+       WHERE user_id = ? AND is_active = 1`,
+      [userId]
+    );
+
+    for (const rule of rules) {
+      if (rule.last_applied_month === selectedMonth) continue;
+
+      const txDate = `${selectedMonth}-${String(Math.min(28, Math.max(1, Number(rule.day_of_month || 1)))).padStart(
+        2,
+        "0"
+      )}`;
+      const recurringDesc = `Recurring Rule #${rule.id}${rule.description ? ` - ${rule.description}` : ""}`;
+
+      const existing = await safeQueryRows<{ id: number }>(
+        db,
+        `SELECT id
+         FROM transactions
+         WHERE user_id = ?
+           AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
+           AND description = ?
+         LIMIT 1`,
+        [userId, selectedMonth, recurringDesc]
+      );
+
+      if (!existing.length) {
+        await db.query(
+          `INSERT INTO transactions (user_id, type, amount, category, description, transaction_date)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [userId, rule.type, Number(rule.amount), rule.category, recurringDesc, txDate]
+        );
+      }
+
+      await db.query(`UPDATE recurring_rules SET last_applied_month = ? WHERE id = ?`, [selectedMonth, rule.id]);
+    }
+  } catch {
+    return;
+  }
+}
+
 export default async function DashboardPage({
   searchParams
 }: {
-  searchParams?: Promise<{ month?: string | string[] }>;
+  searchParams?: Promise<{ month?: string | string[]; lang?: string | string[]; currency?: string | string[] }>;
 }) {
   if (!hasDatabaseConfig() || !process.env.AUTH_SECRET) {
     return (
@@ -150,9 +241,12 @@ export default async function DashboardPage({
 
   const params = await searchParams;
   const selectedMonth = parseMonthParam(params?.month);
+  const lang = parseLangParam(params?.lang);
+  const currency = parseCurrencyParam(params?.currency);
   const selectedYear = Number(selectedMonth.slice(0, 4));
   const monthOptions = monthIsoListForYear(selectedYear);
   const db = getDb();
+  await applyRecurringRulesForMonth(db, user.userId, selectedMonth);
 
   const totalsRows = await safeQueryRows<TotalsRow>(
     db,
@@ -297,7 +391,11 @@ export default async function DashboardPage({
           <div className="brand-name">Other Level&apos;s</div>
           <nav className="month-nav">
             {monthOptions.map((m) => (
-              <Link key={m} href={`?month=${m}`} className={`month-link ${m === selectedMonth ? "active" : ""}`}>
+              <Link
+                key={m}
+                href={`?month=${m}&lang=${lang}&currency=${currency}`}
+                className={`month-link ${m === selectedMonth ? "active" : ""}`}
+              >
                 {monthName(m)}
               </Link>
             ))}
@@ -309,20 +407,37 @@ export default async function DashboardPage({
             <div className="title-block">
               <p className="kicker">Personal Finance Tracker</p>
               <h1>Available Balance</h1>
-              <p className="balance">€{toFixed2(availableBalance)}</p>
+              <p className={`balance ${availableBalance >= 0 ? "income-number" : "expense-number"}`}>
+                {formatMoney(availableBalance, lang, currency)}
+              </p>
             </div>
 
             <div className="center-tabs">
-              <Link className="tab active" href={`/dashboard?month=${selectedMonth}`}>
+              <Link className="tab active" href={`/dashboard?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <rect x="2" y="2" width="7" height="7" rx="1.2" fill="currentColor" />
+                  <rect x="11" y="2" width="7" height="4" rx="1.2" fill="currentColor" />
+                  <rect x="11" y="8" width="7" height="10" rx="1.2" fill="currentColor" />
+                  <rect x="2" y="11" width="7" height="7" rx="1.2" fill="currentColor" />
+                </svg>
                 Dashboard
               </Link>
-              <Link className="tab" href={`/dashboard/spreadsheet?month=${selectedMonth}`}>
+              <Link
+                className="tab"
+                href={`/dashboard/spreadsheet?month=${selectedMonth}&lang=${lang}&currency=${currency}`}
+              >
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <rect x="2" y="3" width="16" height="14" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                  <line x1="2" y1="8" x2="18" y2="8" stroke="currentColor" strokeWidth="1.6" />
+                  <line x1="7" y1="8" x2="7" y2="17" stroke="currentColor" strokeWidth="1.6" />
+                  <line x1="12" y1="8" x2="12" y2="17" stroke="currentColor" strokeWidth="1.6" />
+                </svg>
                 Spreadsheet
               </Link>
             </div>
 
-            <div className="date-card">
-              {new Date().toLocaleDateString("pt-PT", {
+            <div className="date-card date-small">
+              {new Date().toLocaleDateString(lang, {
                 weekday: "long",
                 day: "numeric",
                 month: "long",
@@ -330,11 +445,9 @@ export default async function DashboardPage({
               })}
             </div>
 
+            <ViewControls lang={lang} currency={currency} />
+
             <div className="profile">
-              <div>
-                <p className="name">{user.email.split("@")[0]}</p>
-                <p className="role">Mortgage consultant</p>
-              </div>
               <div className="avatar">{initials}</div>
               <LogoutButton className="logout-mini" label="Sair" />
             </div>
@@ -343,12 +456,12 @@ export default async function DashboardPage({
           <section className="grid-board">
             <article className="card grad card-networth">
               <p className="card-label">Total Net Worth</p>
-              <p className="card-big">€{toFixed2(netWorth)}</p>
+              <p className="card-big">{formatMoney(netWorth, lang, currency)}</p>
             </article>
 
             <article className="card card-spending-spark">
               <p className="card-label">Spendings</p>
-              <p className="card-num">€{toFixed2(expense)}</p>
+              <p className="card-num expense-number">{formatMoney(expense, lang, currency)}</p>
               <svg className="spark" viewBox="0 0 180 40" preserveAspectRatio="none">
                 <path d={sparkSpend} />
               </svg>
@@ -361,7 +474,7 @@ export default async function DashboardPage({
                   <li key={row.key}>
                     <span className={`ico i${(i % 3) + 1}`}>{row.icon}</span>
                     <span>{row.label}</span>
-                    <b>€{toFixed2(row.total)}</b>
+                    <b className="expense-number">{formatMoney(row.total, lang, currency)}</b>
                   </li>
                 ))}
               </ul>
@@ -372,7 +485,7 @@ export default async function DashboardPage({
               <p className="card-label">Income Goal</p>
               <p className="muted">Progress to month</p>
               <p className="goal-value">
-                €{toFixed2(income)} / {toFixed2(incomeGoalTarget)}
+                {formatMoney(income, lang, currency)} / {formatMoney(incomeGoalTarget, lang, currency)}
               </p>
               <div className="goal-bar">
                 <div style={{ width: `${incomeGoalPct}%` }} />
@@ -387,7 +500,7 @@ export default async function DashboardPage({
                   const h = (Number(c.total || 0) / max) * 80;
                   return (
                     <div key={c.category} className="ib-col">
-                      <small>€{toFixed2(Number(c.total || 0))}</small>
+                      <small>{formatMoney(Number(c.total || 0), lang, currency)}</small>
                       <div
                         className={`ib-bar c${(i % 4) + 1}`}
                         style={{ height: `${Math.max(6, h)}px` }}
@@ -401,7 +514,7 @@ export default async function DashboardPage({
 
             <article className="card card-income-spark">
               <p className="card-label">Income</p>
-              <p className="card-num">€{toFixed2(income)}</p>
+              <p className="card-num income-number">{formatMoney(income, lang, currency)}</p>
               <svg className="spark orange" viewBox="0 0 180 40" preserveAspectRatio="none">
                 <path d={sparkIncome} />
               </svg>
@@ -452,13 +565,13 @@ export default async function DashboardPage({
                   {assetRows.slice(0, 4).map((a) => (
                     <div key={`${a.asset_type}-${a.value}`}>
                       <span>{a.asset_type}</span>
-                      <b>€{toFixed2(Number(a.value || 0))}</b>
+                      <b>{formatMoney(Number(a.value || 0), lang, currency)}</b>
                     </div>
                   ))}
                   {assetRows.length === 0 ? (
                     <div>
                       <span>Sem assets</span>
-                      <b>€0.00</b>
+                      <b>{formatMoney(0, lang, currency)}</b>
                     </div>
                   ) : null}
                 </div>
@@ -473,13 +586,13 @@ export default async function DashboardPage({
                     petList.map((p) => (
                       <div key={p.label}>
                         <span>{p.label}</span>
-                        <b>{toFixed2(p.value)}</b>
+                        <b className="expense-number">{formatMoney(p.value, lang, currency)}</b>
                       </div>
                     ))
                   ) : (
                     <div>
                       <span>No pet expenses in this month</span>
-                      <b>0.00</b>
+                      <b>{formatMoney(0, lang, currency)}</b>
                     </div>
                   )}
                 </div>
@@ -495,7 +608,8 @@ export default async function DashboardPage({
                     <span>{tx.description || tx.category}</span>
                     <span>{dayMonth(tx.transaction_date)}</span>
                     <span className={tx.type === "income" ? "pos" : "neg"}>
-                      {tx.type === "income" ? "+" : "-"}€{toFixed2(Math.abs(Number(tx.amount || 0)))}
+                      {tx.type === "income" ? "+" : "-"}
+                      {formatMoney(Math.abs(Number(tx.amount || 0)), lang, currency)}
                     </span>
                   </div>
                 ))}

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "../components/logout-button";
+import { ViewControls } from "../components/view-controls";
 import "../dashboard-theme.css";
 
 type TxRow = {
@@ -27,6 +28,20 @@ function parseMonthParam(value: string | string[] | undefined) {
   return /^\d{4}-\d{2}$/.test(raw) ? raw : new Date().toISOString().slice(0, 7);
 }
 
+function parseLangParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "pt-PT";
+  const allowed = new Set(["pt-PT", "en-US", "es-ES", "fr-FR"]);
+  return allowed.has(raw) ? raw : "pt-PT";
+}
+
+function parseCurrencyParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "EUR";
+  const allowed = new Set(["EUR", "USD", "GBP", "BRL"]);
+  return allowed.has(raw) ? raw : "EUR";
+}
+
 function monthName(monthIso: string) {
   const [year, month] = monthIso.split("-").map(Number);
   return new Date(year, month - 1, 1).toLocaleDateString("pt-PT", { month: "short" });
@@ -38,8 +53,13 @@ function monthLabel(monthIso: string) {
   return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
-function fmt(v: number) {
-  return v.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+function fmt(v: number, lang: string, currency: string) {
+  return new Intl.NumberFormat(lang, {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(v);
 }
 
 function dayMonthYear(v: string | Date) {
@@ -69,7 +89,11 @@ async function safeQueryRows<T>(db: ReturnType<typeof getDb>, sql: string, param
 export default async function SpreadsheetPage({
   searchParams
 }: {
-  searchParams?: Promise<{ month?: string | string[] }>;
+  searchParams?: Promise<{
+    month?: string | string[];
+    lang?: string | string[];
+    currency?: string | string[];
+  }>;
 }) {
   if (!hasDatabaseConfig() || !process.env.AUTH_SECRET) {
     return (
@@ -87,6 +111,8 @@ export default async function SpreadsheetPage({
 
   const params = await searchParams;
   const selectedMonth = parseMonthParam(params?.month);
+  const lang = parseLangParam(params?.lang);
+  const currency = parseCurrencyParam(params?.currency);
   const selectedYear = Number(selectedMonth.slice(0, 4));
   const monthOptions = monthIsoListForYear(selectedYear);
 
@@ -146,7 +172,11 @@ export default async function SpreadsheetPage({
           <div className="brand-name">Other Level&apos;s</div>
           <nav className="month-nav">
             {monthOptions.map((m) => (
-              <Link key={m} href={`?month=${m}`} className={`month-link ${m === selectedMonth ? "active" : ""}`}>
+              <Link
+                key={m}
+                href={`?month=${m}&lang=${lang}&currency=${currency}`}
+                className={`month-link ${m === selectedMonth ? "active" : ""}`}
+              >
                 {monthName(m)}
               </Link>
             ))}
@@ -158,25 +188,41 @@ export default async function SpreadsheetPage({
             <div className="title-block">
               <p className="kicker">Personal Finance Tracker</p>
               <h1>Available Balance</h1>
-              <p className="balance">
-                €
+              <p className="balance income-number">
                 {fmt(
-                  summary.reduce((acc, s) => acc + Number(s.income || 0) - Number(s.expense || 0), 0)
+                  summary.reduce((acc, s) => acc + Number(s.income || 0) - Number(s.expense || 0), 0),
+                  lang,
+                  currency
                 )}
               </p>
             </div>
 
             <div className="center-tabs">
-              <Link className="tab" href={`/dashboard?month=${selectedMonth}`}>
+              <Link className="tab" href={`/dashboard?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <rect x="2" y="2" width="7" height="7" rx="1.2" fill="currentColor" />
+                  <rect x="11" y="2" width="7" height="4" rx="1.2" fill="currentColor" />
+                  <rect x="11" y="8" width="7" height="10" rx="1.2" fill="currentColor" />
+                  <rect x="2" y="11" width="7" height="7" rx="1.2" fill="currentColor" />
+                </svg>
                 Dashboard
               </Link>
-              <Link className="tab active" href={`/dashboard/spreadsheet?month=${selectedMonth}`}>
+              <Link
+                className="tab active"
+                href={`/dashboard/spreadsheet?month=${selectedMonth}&lang=${lang}&currency=${currency}`}
+              >
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <rect x="2" y="3" width="16" height="14" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                  <line x1="2" y1="8" x2="18" y2="8" stroke="currentColor" strokeWidth="1.6" />
+                  <line x1="7" y1="8" x2="7" y2="17" stroke="currentColor" strokeWidth="1.6" />
+                  <line x1="12" y1="8" x2="12" y2="17" stroke="currentColor" strokeWidth="1.6" />
+                </svg>
                 Spreadsheet
               </Link>
             </div>
 
-            <div className="date-card">
-              {new Date().toLocaleDateString("pt-PT", {
+            <div className="date-card date-small">
+              {new Date().toLocaleDateString(lang, {
                 weekday: "long",
                 day: "numeric",
                 month: "long",
@@ -184,11 +230,9 @@ export default async function SpreadsheetPage({
               })}
             </div>
 
+            <ViewControls lang={lang} currency={currency} />
+
             <div className="profile">
-              <div>
-                <p className="name">{user.email.split("@")[0]}</p>
-                <p className="role">Mortgage consultant</p>
-              </div>
               <div className="avatar">{initials}</div>
               <LogoutButton className="logout-mini" label="Sair" />
             </div>
@@ -218,7 +262,7 @@ export default async function SpreadsheetPage({
                         <td>{tx.type === "income" ? "Income" : "Expenses"}</td>
                         <td>{tx.category}</td>
                         <td>{tx.description || "-"}</td>
-                        <td>${fmt(Math.abs(Number(tx.amount || 0)))}</td>
+                        <td>{fmt(Math.abs(Number(tx.amount || 0)), lang, currency)}</td>
                         <td>{dayMonthYear(tx.transaction_date)}</td>
                         <td className={isLate ? "late" : "paid"}>{isLate ? "Late" : "Paid"}</td>
                       </tr>
@@ -240,7 +284,7 @@ export default async function SpreadsheetPage({
                   <tbody>
                     {assets.map((a, i) => (
                       <tr key={`${a.asset_type}-${i}`}>
-                        <td>${fmt(Number(a.value || 0))}</td>
+                        <td>{fmt(Number(a.value || 0), lang, currency)}</td>
                         <td>{a.asset_type}</td>
                       </tr>
                     ))}
@@ -272,7 +316,7 @@ export default async function SpreadsheetPage({
                     {summary.map((s) => (
                       <tr key={s.month}>
                         <td>{monthLabel(s.month)}</td>
-                        <td>{fmt(Math.round(Number(s.income || 0) * 1.2))}</td>
+                        <td>{fmt(Math.round(Number(s.income || 0) * 1.2), lang, currency)}</td>
                       </tr>
                     ))}
                   </tbody>
