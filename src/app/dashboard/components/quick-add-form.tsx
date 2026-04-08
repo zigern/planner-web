@@ -152,6 +152,79 @@ const categoryLabelByLang = {
   }
 } as const;
 
+function CategorySvg({ category }: { category: string }) {
+  if (category === "Housing") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 11.5 12 5l8 6.5v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (category === "Personal") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="8" cy="9" r="3" fill="currentColor" />
+        <circle cx="16" cy="9" r="3" fill="currentColor" />
+        <path d="M3 19a5 5 0 0 1 10 0v1H3zM11 20v-1a5 5 0 0 1 10 0v1z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (category === "Transportation") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M4 13.5 6.5 8h11l2.5 5.5v5a1 1 0 0 1-1 1h-1.5a2.5 2.5 0 0 1-5 0h-1a2.5 2.5 0 0 1-5 0H5a1 1 0 0 1-1-1z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+  if (category === "Food") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 3h2v7a2 2 0 0 1-2 2zM10 3h2v7a2 2 0 0 1-2 2zM17 3h2v18h-2z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (category === "Bills") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 3h12v18l-2.5-1.6L13 21l-2.5-1.6L8 21 6 19.4z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (category === "Pets") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="7" cy="8" r="2.2" fill="currentColor" />
+        <circle cx="12" cy="6.8" r="2.2" fill="currentColor" />
+        <circle cx="17" cy="8" r="2.2" fill="currentColor" />
+        <path d="M6 16a6 5 0 0 1 12 0c0 2.4-2.2 4-6 4s-6-1.6-6-4z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (category === "Health") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (category === "Shopping") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 8h12l-1 11H7z" fill="currentColor" />
+        <path d="M9 8V6a3 3 0 1 1 6 0v2" fill="none" stroke="currentColor" strokeWidth="2" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="8" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
   const router = useRouter();
   const text = uiByLang[lang as keyof typeof uiByLang] || uiByLang["pt-PT"];
@@ -255,26 +328,43 @@ export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
           </select>
         </label>
 
-        <label className="q-field">
+        <label className="q-field q-field-full">
           <span>{text.category}</span>
-          <select
-            value={category}
-            onChange={(e) => {
-              const nextCategory = e.target.value;
-              setCategory(nextCategory);
-              if (type === "expense") {
-                setItem((expenseItemsByCategory[nextCategory] || expenseItemsByCategory.Other)[0]);
-              } else {
+          {type === "expense" ? (
+            <div className="q-category-grid">
+              {expenseCategories.map((cat) => (
+                <button
+                  type="button"
+                  key={cat}
+                  className={`q-cat-btn ${category === cat ? "active" : ""}`}
+                  onClick={() => {
+                    setCategory(cat);
+                    setItem((expenseItemsByCategory[cat] || expenseItemsByCategory.Other)[0]);
+                  }}
+                >
+                  <span className="q-cat-icon">
+                    <CategorySvg category={cat} />
+                  </span>
+                  <span>{categoryLabels[cat as keyof typeof categoryLabels] || cat}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <select
+              value={category}
+              onChange={(e) => {
+                const nextCategory = e.target.value;
+                setCategory(nextCategory);
                 setItem(incomeItems[0]);
-              }
-            }}
-          >
-            {categories.map((item) => (
-              <option key={item} value={item}>
-                {categoryLabels[item as keyof typeof categoryLabels] || item}
-              </option>
-            ))}
-          </select>
+              }}
+            >
+              {categories.map((item) => (
+                <option key={item} value={item}>
+                  {categoryLabels[item as keyof typeof categoryLabels] || item}
+                </option>
+              ))}
+            </select>
+          )}
         </label>
 
         {entryMode === "recurring" ? (
