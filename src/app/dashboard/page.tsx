@@ -98,9 +98,11 @@ function getCopy(lang: string) {
       fixedExpenses: "Despesas fixas mensais",
       fixedIncomes: "Receitas fixas mensais",
       variableExpenses: "Despesas variáveis recentes",
+      variableIncomes: "Receitas variáveis recentes",
       noFixed: "Sem itens fixos mensais",
       noFixedExpenses: "Sem despesas fixas mensais",
       noVariableExpenses: "Sem despesas variáveis recentes",
+      noVariableIncomes: "Sem receitas variáveis recentes",
       recurringIncome: "Receita fixa",
       recurringExpense: "Despesa fixa"
     },
@@ -130,9 +132,11 @@ function getCopy(lang: string) {
       fixedExpenses: "Fixed monthly expenses",
       fixedIncomes: "Fixed monthly incomes",
       variableExpenses: "Recent variable expenses",
+      variableIncomes: "Recent variable incomes",
       noFixed: "No fixed monthly items",
       noFixedExpenses: "No fixed monthly expenses",
       noVariableExpenses: "No recent variable expenses",
+      noVariableIncomes: "No recent variable incomes",
       recurringIncome: "Fixed income",
       recurringExpense: "Fixed expense"
     },
@@ -162,9 +166,11 @@ function getCopy(lang: string) {
       fixedExpenses: "Gastos fijos mensuales",
       fixedIncomes: "Ingresos fijos mensuales",
       variableExpenses: "Gastos variables recientes",
+      variableIncomes: "Ingresos variables recientes",
       noFixed: "Sin elementos fijos mensuales",
       noFixedExpenses: "Sin gastos fijos mensuales",
       noVariableExpenses: "Sin gastos variables recientes",
+      noVariableIncomes: "Sin ingresos variables recientes",
       recurringIncome: "Ingreso fijo",
       recurringExpense: "Gasto fijo"
     },
@@ -194,9 +200,11 @@ function getCopy(lang: string) {
       fixedExpenses: "Dépenses fixes mensuelles",
       fixedIncomes: "Revenus fixes mensuels",
       variableExpenses: "Dépenses variables récentes",
+      variableIncomes: "Revenus variables récents",
       noFixed: "Aucun élément fixe mensuel",
       noFixedExpenses: "Aucune dépense fixe mensuelle",
       noVariableExpenses: "Aucune dépense variable récente",
+      noVariableIncomes: "Aucun revenu variable récent",
       recurringIncome: "Revenu fixe",
       recurringExpense: "Dépense fixe"
     }
@@ -588,6 +596,9 @@ export default async function DashboardPage({
   const variableExpenseRows = txRows.filter(
     (tx) => tx.type === "expense" && !(tx.description || "").startsWith("Recurring Rule #")
   );
+  const variableIncomeRows = txRows.filter(
+    (tx) => tx.type === "income" && !(tx.description || "").startsWith("Recurring Rule #")
+  );
   const initials = user.email.slice(0, 2).toUpperCase();
 
   const sparkSpend = smoothLinePath(expenseSeries.slice(-8), 180, 40);
@@ -785,6 +796,20 @@ export default async function DashboardPage({
                   ))
                 ) : (
                   <p className="muted">{t.noVariableExpenses}</p>
+                )}
+              </div>
+              <p className="card-label mt16">{t.variableIncomes}</p>
+              <div className="fixed-list">
+                {variableIncomeRows.length ? (
+                  variableIncomeRows.slice(0, 4).map((tx) => (
+                    <div key={tx.id} className="fixed-item">
+                      <span>{dayMonth(tx.transaction_date, lang)}</span>
+                      <span>{tx.description || tx.category}</span>
+                      <b className="income-number">{formatMoney(Number(tx.amount || 0), lang, currency)}</b>
+                    </div>
+                  ))
+                ) : (
+                  <p className="muted">{t.noVariableIncomes}</p>
                 )}
               </div>
             </article>

@@ -503,6 +503,10 @@
   grid-template-columns: 0.85fr 1fr 1fr;
 }
 
+.q-row-4 {
+  grid-template-columns: 0.8fr 0.9fr 1fr 1fr;
+}
+
 .q-row-2 {
   grid-template-columns: 1fr 1fr;
 }

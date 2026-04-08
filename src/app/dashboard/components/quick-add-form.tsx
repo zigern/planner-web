@@ -129,10 +129,10 @@ export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
   const text = uiByLang[lang as keyof typeof uiByLang] || uiByLang["pt-PT"];
   const categoryLabels = categoryLabelByLang[lang as keyof typeof categoryLabelByLang] || categoryLabelByLang["pt-PT"];
   const [type, setType] = useState<"income" | "expense">("expense");
+  const [entryMode, setEntryMode] = useState<"normal" | "recurring">("normal");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("Housing");
   const [item, setItem] = useState(expenseItemsByCategory.Housing[0]);
-  const [monthlyFixed, setMonthlyFixed] = useState(false);
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -145,20 +145,26 @@ export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
     setMessage(null);
     try {
       const parsedAmount = Number(amount);
-      const response = await fetch("/api/transactions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type,
-          amount: parsedAmount,
-          category: category.trim() || categories[0],
-          description: item,
-          transactionDate: date
-        })
-      });
-      if (response.ok) {
-        if (monthlyFixed) {
-          await fetch("/api/recurring-rules", {
+      if (entryMode === "normal") {
+        const response = await fetch("/api/transactions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type,
+            amount: parsedAmount,
+            category: category.trim() || categories[0],
+            description: item,
+            transactionDate: date
+          })
+        });
+
+        if (!response.ok) {
+          setMessage(text.failed);
+          setLoading(false);
+          return;
+        }
+      } else {
+        const recurringRes = await fetch("/api/recurring-rules", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -169,15 +175,19 @@ export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
               dayOfMonth: Math.min(28, Math.max(1, Number(date.slice(8, 10))))
             })
           });
+        if (!recurringRes.ok) {
+          setMessage(text.failed);
+          setLoading(false);
+          return;
         }
+      }
+
+      {
         setAmount("");
         setCategory(categories[0]);
         setItem(items[0]);
-        setMonthlyFixed(false);
-        setMessage(monthlyFixed ? text.savedRecurring : text.saved);
+        setMessage(entryMode === "recurring" ? text.savedRecurring : text.saved);
         router.refresh();
-      } else {
-        setMessage(text.failed);
       }
     } finally {
       setLoading(false);
@@ -186,7 +196,11 @@ export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
 
   return (
     <form className="quick-form quick-form-compact" onSubmit={onSubmit}>
-      <div className="q-row q-row-3">
+      <div className="q-row q-row-4">
+        <select value={entryMode} onChange={(e) => setEntryMode(e.target.value as "normal" | "recurring")}>
+          <option value="normal">Normal</option>
+          <option value="recurring">Recorrente</option>
+        </select>
         <select
           value={type}
           onChange={(e) => {
@@ -250,10 +264,15 @@ export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
       </div>
 
       <div className="q-inline">
-        <label className="q-check q-check-inline">
-          <input type="checkbox" checked={monthlyFixed} onChange={(e) => setMonthlyFixed(e.target.checked)} />
-          {type === "income" ? text.fixedIncome : text.fixedExpense}
-        </label>
+        <div className="q-check q-check-inline">
+          {entryMode === "recurring"
+            ? type === "income"
+              ? text.fixedIncome
+              : text.fixedExpense
+            : type === "income"
+              ? text.income
+              : text.expense}
+        </div>
         <button type="submit" disabled={loading}>
           {loading ? text.saving : text.add}
         </button>
