@@ -9,7 +9,7 @@ import "./dashboard-theme.css";
 type TotalsRow = { income: string | null; expense: string | null };
 type MonthSummaryRow = { month: string; income: string; expense: string };
 type CategoryRow = { category: string; total: string };
-type RecentRow = {
+type TxRow = {
   id: number;
   type: "income" | "expense";
   amount: string;
@@ -18,8 +18,9 @@ type RecentRow = {
   transaction_date: string | Date;
 };
 type BillRow = { id: number; name: string; amount: string; due_day: number; status: "pending" | "paid" };
-type AssetRow = { value: string };
+type AssetRow = { asset_type: string; value: string };
 type DebtRow = { total_owed: string; amount_paid: string };
+type IncomeCategoryRow = { category: string; total: string };
 
 function monthIsoList(count: number) {
   const out: string[] = [];
@@ -37,9 +38,8 @@ function parseMonthParam(value: string | string[] | undefined) {
   return /^\d{4}-\d{2}$/.test(raw) ? raw : new Date().toISOString().slice(0, 7);
 }
 
-function parsePeriodParam(value: string | string[] | undefined) {
-  const raw = Array.isArray(value) ? value[0] : value;
-  return raw === "7d" || raw === "30d" || raw === "90d" || raw === "1a" ? raw : "30d";
+function toFixed2(v: number) {
+  return v.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function monthShort(monthIso: string) {
@@ -47,25 +47,33 @@ function monthShort(monthIso: string) {
   return `${month}/${year.slice(2)}`;
 }
 
-function monthNamePt(monthIso: string) {
+function monthName(monthIso: string) {
   const [year, month] = monthIso.split("-").map(Number);
-  const d = new Date(year, month - 1, 1);
-  return d.toLocaleDateString("pt-PT", { month: "short" });
+  return new Date(year, month - 1, 1).toLocaleDateString("pt-PT", { month: "short" });
 }
 
-function toFixed2(v: number) {
-  return v.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function toDayMonth(v: string | Date) {
+function dayMonth(v: string | Date) {
   const d = v instanceof Date ? v : new Date(v);
   if (Number.isNaN(d.getTime())) return String(v);
   return d.toLocaleDateString("pt-PT", { day: "2-digit", month: "short" });
 }
 
-function pctChange(current: number, previous: number) {
+function pct(current: number, previous: number) {
   if (previous <= 0) return 0;
   return ((current - previous) / previous) * 100;
+}
+
+function linePath(data: number[], w: number, h: number) {
+  if (data.length === 0) return "";
+  const max = Math.max(1, ...data);
+  const step = data.length > 1 ? w / (data.length - 1) : w;
+  return data
+    .map((v, i) => {
+      const x = i * step;
+      const y = h - (v / max) * h;
+      return `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+    })
+    .join(" ");
 }
 
 async function safeQueryRows<T>(db: ReturnType<typeof getDb>, sql: string, params: unknown[]): Promise<T[]> {
@@ -89,7 +97,7 @@ async function safeQueryRows<T>(db: ReturnType<typeof getDb>, sql: string, param
 export default async function DashboardPage({
   searchParams
 }: {
-  searchParams?: Promise<{ month?: string | string[]; period?: string | string[] }>;
+  searchParams?: Promise<{ month?: string | string[] }>;
 }) {
   if (!hasDatabaseConfig() || !process.env.AUTH_SECRET) {
     return (
@@ -107,9 +115,7 @@ export default async function DashboardPage({
 
   const params = await searchParams;
   const selectedMonth = parseMonthParam(params?.month);
-  const selectedPeriod = parsePeriodParam(params?.period);
   const monthOptions = monthIsoList(12);
-
   const db = getDb();
 
   const totalsRows = await safeQueryRows<TotalsRow>(
@@ -132,11 +138,11 @@ export default async function DashboardPage({
      WHERE user_id = ?
      GROUP BY DATE_FORMAT(transaction_date, '%Y-%m')
      ORDER BY month DESC
-     LIMIT 6`,
+     LIMIT 12`,
     [user.userId]
   );
 
-  const categoryRows = await safeQueryRows<CategoryRow>(
+  const expenseCategories = await safeQueryRows<CategoryRow>(
     db,
     `SELECT category, SUM(amount) AS total
      FROM transactions
@@ -145,11 +151,24 @@ export default async function DashboardPage({
        AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
      GROUP BY category
      ORDER BY total DESC
-     LIMIT 5`,
+     LIMIT 8`,
     [user.userId, selectedMonth]
   );
 
-  const recentRows = await safeQueryRows<RecentRow>(
+  const incomeCategories = await safeQueryRows<IncomeCategoryRow>(
+    db,
+    `SELECT category, SUM(amount) AS total
+     FROM transactions
+     WHERE user_id = ?
+       AND type = 'income'
+       AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
+     GROUP BY category
+     ORDER BY total DESC
+     LIMIT 4`,
+    [user.userId, selectedMonth]
+  );
+
+  const txRows = await safeQueryRows<TxRow>(
     db,
     `SELECT id, type, amount, category, description, transaction_date
      FROM transactions
@@ -172,123 +191,97 @@ export default async function DashboardPage({
 
   const assetRows = await safeQueryRows<AssetRow>(
     db,
-    `SELECT value FROM assets WHERE user_id = ?`,
+    `SELECT asset_type, value FROM assets WHERE user_id = ? ORDER BY value DESC LIMIT 6`,
     [user.userId]
   );
 
-  const debtRows = await safeQueryRows<DebtRow>(
-    db,
-    `SELECT total_owed, amount_paid FROM debts WHERE user_id = ?`,
-    [user.userId]
-  );
+  const debtRows = await safeQueryRows<DebtRow>(db, `SELECT total_owed, amount_paid FROM debts WHERE user_id = ?`, [
+    user.userId
+  ]);
 
   const totals = totalsRows[0] ?? { income: "0", expense: "0" };
   const income = Number(totals.income || 0);
-  const expenses = Number(totals.expense || 0);
-  const savings = income - expenses;
-  const availableBalance = savings;
+  const expense = Number(totals.expense || 0);
+  const availableBalance = income - expense;
 
-  const summary = [...summaryRows].reverse();
-  const prev = summaryRows[1];
-  const incomeChange = pctChange(income, prev ? Number(prev.income || 0) : 0);
-  const expenseChange = pctChange(expenses, prev ? Number(prev.expense || 0) : 0);
-
-  const assetsTotal = assetRows.reduce((acc, row) => acc + Number(row.value || 0), 0);
-  const debtOpen = debtRows.reduce(
-    (acc, row) => acc + Math.max(0, Number(row.total_owed || 0) - Number(row.amount_paid || 0)),
+  const assetsTotal = assetRows.reduce((a, r) => a + Number(r.value || 0), 0);
+  const liabilities = debtRows.reduce(
+    (a, r) => a + Math.max(0, Number(r.total_owed || 0) - Number(r.amount_paid || 0)),
     0
   );
-  const netWorth = assetsTotal - debtOpen + savings;
+  const netWorth = assetsTotal - liabilities + availableBalance;
 
-  const maxBar = Math.max(
-    1,
-    ...summary.flatMap((r) => [Number(r.income || 0), Number(r.expense || 0)])
-  );
+  const summary = [...summaryRows].reverse();
+  const incomeSeries = summary.map((s) => Number(s.income || 0));
+  const expenseSeries = summary.map((s) => Number(s.expense || 0));
 
-  const pieTotal = categoryRows.reduce((acc, row) => acc + Number(row.total || 0), 0);
-  const pieColors = ["#7c3aed", "#ef4444", "#06b6d4", "#f97316", "#22c55e"];
-  const pieSegments = categoryRows.map((row, i) => ({
-    label: row.category,
-    value: Number(row.total || 0),
-    pct: pieTotal > 0 ? Math.round((Number(row.total || 0) / pieTotal) * 100) : 0,
-    color: pieColors[i % pieColors.length]
-  }));
+  const expenseChange = pct(expense, summaryRows[1] ? Number(summaryRows[1].expense || 0) : 0);
+  const incomeGoalTarget = Math.max(1, income + expense);
+  const incomeGoalPct = Math.min(100, (income / incomeGoalTarget) * 100);
+
+  const pieTotal = expenseCategories.reduce((a, r) => a + Number(r.total || 0), 0);
+  const pieColors = ["#ef476f", "#6d4dff", "#1fd2ca", "#7ed957", "#f59e0b", "#60a5fa"];
   let cursor = 0;
-  const pieGradient = pieSegments.length
-    ? `conic-gradient(${pieSegments
-        .map((s) => {
+  const pieGradient = expenseCategories.length
+    ? `conic-gradient(${expenseCategories
+        .map((r, i) => {
+          const pctVal = pieTotal > 0 ? (Number(r.total || 0) / pieTotal) * 100 : 0;
           const start = cursor;
-          cursor += s.pct;
-          return `${s.color} ${start}% ${cursor}%`;
+          cursor += pctVal;
+          return `${pieColors[i % pieColors.length]} ${start}% ${cursor}%`;
         })
         .join(", ")})`
-    : "conic-gradient(#27335f 0% 100%)";
+    : "conic-gradient(#293467 0% 100%)";
 
-  const today = new Date();
-  const pendingBills = billRows.filter((b) => b.status === "pending");
-  const overdueCount = pendingBills.filter((b) => b.due_day < today.getDate()).length;
+  const spendTop = expenseCategories.slice(0, 3);
+  const petKeywords = /pet|dog|cat|vet|food|treat|kennel/i;
+  const petListRaw = expenseCategories.filter((c) => petKeywords.test(c.category));
+  const petList = (petListRaw.length ? petListRaw : expenseCategories.slice(0, 4)).map((r) => ({
+    label: r.category,
+    value: Number(r.total || 0)
+  }));
 
-  const incomeGoal = Math.max(1, income + expenses);
-  const incomeGoalPct = Math.min(100, (income / incomeGoal) * 100);
-
+  const overdueBills = billRows.filter((b) => b.status === "pending" && b.due_day < new Date().getDate()).length;
   const initials = user.email.slice(0, 2).toUpperCase();
-  const name = user.email.split("@")[0];
+
+  const sparkSpend = linePath(expenseSeries.slice(-8), 180, 40);
+  const sparkIncome = linePath(incomeSeries.slice(-8), 180, 40);
+  const bigIncome = linePath(incomeSeries.slice(-12), 620, 220);
+  const bigExpense = linePath(expenseSeries.slice(-12), 620, 220);
 
   return (
-    <div className="pf-wrap">
-      <div className="pf-shell">
-        <aside className="pf-sidebar">
-          <div className="pf-brand">
-            <div className="pf-mark" />
-            <div>
-              <p className="pf-brand-title">Planner</p>
-              <p className="pf-brand-sub">Finance</p>
-            </div>
-          </div>
-
-          <div className="pf-months">
+    <div className="dash-wrap">
+      <div className="dash-shell">
+        <aside className="left-nav">
+          <div className="brand-icon">{initials}</div>
+          <div className="brand-name">Other Level's</div>
+          <nav className="month-nav">
             {monthOptions.map((m) => (
-              <Link
-                key={m}
-                href={`?month=${m}&period=${selectedPeriod}`}
-                className={`pf-month ${m === selectedMonth ? "active" : ""}`}
-              >
-                {monthNamePt(m)}
+              <Link key={m} href={`?month=${m}`} className={`month-link ${m === selectedMonth ? "active" : ""}`}>
+                {monthName(m)}
               </Link>
             ))}
-          </div>
-
-          <div className="pf-user">
-            <div className="pf-avatar">{initials}</div>
-            <div>
-              <p className="pf-user-name">{name}</p>
-              <p className="pf-user-role">Owner</p>
-            </div>
-            <LogoutButton />
-          </div>
+          </nav>
         </aside>
 
-        <main className="pf-main">
-          <header className="pf-top">
-            <div>
-              <p className="pf-kicker">Personal Finance Tracker</p>
-              <h1 className="pf-balance-title">Available Balance</h1>
-              <p className="pf-balance-value">€ {toFixed2(availableBalance)}</p>
+        <main className="main-area">
+          <header className="top-row">
+            <div className="title-block">
+              <p className="kicker">Personal Finance Tracker</p>
+              <h1>Available Balance</h1>
+              <p className="balance">€{toFixed2(availableBalance)}</p>
             </div>
 
-            <div className="pf-tabs">
-              {(["7d", "30d", "90d", "1a"] as const).map((p) => (
-                <Link
-                  key={p}
-                  href={`?month=${selectedMonth}&period=${p}`}
-                  className={`pf-tab ${selectedPeriod === p ? "active" : ""}`}
-                >
-                  {p}
-                </Link>
-              ))}
+            <div className="center-tabs">
+              <Link className="tab active" href={`/dashboard?month=${selectedMonth}`}>
+                Dashboard
+              </Link>
+              <Link className="tab" href={`/dashboard/spreadsheet?month=${selectedMonth}`}>
+                Spreadsheet
+              </Link>
             </div>
 
-            <div className="pf-date-card">
+            <div className="date-card">
               {new Date().toLocaleDateString("pt-PT", {
                 weekday: "long",
                 day: "numeric",
@@ -296,110 +289,169 @@ export default async function DashboardPage({
                 year: "numeric"
               })}
             </div>
+
+            <div className="profile">
+              <div>
+                <p className="name">{user.email.split("@")[0]}</p>
+                <p className="role">Mortgage consultant</p>
+              </div>
+              <div className="avatar">{initials}</div>
+              <LogoutButton className="logout-mini" label="Sair" />
+            </div>
           </header>
 
-          <section className="pf-grid">
-            <article className="pf-card pf-gradient">
-              <p className="pf-card-title">Total Net Worth</p>
-              <p className="pf-card-big">€ {toFixed2(netWorth)}</p>
+          <section className="grid-board">
+            <article className="card grad">
+              <p className="card-label">Total Net Worth</p>
+              <p className="card-big">€{toFixed2(netWorth)}</p>
             </article>
 
-            <article className="pf-card">
-              <p className="pf-card-title">Spendings</p>
-              <p className="pf-card-number">€ {toFixed2(expenses)}</p>
-              <p className={`pf-badge ${expenseChange <= 0 ? "ok" : "bad"}`}>
-                {expenseChange >= 0 ? "+" : ""}
-                {expenseChange.toFixed(1)}%
-              </p>
+            <article className="card">
+              <p className="card-label">Spendings</p>
+              <p className="card-num">€{toFixed2(expense)}</p>
+              <svg className="spark" viewBox="0 0 180 40" preserveAspectRatio="none">
+                <path d={sparkSpend} />
+              </svg>
             </article>
 
-            <article className="pf-card">
-              <p className="pf-card-title">Top categorias</p>
-              <ul className="pf-list">
-                {pieSegments.slice(0, 3).map((item) => (
-                  <li key={item.label}>
-                    <span className="dot" style={{ background: item.color }} />
-                    {item.label}
-                    <b>€ {toFixed2(item.value)}</b>
+            <article className="card">
+              <p className="card-label">Spendings</p>
+              <ul className="spend-list">
+                {spendTop.map((r, i) => (
+                  <li key={r.category}>
+                    <span className={`ico i${i + 1}`}>{i === 0 ? "🏠" : i === 1 ? "👥" : "🚗"}</span>
+                    <span>{r.category}</span>
+                    <b>€{toFixed2(Number(r.total || 0))}</b>
                   </li>
                 ))}
               </ul>
             </article>
 
-            <article className="pf-card">
-              <p className="pf-card-title">{Math.round(incomeGoalPct)}% Income Goal</p>
-              <p className="pf-sub">Progress mensal</p>
-              <div className="pf-progress">
+            <article className="card goal">
+              <p className="goal-top">{Math.round(incomeGoalPct)}%</p>
+              <p className="card-label">Income Goal</p>
+              <p className="muted">Progress to month</p>
+              <p className="goal-value">
+                €{toFixed2(income)} / {toFixed2(incomeGoalTarget)}
+              </p>
+              <div className="goal-bar">
                 <div style={{ width: `${incomeGoalPct}%` }} />
               </div>
-              <p className="pf-sub right">
-                €{toFixed2(income)} / {toFixed2(incomeGoal)}
-              </p>
             </article>
 
-            <article className="pf-card pf-bar-card">
-              <div className="pf-head-row">
-                <p className="pf-card-title">Income & Expenses</p>
-                <Link className="pf-link" href={`/api/transactions/export?month=${selectedMonth}`}>
-                  Export CSV
-                </Link>
-              </div>
-              <div className="pf-bars">
-                {summary.map((row) => {
-                  const i = Number(row.income || 0);
-                  const e = Number(row.expense || 0);
-                  const ih = Math.max(4, (i / maxBar) * 100);
-                  const eh = Math.max(4, (e / maxBar) * 100);
+            <article className="card">
+              <p className="card-label">Income Source</p>
+              <div className="income-bars">
+                {incomeCategories.map((c, i) => {
+                  const max = Math.max(1, ...incomeCategories.map((x) => Number(x.total || 0)));
+                  const h = (Number(c.total || 0) / max) * 80;
                   return (
-                    <div className="pf-bar-col" key={row.month}>
-                      <div className="pf-bar-stack">
-                        <span className="inc" style={{ height: `${ih}%` }} />
-                        <span className="exp" style={{ height: `${eh}%` }} />
-                      </div>
-                      <small>{monthShort(row.month)}</small>
+                    <div key={c.category} className="ib-col">
+                      <small>€{toFixed2(Number(c.total || 0))}</small>
+                      <div
+                        className={`ib-bar c${(i % 4) + 1}`}
+                        style={{ height: `${Math.max(6, h)}px` }}
+                      />
+                      <span>{c.category}</span>
                     </div>
                   );
                 })}
               </div>
             </article>
 
-            <article className="pf-card">
-              <p className="pf-card-title">Assets by Category</p>
-              <div className="pf-donut">
-                <div
-                  className="pf-donut-ring"
-                  style={{
-                    background: pieGradient
-                  }}
-                />
-                <div className="pf-donut-hole">€ {toFixed2(assetsTotal)}</div>
-              </div>
+            <article className="card">
+              <p className="card-label">Income</p>
+              <p className="card-num">€{toFixed2(income)}</p>
+              <svg className="spark orange" viewBox="0 0 180 40" preserveAspectRatio="none">
+                <path d={sparkIncome} />
+              </svg>
             </article>
 
-            <article className="pf-card">
-              <p className="pf-card-title">Notification</p>
-              <div className="pf-alert">
-                {overdueCount > 0
-                  ? `${overdueCount} contas vencidas. Paga assim que possível.`
-                  : "Sem contas vencidas hoje."}
+            <article className="card notification">
+              <p className="card-label">Notification</p>
+              <div className="notice">
+                {overdueBills > 0
+                  ? `${overdueBills} bills are past due. Pay soon to avoid late fees.`
+                  : "No overdue bills right now."}
               </div>
-              <p className="pf-sub mt">Quick add</p>
+              <p className="card-label mt16">Quick add transaction</p>
               <QuickAddForm />
             </article>
 
-            <article className="pf-card pf-table-card">
-              <p className="pf-card-title">Transações recentes</p>
-              <div className="pf-table">
-                {recentRows.map((tx) => (
-                  <div className="pf-row" key={tx.id}>
+            <article className="card line-chart">
+              <div className="line-head">
+                <p className="card-label">Income & Expenses</p>
+                <Link href={`/api/transactions/export?month=${selectedMonth}`} className="export">
+                  Export CSV
+                </Link>
+              </div>
+              <svg viewBox="0 0 620 220" preserveAspectRatio="none" className="big-chart">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <line key={`h-${i}`} x1="0" x2="620" y1={i * 44} y2={i * 44} className="grid" />
+                ))}
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <line key={`v-${i}`} y1="0" y2="220" x1={i * (620 / 11)} x2={i * (620 / 11)} className="grid" />
+                ))}
+                <path d={bigIncome} className="line income" />
+                <path d={bigExpense} className="line expense" />
+              </svg>
+              <div className="chart-months">
+                {summary.slice(-12).map((m) => (
+                  <span key={m.month}>{monthName(m.month)}</span>
+                ))}
+              </div>
+            </article>
+
+            <article className="card asset">
+              <p className="card-label">Assets</p>
+              <div className="asset-wrap">
+                <div className="donut" style={{ background: pieGradient }}>
+                  <div className="donut-hole" />
+                </div>
+                <div className="asset-list">
+                  {assetRows.slice(0, 4).map((a) => (
+                    <div key={`${a.asset_type}-${a.value}`}>
+                      <span>{a.asset_type}</span>
+                      <b>€{toFixed2(Number(a.value || 0))}</b>
+                    </div>
+                  ))}
+                  {assetRows.length === 0 ? (
+                    <div>
+                      <span>Sem assets</span>
+                      <b>€0.00</b>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </article>
+
+            <article className="card pets">
+              <p className="card-label">Expenses for My Dogs and Cats</p>
+              <div className="pet-box">
+                <div className="pet-lines">
+                  {petList.map((p) => (
+                    <div key={p.label}>
+                      <span>{p.label}</span>
+                      <b>{toFixed2(p.value)}</b>
+                    </div>
+                  ))}
+                </div>
+                <div className="pet-emoji">🐶</div>
+              </div>
+            </article>
+
+            <article className="card table">
+              <p className="card-label">Recent Transactions</p>
+              <div className="rows">
+                {txRows.map((tx) => (
+                  <div key={tx.id} className="row">
                     <span>{tx.description || tx.category}</span>
-                    <span>{toDayMonth(tx.transaction_date)}</span>
+                    <span>{dayMonth(tx.transaction_date)}</span>
                     <span className={tx.type === "income" ? "pos" : "neg"}>
                       {tx.type === "income" ? "+" : "-"}€{toFixed2(Math.abs(Number(tx.amount || 0)))}
                     </span>
                   </div>
                 ))}
-                {recentRows.length === 0 ? <p className="pf-sub">Sem transações no mês.</p> : null}
               </div>
             </article>
           </section>
