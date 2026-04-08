@@ -22,10 +22,17 @@ const expenseItemsByCategory: Record<string, string[]> = {
 const incomeItems = ["Salary", "Freelance", "Bonus", "Business", "Other"];
 
   const uiByLang = {
-  "pt-PT": {
-    expense: "Despesa",
-    income: "Receita",
-    amount: "Valor",
+    "pt-PT": {
+      mode: "Modo",
+      modeNormal: "Normal",
+      modeRecurring: "Recorrente",
+      type: "Tipo",
+      category: "Categoria",
+      item: "Item",
+      date: "Data",
+      expense: "Despesa",
+      income: "Receita",
+      amount: "Valor",
     add: "Adicionar",
     saving: "A guardar...",
     saved: "Transação guardada.",
@@ -33,11 +40,18 @@ const incomeItems = ["Salary", "Freelance", "Bonus", "Business", "Other"];
     failed: "Falha ao guardar.",
     fixedIncome: "Entrada fixa mensal",
     fixedExpense: "Despesa fixa mensal"
-  },
-  "en-US": {
-    expense: "Expense",
-    income: "Income",
-    amount: "Amount",
+    },
+    "en-US": {
+      mode: "Mode",
+      modeNormal: "Normal",
+      modeRecurring: "Recurring",
+      type: "Type",
+      category: "Category",
+      item: "Item",
+      date: "Date",
+      expense: "Expense",
+      income: "Income",
+      amount: "Amount",
     add: "Add",
     saving: "Saving...",
     saved: "Transaction saved.",
@@ -45,11 +59,18 @@ const incomeItems = ["Salary", "Freelance", "Bonus", "Business", "Other"];
     failed: "Failed to save.",
     fixedIncome: "Fixed monthly income",
     fixedExpense: "Fixed monthly expense"
-  },
-  "es-ES": {
-    expense: "Gasto",
-    income: "Ingreso",
-    amount: "Importe",
+    },
+    "es-ES": {
+      mode: "Modo",
+      modeNormal: "Normal",
+      modeRecurring: "Recurrente",
+      type: "Tipo",
+      category: "Categoría",
+      item: "Concepto",
+      date: "Fecha",
+      expense: "Gasto",
+      income: "Ingreso",
+      amount: "Importe",
     add: "Añadir",
     saving: "Guardando...",
     saved: "Transacción guardada.",
@@ -57,11 +78,18 @@ const incomeItems = ["Salary", "Freelance", "Bonus", "Business", "Other"];
     failed: "Error al guardar.",
     fixedIncome: "Ingreso fijo mensual",
     fixedExpense: "Gasto fijo mensual"
-  },
-  "fr-FR": {
-    expense: "Dépense",
-    income: "Revenu",
-    amount: "Montant",
+    },
+    "fr-FR": {
+      mode: "Mode",
+      modeNormal: "Normal",
+      modeRecurring: "Récurrent",
+      type: "Type",
+      category: "Catégorie",
+      item: "Élément",
+      date: "Date",
+      expense: "Dépense",
+      income: "Revenu",
+      amount: "Montant",
     add: "Ajouter",
     saving: "Enregistrement...",
     saved: "Transaction enregistrée.",
@@ -196,71 +224,87 @@ export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
 
   return (
     <form className="quick-form quick-form-compact" onSubmit={onSubmit}>
-      <div className="q-row q-row-4">
-        <select value={entryMode} onChange={(e) => setEntryMode(e.target.value as "normal" | "recurring")}>
-          <option value="normal">Normal</option>
-          <option value="recurring">Recorrente</option>
-        </select>
-        <select
-          value={type}
-          onChange={(e) => {
-            const nextType = e.target.value as "income" | "expense";
-            setType(nextType);
-            if (nextType === "income") {
-              setCategory(incomeCategories[0]);
-              setItem(incomeItems[0]);
-            } else {
-              const nextCategory = expenseCategories[0];
-              setCategory(nextCategory);
-              setItem((expenseItemsByCategory[nextCategory] || expenseItemsByCategory.Other)[0]);
-            }
-          }}
-        >
-          <option value="expense">{text.expense}</option>
-          <option value="income">{text.income}</option>
-        </select>
-        <select
-          value={category}
-          onChange={(e) => {
-            const nextCategory = e.target.value;
-            setCategory(nextCategory);
-            if (type === "expense") {
-              setItem((expenseItemsByCategory[nextCategory] || expenseItemsByCategory.Other)[0]);
-            } else {
-              setItem(incomeItems[0]);
-            }
-          }}
-        >
-          {categories.map((item) => (
-            <option key={item} value={item}>
-              {categoryLabels[item as keyof typeof categoryLabels] || item}
-            </option>
-          ))}
-        </select>
-        <select
-          value={item}
-          onChange={(e) => setItem(e.target.value)}
-          key={`${type}-${category}`}
-        >
-          {items.map((opt) => (
-            <option key={opt} value={opt}>
-              {categoryLabels[opt as keyof typeof categoryLabels] || opt}
-            </option>
-          ))}
-        </select>
-      </div>
+      <div className="q-grid">
+        <label className="q-field">
+          <span>{text.mode}</span>
+          <select value={entryMode} onChange={(e) => setEntryMode(e.target.value as "normal" | "recurring")}>
+            <option value="normal">{text.modeNormal}</option>
+            <option value="recurring">{text.modeRecurring}</option>
+          </select>
+        </label>
 
-      <div className="q-row q-row-2">
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          placeholder={text.amount}
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          required
-        />
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+        <label className="q-field">
+          <span>{text.type}</span>
+          <select
+            value={type}
+            onChange={(e) => {
+              const nextType = e.target.value as "income" | "expense";
+              setType(nextType);
+              if (nextType === "income") {
+                setCategory(incomeCategories[0]);
+                setItem(incomeItems[0]);
+              } else {
+                const nextCategory = expenseCategories[0];
+                setCategory(nextCategory);
+                setItem((expenseItemsByCategory[nextCategory] || expenseItemsByCategory.Other)[0]);
+              }
+            }}
+          >
+            <option value="expense">{text.expense}</option>
+            <option value="income">{text.income}</option>
+          </select>
+        </label>
+
+        <label className="q-field">
+          <span>{text.category}</span>
+          <select
+            value={category}
+            onChange={(e) => {
+              const nextCategory = e.target.value;
+              setCategory(nextCategory);
+              if (type === "expense") {
+                setItem((expenseItemsByCategory[nextCategory] || expenseItemsByCategory.Other)[0]);
+              } else {
+                setItem(incomeItems[0]);
+              }
+            }}
+          >
+            {categories.map((item) => (
+              <option key={item} value={item}>
+                {categoryLabels[item as keyof typeof categoryLabels] || item}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="q-field">
+          <span>{text.item}</span>
+          <select value={item} onChange={(e) => setItem(e.target.value)} key={`${type}-${category}`}>
+            {items.map((opt) => (
+              <option key={opt} value={opt}>
+                {categoryLabels[opt as keyof typeof categoryLabels] || opt}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="q-field">
+          <span>{text.amount}</span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder={text.amount}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            required
+          />
+        </label>
+
+        <label className="q-field">
+          <span>{text.date}</span>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+        </label>
       </div>
 
       <div className="q-inline">
