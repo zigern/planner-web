@@ -35,7 +35,7 @@ export default function HomePage() {
           {[
             ["Categorias prontas", "Income e expenses com categorias predefinidas e opção personalizada."],
             ["Filtro por mês", "Acompanha resultados mensais e compara performance recente."],
-            ["Export CSV", "Exporta os teus dados financeiros para contabilidade ou análise externa."]
+            ["Gráficos e trackers", "Tendências mensais, despesas por categoria, bills, goals, debts e assets."]
           ].map(([title, description]) => (
             <article key={title} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="font-semibold text-slate-900">{title}</h2>
@@ -50,9 +50,12 @@ export default function HomePage() {
             <p>Autenticação por conta (registo/login/logout)</p>
             <p>Base de dados MySQL no teu Hostinger</p>
             <p>Dashboard com KPIs (Income, Expenses, Savings, Net Worth)</p>
-            <p>Lista de transações recentes</p>
-            <p>Resumo dos últimos meses</p>
-            <p>Export de dados em CSV</p>
+            <p>Gráficos de tendência e despesas por categoria</p>
+            <p>Lista de transações recentes + export CSV</p>
+            <p>Bills tracker e subscriptions tracker</p>
+            <p>Financial goals tracker</p>
+            <p>Debt tracker e net worth assets</p>
+            <p>Budget mensal por categoria com controlo de excesso</p>
           </div>
         </div>
       </section>
