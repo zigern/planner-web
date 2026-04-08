@@ -148,7 +148,7 @@ export default async function SpreadsheetPage({
       <div className="dash-shell">
         <aside className="left-nav">
           <div className="brand-icon">{initials}</div>
-          <div className="brand-name">Other Level's</div>
+          <div className="brand-name">Other Levels</div>
           <nav className="month-nav">
             {monthOptions.map((m) => (
               <Link key={m} href={`?month=${m}`} className={`month-link ${m === selectedMonth ? "active" : ""}`}>
@@ -290,4 +290,3 @@ export default async function SpreadsheetPage({
     </div>
   );
 }
-
