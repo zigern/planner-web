@@ -1,17 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getCategoriesForType } from "@/lib/finance/categories";
 
 export function AddTransactionForm() {
   const router = useRouter();
   const [type, setType] = useState<"income" | "expense">("income");
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState("Salário");
+  const [customCategory, setCustomCategory] = useState("");
   const [description, setDescription] = useState("");
   const [transactionDate, setTransactionDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const categories = useMemo(() => getCategoriesForType(type), [type]);
+  const selectedCategory = category === "__custom__" ? customCategory.trim() : category;
+
+  function onTypeChange(nextType: "income" | "expense") {
+    setType(nextType);
+    const nextCategories = getCategoriesForType(nextType);
+    setCategory(nextCategories[0]);
+    setCustomCategory("");
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -24,7 +35,7 @@ export function AddTransactionForm() {
       body: JSON.stringify({
         type,
         amount: Number(amount),
-        category,
+        category: selectedCategory,
         description,
         transactionDate
       })
@@ -39,7 +50,8 @@ export function AddTransactionForm() {
     }
 
     setAmount("");
-    setCategory("");
+    setCategory(categories[0]);
+    setCustomCategory("");
     setDescription("");
     setMessage("Transação adicionada.");
     setLoading(false);
@@ -52,7 +64,7 @@ export function AddTransactionForm() {
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <select
           value={type}
-          onChange={(e) => setType(e.target.value as "income" | "expense")}
+          onChange={(e) => onTypeChange(e.target.value as "income" | "expense")}
           className="rounded-lg border border-slate-300 px-3 py-2"
         >
           <option value="income">Income</option>
@@ -68,13 +80,18 @@ export function AddTransactionForm() {
           className="rounded-lg border border-slate-300 px-3 py-2"
           required
         />
-        <input
-          placeholder="Category"
+        <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           className="rounded-lg border border-slate-300 px-3 py-2"
-          required
-        />
+        >
+          {categories.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+          <option value="__custom__">Outro (escrever)</option>
+        </select>
         <input
           type="date"
           value={transactionDate}
@@ -83,6 +100,15 @@ export function AddTransactionForm() {
           required
         />
       </div>
+      {category === "__custom__" ? (
+        <input
+          placeholder="Escreve a categoria"
+          value={customCategory}
+          onChange={(e) => setCustomCategory(e.target.value)}
+          className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2"
+          required
+        />
+      ) : null}
       <textarea
         placeholder="Description (optional)"
         value={description}
@@ -92,7 +118,7 @@ export function AddTransactionForm() {
       />
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || !selectedCategory}
         className="mt-3 rounded-lg bg-brand-500 px-4 py-2.5 font-medium text-white hover:bg-brand-700 disabled:opacity-60"
       >
         {loading ? "A guardar..." : "Adicionar"}
