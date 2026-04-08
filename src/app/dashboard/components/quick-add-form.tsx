@@ -7,19 +7,17 @@ const expenseCategories = ["Housing", "Personal", "Transportation", "Food", "Bil
 
 const incomeCategories = ["Salary", "Freelance", "Business", "Investments", "Bonus", "Other"];
 
-const expenseItems = [
-  "Rent",
-  "Utilities",
-  "Internet",
-  "Netflix",
-  "Gym",
-  "Fuel",
-  "Groceries",
-  "Transport Pass",
-  "Pet Food",
-  "Vet",
-  "Other"
-];
+const expenseItemsByCategory: Record<string, string[]> = {
+  Housing: ["Rent", "Utilities", "Internet", "Condo", "Insurance", "Other"],
+  Personal: ["Shopping", "Leisure", "Clothing", "Beauty", "Other"],
+  Transportation: ["Fuel", "Transport Pass", "Parking", "Ride Apps", "Car Maintenance", "Other"],
+  Food: ["Groceries", "Restaurant", "Coffee", "Snacks", "Other"],
+  Bills: ["Electricity", "Water", "Phone", "Netflix", "Gym", "Other"],
+  Pets: ["Pet Food", "Vet", "Grooming", "Toys", "Other"],
+  Health: ["Pharmacy", "Doctor", "Insurance", "Supplements", "Other"],
+  Shopping: ["Online Shopping", "Store Shopping", "Gifts", "Other"],
+  Other: ["Other"]
+};
 
 const incomeItems = ["Salary", "Freelance", "Bonus", "Business", "Other"];
 
@@ -133,13 +131,13 @@ export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
   const [type, setType] = useState<"income" | "expense">("expense");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("Housing");
-  const [item, setItem] = useState("Rent");
+  const [item, setItem] = useState(expenseItemsByCategory.Housing[0]);
   const [monthlyFixed, setMonthlyFixed] = useState(false);
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const categories = type === "income" ? incomeCategories : expenseCategories;
-  const items = type === "income" ? incomeItems : expenseItems;
+  const items = type === "income" ? incomeItems : expenseItemsByCategory[category] || expenseItemsByCategory.Other;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -194,21 +192,42 @@ export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
           onChange={(e) => {
             const nextType = e.target.value as "income" | "expense";
             setType(nextType);
-            setCategory(nextType === "income" ? incomeCategories[0] : expenseCategories[0]);
-            setItem(nextType === "income" ? incomeItems[0] : expenseItems[0]);
+            if (nextType === "income") {
+              setCategory(incomeCategories[0]);
+              setItem(incomeItems[0]);
+            } else {
+              const nextCategory = expenseCategories[0];
+              setCategory(nextCategory);
+              setItem((expenseItemsByCategory[nextCategory] || expenseItemsByCategory.Other)[0]);
+            }
           }}
         >
           <option value="expense">{text.expense}</option>
           <option value="income">{text.income}</option>
         </select>
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+        <select
+          value={category}
+          onChange={(e) => {
+            const nextCategory = e.target.value;
+            setCategory(nextCategory);
+            if (type === "expense") {
+              setItem((expenseItemsByCategory[nextCategory] || expenseItemsByCategory.Other)[0]);
+            } else {
+              setItem(incomeItems[0]);
+            }
+          }}
+        >
           {categories.map((item) => (
             <option key={item} value={item}>
               {categoryLabels[item as keyof typeof categoryLabels] || item}
             </option>
           ))}
         </select>
-        <select value={item} onChange={(e) => setItem(e.target.value)}>
+        <select
+          value={item}
+          onChange={(e) => setItem(e.target.value)}
+          key={`${type}-${category}`}
+        >
           {items.map((opt) => (
             <option key={opt} value={opt}>
               {categoryLabels[opt as keyof typeof categoryLabels] || opt}

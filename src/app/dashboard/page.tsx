@@ -95,7 +95,12 @@ function getCopy(lang: string) {
       noPetExpenses: "Sem despesas com animais neste mês",
       recentTransactions: "Transações recentes",
       fixedMonthly: "Despesas/receitas fixas mensais",
+      fixedExpenses: "Despesas fixas mensais",
+      fixedIncomes: "Receitas fixas mensais",
+      variableExpenses: "Despesas variáveis recentes",
       noFixed: "Sem itens fixos mensais",
+      noFixedExpenses: "Sem despesas fixas mensais",
+      noVariableExpenses: "Sem despesas variáveis recentes",
       recurringIncome: "Receita fixa",
       recurringExpense: "Despesa fixa"
     },
@@ -122,7 +127,12 @@ function getCopy(lang: string) {
       noPetExpenses: "No pet expenses in this month",
       recentTransactions: "Recent Transactions",
       fixedMonthly: "Fixed monthly income/expenses",
+      fixedExpenses: "Fixed monthly expenses",
+      fixedIncomes: "Fixed monthly incomes",
+      variableExpenses: "Recent variable expenses",
       noFixed: "No fixed monthly items",
+      noFixedExpenses: "No fixed monthly expenses",
+      noVariableExpenses: "No recent variable expenses",
       recurringIncome: "Fixed income",
       recurringExpense: "Fixed expense"
     },
@@ -149,7 +159,12 @@ function getCopy(lang: string) {
       noPetExpenses: "Sin gastos de mascotas este mes",
       recentTransactions: "Transacciones recientes",
       fixedMonthly: "Ingresos/gastos fijos mensuales",
+      fixedExpenses: "Gastos fijos mensuales",
+      fixedIncomes: "Ingresos fijos mensuales",
+      variableExpenses: "Gastos variables recientes",
       noFixed: "Sin elementos fijos mensuales",
+      noFixedExpenses: "Sin gastos fijos mensuales",
+      noVariableExpenses: "Sin gastos variables recientes",
       recurringIncome: "Ingreso fijo",
       recurringExpense: "Gasto fijo"
     },
@@ -176,7 +191,12 @@ function getCopy(lang: string) {
       noPetExpenses: "Aucune dépense animale ce mois",
       recentTransactions: "Transactions récentes",
       fixedMonthly: "Revenus/dépenses mensuels fixes",
+      fixedExpenses: "Dépenses fixes mensuelles",
+      fixedIncomes: "Revenus fixes mensuels",
+      variableExpenses: "Dépenses variables récentes",
       noFixed: "Aucun élément fixe mensuel",
+      noFixedExpenses: "Aucune dépense fixe mensuelle",
+      noVariableExpenses: "Aucune dépense variable récente",
       recurringIncome: "Revenu fixe",
       recurringExpense: "Dépense fixe"
     }
@@ -563,6 +583,11 @@ export default async function DashboardPage({
      LIMIT 8`,
     [user.userId]
   );
+  const recurringExpenseRules = recurringRules.filter((rule) => rule.type === "expense");
+  const recurringIncomeRules = recurringRules.filter((rule) => rule.type === "income");
+  const variableExpenseRows = txRows.filter(
+    (tx) => tx.type === "expense" && !(tx.description || "").startsWith("Recurring Rule #")
+  );
   const initials = user.email.slice(0, 2).toUpperCase();
 
   const sparkSpend = smoothLinePath(expenseSeries.slice(-8), 180, 40);
@@ -718,20 +743,48 @@ export default async function DashboardPage({
               </div>
               <p className="card-label mt16">{t.quickAddTransaction}</p>
               <QuickAddForm lang={lang} />
-              <p className="card-label mt16">{t.fixedMonthly}</p>
+              <p className="card-label mt16">{t.fixedExpenses}</p>
               <div className="fixed-list">
-                {recurringRules.length ? (
-                  recurringRules.map((rule) => (
+                {recurringExpenseRules.length ? (
+                  recurringExpenseRules.map((rule) => (
                     <div key={rule.id} className="fixed-item">
-                      <span>{rule.type === "income" ? t.recurringIncome : t.recurringExpense}</span>
+                      <span>{t.recurringExpense}</span>
                       <span>{rule.description || rule.category}</span>
-                      <b className={rule.type === "income" ? "income-number" : "expense-number"}>
+                      <b className="expense-number">
                         {formatMoney(Number(rule.amount || 0), lang, currency)}
                       </b>
                     </div>
                   ))
                 ) : (
-                  <p className="muted">{t.noFixed}</p>
+                  <p className="muted">{t.noFixedExpenses}</p>
+                )}
+              </div>
+              {recurringIncomeRules.length ? (
+                <>
+                  <p className="card-label mt16">{t.fixedIncomes}</p>
+                  <div className="fixed-list">
+                    {recurringIncomeRules.map((rule) => (
+                      <div key={rule.id} className="fixed-item">
+                        <span>{t.recurringIncome}</span>
+                        <span>{rule.description || rule.category}</span>
+                        <b className="income-number">{formatMoney(Number(rule.amount || 0), lang, currency)}</b>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : null}
+              <p className="card-label mt16">{t.variableExpenses}</p>
+              <div className="fixed-list">
+                {variableExpenseRows.length ? (
+                  variableExpenseRows.slice(0, 4).map((tx) => (
+                    <div key={tx.id} className="fixed-item">
+                      <span>{dayMonth(tx.transaction_date, lang)}</span>
+                      <span>{tx.description || tx.category}</span>
+                      <b className="expense-number">{formatMoney(Number(tx.amount || 0), lang, currency)}</b>
+                    </div>
+                  ))
+                ) : (
+                  <p className="muted">{t.noVariableExpenses}</p>
                 )}
               </div>
             </article>
