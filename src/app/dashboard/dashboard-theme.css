@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 
 :root {
   --bg: #070f34;
@@ -21,7 +21,7 @@
   min-height: 100vh;
   background: radial-gradient(circle at 30% -10%, #1a285f 0%, var(--bg) 45%);
   color: var(--text);
-  font-family: "Geist", sans-serif;
+  font-family: "Plus Jakarta Sans", sans-serif;
   padding: 18px;
 }
 
@@ -32,28 +32,28 @@
   overflow: hidden;
   background: var(--bg-2);
   display: grid;
-  grid-template-columns: 120px 1fr;
+  grid-template-columns: 106px 1fr;
 }
 
 .left-nav {
   background: #131c4c;
   border-right: 1px solid var(--line);
-  padding: 18px 10px;
+  padding: 16px 8px;
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
 .brand-icon {
-  width: 68px;
-  height: 68px;
+  width: 62px;
+  height: 62px;
   margin: 0 auto;
   border-radius: 20px;
   background: linear-gradient(145deg, #ffffff, #97a8ff);
   color: #13205a;
   display: grid;
   place-items: center;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
 }
 
@@ -61,6 +61,7 @@
   text-align: center;
   font-weight: 600;
   line-height: 1.2;
+  font-size: 13px;
 }
 
 .month-nav {
@@ -73,7 +74,7 @@
 .month-link {
   text-decoration: none;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13px;
   border-radius: 10px;
   padding: 8px 10px;
   text-align: center;
@@ -86,13 +87,13 @@
 }
 
 .main-area {
-  padding: 20px;
+  padding: 18px;
   overflow: auto;
 }
 
 .top-row {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr auto;
+  grid-template-columns: 360px 360px 320px minmax(220px, 1fr);
   gap: 14px;
   align-items: center;
   margin-bottom: 14px;
@@ -104,23 +105,24 @@
 }
 
 .title-block h1 {
-  font-size: 52px;
-  line-height: 1;
+  font-size: 54px;
+  line-height: 0.96;
   margin-top: 2px;
+  font-weight: 800;
 }
 
 .balance {
   margin-top: 6px;
-  font-size: 48px;
+  font-size: 54px;
   line-height: 1;
   color: var(--cyan);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .center-tabs {
   border: 1px solid var(--line);
   background: var(--panel);
-  border-radius: 14px;
+  border-radius: 12px;
   padding: 8px;
   display: flex;
   gap: 8px;
@@ -131,8 +133,8 @@
   border: 1px solid transparent;
   color: var(--muted);
   background: transparent;
-  border-radius: 10px;
-  font-size: 15px;
+  border-radius: 9px;
+  font-size: 16px;
   font-weight: 600;
   padding: 10px 14px;
 }
@@ -147,7 +149,7 @@
 .date-card {
   border: 1px solid var(--line);
   background: var(--panel);
-  border-radius: 14px;
+  border-radius: 12px;
   padding: 14px;
   color: var(--muted);
   font-weight: 600;
@@ -161,7 +163,7 @@
 }
 
 .profile .name {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -171,8 +173,8 @@
 }
 
 .avatar {
-  width: 46px;
-  height: 46px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: linear-gradient(135deg, #7f5cff, #1ed6d9);
   display: grid;
@@ -198,37 +200,63 @@
 .card {
   border: 1px solid var(--line);
   background: var(--panel);
-  border-radius: 20px;
-  padding: 16px;
+  border-radius: 18px;
+  padding: 18px;
 }
 
-.card:nth-child(1),
-.card:nth-child(2),
-.card:nth-child(3),
-.card:nth-child(4) {
-  grid-column: span 3;
+.card-networth {
+  grid-column: 1 / span 3;
+  grid-row: 1;
 }
 
-.card:nth-child(5),
-.card:nth-child(6),
-.card:nth-child(7) {
-  grid-column: span 3;
+.card-spending-spark {
+  grid-column: 4 / span 3;
+  grid-row: 1;
 }
 
-.line-chart {
-  grid-column: span 5 !important;
+.card-spending-list {
+  grid-column: 7 / span 3;
+  grid-row: 1 / span 2;
 }
 
-.asset {
-  grid-column: span 3 !important;
+.card-goal {
+  grid-column: 10 / span 3;
+  grid-row: 1;
 }
 
-.pets {
-  grid-column: span 4 !important;
+.card-income-source {
+  grid-column: 1 / span 3;
+  grid-row: 2;
 }
 
-.table {
-  grid-column: span 12 !important;
+.card-income-spark {
+  grid-column: 4 / span 3;
+  grid-row: 2;
+}
+
+.card-notice {
+  grid-column: 10 / span 3;
+  grid-row: 2 / span 2;
+}
+
+.card-trend {
+  grid-column: 1 / span 5;
+  grid-row: 3;
+}
+
+.card-assets {
+  grid-column: 6 / span 4;
+  grid-row: 3;
+}
+
+.card-pets {
+  grid-column: 10 / span 3;
+  grid-row: 3;
+}
+
+.card-recent {
+  grid-column: 1 / span 12;
+  grid-row: 4;
 }
 
 .grad {
@@ -243,14 +271,14 @@
 
 .card-big {
   margin-top: 8px;
-  font-size: 46px;
+  font-size: 50px;
   line-height: 1;
   font-weight: 700;
 }
 
 .card-num {
   margin-top: 6px;
-  font-size: 40px;
+  font-size: 50px;
   line-height: 1;
   font-weight: 700;
 }
@@ -398,7 +426,7 @@
   background: rgba(0, 0, 0, 0.25);
   padding: 10px;
   border-radius: 8px;
-  font-size: 30px;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1.15;
 }
@@ -428,7 +456,7 @@
   background: var(--panel-soft);
   color: var(--text);
   padding: 10px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .quick-form button {
@@ -670,13 +698,23 @@
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
-  .card {
-    grid-column: span 3 !important;
+  .card-networth,
+  .card-spending-spark,
+  .card-spending-list,
+  .card-goal,
+  .card-income-source,
+  .card-income-spark,
+  .card-notice,
+  .card-trend,
+  .card-assets,
+  .card-pets {
+    grid-column: span 3;
+    grid-row: auto;
   }
 
-  .line-chart,
-  .table {
-    grid-column: span 6 !important;
+  .card-recent {
+    grid-column: span 6;
+    grid-row: auto;
   }
 
   .sheet-grid {
@@ -709,10 +747,19 @@
     grid-template-columns: 1fr;
   }
 
-  .card,
-  .line-chart,
-  .table {
-    grid-column: span 1 !important;
+  .card-networth,
+  .card-spending-spark,
+  .card-spending-list,
+  .card-goal,
+  .card-income-source,
+  .card-income-spark,
+  .card-notice,
+  .card-trend,
+  .card-assets,
+  .card-pets,
+  .card-recent {
+    grid-column: span 1;
+    grid-row: auto;
   }
 
   .card-big {
@@ -723,4 +770,3 @@
     font-size: 30px;
   }
 }
-

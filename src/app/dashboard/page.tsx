@@ -243,7 +243,7 @@ export default async function DashboardPage({
       <div className="dash-shell">
         <aside className="left-nav">
           <div className="brand-icon">{initials}</div>
-          <div className="brand-name">Other Levels</div>
+          <div className="brand-name">Other Level&apos;s</div>
           <nav className="month-nav">
             {monthOptions.map((m) => (
               <Link key={m} href={`?month=${m}`} className={`month-link ${m === selectedMonth ? "active" : ""}`}>
@@ -290,12 +290,12 @@ export default async function DashboardPage({
           </header>
 
           <section className="grid-board">
-            <article className="card grad">
+            <article className="card grad card-networth">
               <p className="card-label">Total Net Worth</p>
               <p className="card-big">€{toFixed2(netWorth)}</p>
             </article>
 
-            <article className="card">
+            <article className="card card-spending-spark">
               <p className="card-label">Spendings</p>
               <p className="card-num">€{toFixed2(expense)}</p>
               <svg className="spark" viewBox="0 0 180 40" preserveAspectRatio="none">
@@ -303,7 +303,7 @@ export default async function DashboardPage({
               </svg>
             </article>
 
-            <article className="card">
+            <article className="card card-spending-list">
               <p className="card-label">Spendings</p>
               <ul className="spend-list">
                 {spendTop.map((r, i) => (
@@ -316,7 +316,7 @@ export default async function DashboardPage({
               </ul>
             </article>
 
-            <article className="card goal">
+            <article className="card goal card-goal">
               <p className="goal-top">{Math.round(incomeGoalPct)}%</p>
               <p className="card-label">Income Goal</p>
               <p className="muted">Progress to month</p>
@@ -328,7 +328,7 @@ export default async function DashboardPage({
               </div>
             </article>
 
-            <article className="card">
+            <article className="card card-income-source">
               <p className="card-label">Income Source</p>
               <div className="income-bars">
                 {incomeCategories.map((c, i) => {
@@ -348,7 +348,7 @@ export default async function DashboardPage({
               </div>
             </article>
 
-            <article className="card">
+            <article className="card card-income-spark">
               <p className="card-label">Income</p>
               <p className="card-num">€{toFixed2(income)}</p>
               <svg className="spark orange" viewBox="0 0 180 40" preserveAspectRatio="none">
@@ -356,7 +356,7 @@ export default async function DashboardPage({
               </svg>
             </article>
 
-            <article className="card notification">
+            <article className="card notification card-notice">
               <p className="card-label">Notification</p>
               <div className="notice">
                 {overdueBills > 0
@@ -367,7 +367,7 @@ export default async function DashboardPage({
               <QuickAddForm />
             </article>
 
-            <article className="card line-chart">
+            <article className="card line-chart card-trend">
               <div className="line-head">
                 <p className="card-label">Income & Expenses</p>
                 <Link href={`/api/transactions/export?month=${selectedMonth}`} className="export">
@@ -391,7 +391,7 @@ export default async function DashboardPage({
               </div>
             </article>
 
-            <article className="card asset">
+            <article className="card asset card-assets">
               <p className="card-label">Assets</p>
               <div className="asset-wrap">
                 <div className="donut" style={{ background: pieGradient }}>
@@ -414,7 +414,7 @@ export default async function DashboardPage({
               </div>
             </article>
 
-            <article className="card pets">
+            <article className="card pets card-pets">
               <p className="card-label">Expenses for My Dogs and Cats</p>
               <div className="pet-box">
                 <div className="pet-lines">
@@ -429,7 +429,7 @@ export default async function DashboardPage({
               </div>
             </article>
 
-            <article className="card table">
+            <article className="card table card-recent">
               <p className="card-label">Recent Transactions</p>
               <div className="rows">
                 {txRows.map((tx) => (
