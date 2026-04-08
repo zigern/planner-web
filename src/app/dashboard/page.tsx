@@ -21,6 +21,12 @@ type BillRow = { id: number; name: string; amount: string; due_day: number; stat
 type AssetRow = { asset_type: string; value: string };
 type DebtRow = { total_owed: string; amount_paid: string };
 type IncomeCategoryRow = { category: string; total: string };
+type SpendingBucket = {
+  key: "housing" | "personal" | "transportation";
+  label: string;
+  icon: string;
+  matcher: RegExp;
+};
 
 function monthIsoListForYear(year: number) {
   return Array.from({ length: 12 }).map((_, i) => `${year}-${String(i + 1).padStart(2, "0")}`);
@@ -47,30 +53,62 @@ function dayMonth(v: string | Date) {
   return d.toLocaleDateString("pt-PT", { day: "2-digit", month: "short" });
 }
 
-function categoryIcon(category: string) {
-  const key = category.toLowerCase();
-  if (key.includes("renda") || key.includes("casa") || key.includes("housing")) return "🏠";
-  if (key.includes("comida") || key.includes("food") || key.includes("rest")) return "🍽️";
-  if (key.includes("transporte") || key.includes("carro") || key.includes("fuel")) return "🚗";
-  if (key.includes("saúde") || key.includes("health")) return "🩺";
-  if (key.includes("lazer") || key.includes("entertain")) return "🎮";
-  if (key.includes("compras") || key.includes("shopping")) return "🛍️";
-  if (key.includes("educação") || key.includes("education")) return "📚";
-  if (key.includes("contas") || key.includes("utilities")) return "💡";
-  return "💸";
-}
+const spendingBuckets: SpendingBucket[] = [
+  {
+    key: "housing",
+    label: "Housing",
+    icon: "🏠",
+    matcher: /(housing|renda|rent|mortgage|casa|home|eletric|electric|agua|water|internet|insurance|luz)/i
+  },
+  {
+    key: "personal",
+    label: "Personal",
+    icon: "👥",
+    matcher: /(personal|shopping|compras|lazer|saude|saúde|health|beauty|hobby|food|comida)/i
+  },
+  {
+    key: "transportation",
+    label: "Transportation",
+    icon: "🚗",
+    matcher: /(transport|transporte|car|carro|fuel|gas|uber|bolt|parking|viagem|trip)/i
+  }
+];
 
-function linePath(data: number[], w: number, h: number) {
+function smoothLinePath(data: number[], w: number, h: number) {
   if (data.length === 0) return "";
-  const max = Math.max(1, ...data);
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = Math.max(1, max - min);
   const step = data.length > 1 ? w / (data.length - 1) : w;
-  return data
-    .map((v, i) => {
-      const x = i * step;
-      const y = h - (v / max) * h;
-      return `${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
-    })
-    .join(" ");
+
+  const points = data.map((value, index) => {
+    const x = data.length === 1 ? w / 2 : index * step;
+    const y = h - ((value - min) / range) * (h - 8) - 4;
+    return { x, y };
+  });
+
+  if (points.length === 1) {
+    return `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+  }
+
+  let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const p0 = points[i - 1] || points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] || p2;
+
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+    d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(
+      2
+    )} ${p2.y.toFixed(2)}`;
+  }
+
+  return d;
 }
 
 async function safeQueryRows<T>(db: ReturnType<typeof getDb>, sql: string, params: unknown[]): Promise<T[]> {
@@ -230,10 +268,15 @@ export default async function DashboardPage({
         .join(", ")})`
     : "conic-gradient(#293467 0% 100%)";
 
-  const spendTop = expenseCategories.slice(0, 3);
-  const petKeywords = /pet|dog|cat|vet|food|treat|kennel/i;
-  const petListRaw = expenseCategories.filter((c) => petKeywords.test(c.category));
-  const petList = (petListRaw.length ? petListRaw : expenseCategories.slice(0, 4)).map((r) => ({
+  const spendingByBucket = spendingBuckets.map((bucket) => {
+    const total = expenseCategories.reduce((acc, row) => {
+      return bucket.matcher.test(row.category) ? acc + Number(row.total || 0) : acc;
+    }, 0);
+    return { ...bucket, total };
+  });
+
+  const petKeywords = /(pet|animal|dog|cat|vet|veterin|food treat|kennel|racao|ração|groom|banho)/i;
+  const petList = expenseCategories.filter((c) => petKeywords.test(c.category)).map((r) => ({
     label: r.category,
     value: Number(r.total || 0)
   }));
@@ -241,10 +284,10 @@ export default async function DashboardPage({
   const overdueBills = billRows.filter((b) => b.status === "pending" && b.due_day < new Date().getDate()).length;
   const initials = user.email.slice(0, 2).toUpperCase();
 
-  const sparkSpend = linePath(expenseSeries.slice(-8), 180, 40);
-  const sparkIncome = linePath(incomeSeries.slice(-8), 180, 40);
-  const bigIncome = linePath(incomeSeries.slice(-12), 620, 220);
-  const bigExpense = linePath(expenseSeries.slice(-12), 620, 220);
+  const sparkSpend = smoothLinePath(expenseSeries.slice(-8), 180, 40);
+  const sparkIncome = smoothLinePath(incomeSeries.slice(-8), 180, 40);
+  const bigIncome = smoothLinePath(incomeSeries.slice(-12), 620, 220);
+  const bigExpense = smoothLinePath(expenseSeries.slice(-12), 620, 220);
 
   return (
     <div className="dash-wrap">
@@ -314,11 +357,11 @@ export default async function DashboardPage({
             <article className="card card-spending-list">
               <p className="card-label">Spendings</p>
               <ul className="spend-list">
-                {spendTop.map((r, i) => (
-                  <li key={r.category}>
-                    <span className={`ico i${(i % 3) + 1}`}>{categoryIcon(r.category)}</span>
-                    <span>{r.category}</span>
-                    <b>€{toFixed2(Number(r.total || 0))}</b>
+                {spendingByBucket.map((row, i) => (
+                  <li key={row.key}>
+                    <span className={`ico i${(i % 3) + 1}`}>{row.icon}</span>
+                    <span>{row.label}</span>
+                    <b>€{toFixed2(row.total)}</b>
                   </li>
                 ))}
               </ul>
@@ -426,12 +469,19 @@ export default async function DashboardPage({
               <p className="card-label">Expenses for My Dogs and Cats</p>
               <div className="pet-box">
                 <div className="pet-lines">
-                  {petList.map((p) => (
-                    <div key={p.label}>
-                      <span>{p.label}</span>
-                      <b>{toFixed2(p.value)}</b>
+                  {petList.length ? (
+                    petList.map((p) => (
+                      <div key={p.label}>
+                        <span>{p.label}</span>
+                        <b>{toFixed2(p.value)}</b>
+                      </div>
+                    ))
+                  ) : (
+                    <div>
+                      <span>No pet expenses in this month</span>
+                      <b>0.00</b>
                     </div>
-                  ))}
+                  )}
                 </div>
                 <div className="pet-emoji">🐶</div>
               </div>
