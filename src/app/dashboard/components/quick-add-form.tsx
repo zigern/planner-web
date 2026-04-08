@@ -23,7 +23,7 @@ const expenseItems = [
 
 const incomeItems = ["Salary", "Freelance", "Bonus", "Business", "Other"];
 
-const uiByLang = {
+  const uiByLang = {
   "pt-PT": {
     expense: "Despesa",
     income: "Receita",
@@ -33,7 +33,7 @@ const uiByLang = {
     saved: "Transação guardada.",
     savedRecurring: "Transação + regra mensal guardadas.",
     failed: "Falha ao guardar.",
-    fixedIncome: "Salário/entrada fixa mensal",
+    fixedIncome: "Entrada fixa mensal",
     fixedExpense: "Despesa fixa mensal"
   },
   "en-US": {
@@ -45,7 +45,7 @@ const uiByLang = {
     saved: "Transaction saved.",
     savedRecurring: "Transaction + monthly rule saved.",
     failed: "Failed to save.",
-    fixedIncome: "Fixed monthly salary/income",
+    fixedIncome: "Fixed monthly income",
     fixedExpense: "Fixed monthly expense"
   },
   "es-ES": {
@@ -57,8 +57,8 @@ const uiByLang = {
     saved: "Transacción guardada.",
     savedRecurring: "Transacción + regla mensual guardadas.",
     failed: "Error al guardar.",
-    fixedIncome: "Salario/ingreso mensual fijo",
-    fixedExpense: "Gasto mensual fijo"
+    fixedIncome: "Ingreso fijo mensual",
+    fixedExpense: "Gasto fijo mensual"
   },
   "fr-FR": {
     expense: "Dépense",
@@ -69,8 +69,8 @@ const uiByLang = {
     saved: "Transaction enregistrée.",
     savedRecurring: "Transaction + règle mensuelle enregistrées.",
     failed: "Échec de l'enregistrement.",
-    fixedIncome: "Salaire/revenu mensuel fixe",
-    fixedExpense: "Dépense mensuelle fixe"
+    fixedIncome: "Revenu fixe mensuel",
+    fixedExpense: "Dépense fixe mensuelle"
   }
 } as const;
 
@@ -187,8 +187,8 @@ export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
   }
 
   return (
-    <form className="quick-form" onSubmit={onSubmit}>
-      <div className="q-row">
+    <form className="quick-form quick-form-compact" onSubmit={onSubmit}>
+      <div className="q-row q-row-3">
         <select
           value={type}
           onChange={(e) => {
@@ -201,6 +201,23 @@ export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
           <option value="expense">{text.expense}</option>
           <option value="income">{text.income}</option>
         </select>
+        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+          {categories.map((item) => (
+            <option key={item} value={item}>
+              {categoryLabels[item as keyof typeof categoryLabels] || item}
+            </option>
+          ))}
+        </select>
+        <select value={item} onChange={(e) => setItem(e.target.value)}>
+          {items.map((opt) => (
+            <option key={opt} value={opt}>
+              {categoryLabels[opt as keyof typeof categoryLabels] || opt}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="q-row q-row-2">
         <input
           type="number"
           min="0"
@@ -210,33 +227,19 @@ export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
           onChange={(e) => setAmount(e.target.value)}
           required
         />
-      </div>
-      <div className="q-row">
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
-          {categories.map((item) => (
-            <option key={item} value={item}>
-              {categoryLabels[item as keyof typeof categoryLabels] || item}
-            </option>
-          ))}
-        </select>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
       </div>
-      <div className="q-row">
-        <select value={item} onChange={(e) => setItem(e.target.value)}>
-          {items.map((opt) => (
-            <option key={opt} value={opt}>
-              {categoryLabels[opt as keyof typeof categoryLabels] || opt}
-            </option>
-          ))}
-        </select>
-        <label className="q-check">
+
+      <div className="q-inline">
+        <label className="q-check q-check-inline">
           <input type="checkbox" checked={monthlyFixed} onChange={(e) => setMonthlyFixed(e.target.checked)} />
           {type === "income" ? text.fixedIncome : text.fixedExpense}
         </label>
+        <button type="submit" disabled={loading}>
+          {loading ? text.saving : text.add}
+        </button>
       </div>
-      <button type="submit" disabled={loading}>
-        {loading ? text.saving : text.add}
-      </button>
+
       {message ? <p className="q-msg">{message}</p> : null}
     </form>
   );

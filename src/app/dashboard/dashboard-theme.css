@@ -471,7 +471,7 @@
   background: rgba(0, 0, 0, 0.25);
   padding: 10px;
   border-radius: 8px;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   line-height: 1.15;
 }
@@ -483,7 +483,7 @@
 .quick-form {
   margin-top: 8px;
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .q-row {
@@ -492,39 +492,62 @@
   gap: 8px;
 }
 
+.q-row-3 {
+  grid-template-columns: 0.85fr 1fr 1fr;
+}
+
+.q-row-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
 .quick-form input,
 .quick-form select,
 .quick-form button {
   width: 100%;
-  border-radius: 10px;
+  border-radius: 9px;
   border: 1px solid var(--line-2);
   background: var(--panel-soft);
   color: var(--text);
-  padding: 10px;
-  font-size: 14px;
+  padding: 8px 10px;
+  font-size: 13px;
+  min-height: 40px;
 }
 
 .quick-form button {
   background: linear-gradient(90deg, #7f5cff, #1aa5c4);
   border: none;
   font-weight: 700;
+  min-width: 120px;
+  width: auto;
+  padding-inline: 16px;
 }
 
 .q-check {
-  border-radius: 10px;
+  border-radius: 9px;
   border: 1px solid var(--line-2);
   background: var(--panel-soft);
   color: var(--text);
-  padding: 9px 10px;
+  padding: 7px 9px;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .q-msg {
-  font-size: 12px;
+  font-size: 11px;
   color: #98f5cb;
+}
+
+.q-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.q-check-inline {
+  flex: 1;
 }
 
 .fixed-list {
