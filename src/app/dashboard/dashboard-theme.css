@@ -93,7 +93,7 @@
 
 .top-row {
   display: grid;
-  grid-template-columns: minmax(250px, 1.2fr) 300px 250px 150px auto;
+  grid-template-columns: minmax(430px, 1fr) auto auto auto auto;
   gap: 14px;
   align-items: center;
   margin-bottom: 14px;
@@ -105,16 +105,16 @@
 }
 
 .title-block h1 {
-  font-size: clamp(34px, 4vw, 56px);
-  line-height: 0.96;
+  font-size: 62px;
+  line-height: 0.92;
   margin-top: 2px;
   font-weight: 800;
-  white-space: normal;
+  white-space: nowrap;
 }
 
 .balance {
   margin-top: 6px;
-  font-size: clamp(28px, 3vw, 46px);
+  font-size: 56px;
   line-height: 1;
   font-weight: 800;
   overflow-wrap: anywhere;
@@ -127,6 +127,8 @@
   padding: 8px;
   display: flex;
   gap: 8px;
+  width: fit-content;
+  justify-self: start;
 }
 
 .tab {
@@ -164,6 +166,8 @@
   color: var(--muted);
   font-weight: 600;
   text-transform: capitalize;
+  width: fit-content;
+  white-space: nowrap;
 }
 
 .date-small {
@@ -176,6 +180,8 @@
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+  width: fit-content;
+  justify-self: end;
 }
 
 .avatar {
@@ -200,6 +206,7 @@
 .view-controls {
   display: flex;
   gap: 8px;
+  justify-self: start;
 }
 
 .view-controls select {
@@ -208,7 +215,8 @@
   background: var(--panel);
   color: var(--text);
   padding: 8px 10px;
-  font-size: 12px;
+  font-size: 11px;
+  min-width: 64px;
 }
 
 .grid-board {
@@ -227,36 +235,43 @@
 .card-networth {
   grid-column: 1 / span 3;
   grid-row: 1;
+  min-height: 176px;
 }
 
 .card-spending-spark {
   grid-column: 4 / span 3;
   grid-row: 1;
+  min-height: 176px;
 }
 
 .card-spending-list {
   grid-column: 7 / span 3;
   grid-row: 1 / span 2;
+  min-height: 366px;
 }
 
 .card-goal {
   grid-column: 10 / span 3;
   grid-row: 1;
+  min-height: 176px;
 }
 
 .card-income-source {
   grid-column: 1 / span 3;
   grid-row: 2;
+  min-height: 176px;
 }
 
 .card-income-spark {
   grid-column: 4 / span 3;
   grid-row: 2;
+  min-height: 176px;
 }
 
 .card-notice {
   grid-column: 10 / span 3;
   grid-row: 2 / span 2;
+  min-height: 366px;
 }
 
 .card-trend {
@@ -510,6 +525,26 @@
   color: #98f5cb;
 }
 
+.fixed-list {
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+  max-height: 130px;
+  overflow: auto;
+}
+
+.fixed-item {
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+}
+
 .line-head {
   display: flex;
   justify-content: space-between;
@@ -736,7 +771,7 @@
 
 @media (max-width: 1300px) {
   .top-row {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 
   .grid-board {

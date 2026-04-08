@@ -71,15 +71,129 @@ function formatMoney(value: number, lang: string, currency: string) {
   }).format(value);
 }
 
-function monthName(monthIso: string) {
-  const [year, month] = monthIso.split("-").map(Number);
-  return new Date(year, month - 1, 1).toLocaleDateString("pt-PT", { month: "short" });
+function getCopy(lang: string) {
+  const copy = {
+    "pt-PT": {
+      personalFinanceTracker: "Rastreador de Finanças Pessoais",
+      availableBalance: "Saldo Disponível",
+      dashboard: "Dashboard",
+      spreadsheet: "Spreadsheet",
+      totalNetWorth: "Património Líquido Total",
+      spendings: "Despesas",
+      incomeGoal: "Meta de Receita",
+      progressToMonth: "Progresso no mês",
+      incomeSource: "Fontes de Receita",
+      income: "Receitas",
+      notification: "Notificações",
+      noOverdue: "Sem contas em atraso.",
+      overdueMsg: "contas em atraso. Paga em breve para evitar taxas.",
+      quickAddTransaction: "Adicionar transação",
+      exportCsv: "Exportar CSV",
+      incomeExpenses: "Receitas & Despesas",
+      assets: "Ativos",
+      noAssets: "Sem ativos",
+      petsTitle: "Despesas com os meus cães e gatos",
+      noPetExpenses: "Sem despesas com animais neste mês",
+      recentTransactions: "Transações recentes",
+      fixedMonthly: "Despesas/receitas fixas mensais",
+      noFixed: "Sem itens fixos mensais",
+      recurringIncome: "Receita fixa",
+      recurringExpense: "Despesa fixa"
+    },
+    "en-US": {
+      personalFinanceTracker: "Personal Finance Tracker",
+      availableBalance: "Available Balance",
+      dashboard: "Dashboard",
+      spreadsheet: "Spreadsheet",
+      totalNetWorth: "Total Net Worth",
+      spendings: "Spendings",
+      incomeGoal: "Income Goal",
+      progressToMonth: "Progress to month",
+      incomeSource: "Income Source",
+      income: "Income",
+      notification: "Notification",
+      noOverdue: "No overdue bills right now.",
+      overdueMsg: "bills are past due. Pay soon to avoid late fees.",
+      quickAddTransaction: "Quick add transaction",
+      exportCsv: "Export CSV",
+      incomeExpenses: "Income & Expenses",
+      assets: "Assets",
+      noAssets: "No assets",
+      petsTitle: "Expenses for My Dogs and Cats",
+      noPetExpenses: "No pet expenses in this month",
+      recentTransactions: "Recent Transactions",
+      fixedMonthly: "Fixed monthly income/expenses",
+      noFixed: "No fixed monthly items",
+      recurringIncome: "Fixed income",
+      recurringExpense: "Fixed expense"
+    },
+    "es-ES": {
+      personalFinanceTracker: "Rastreador de Finanzas Personales",
+      availableBalance: "Saldo Disponible",
+      dashboard: "Panel",
+      spreadsheet: "Hoja",
+      totalNetWorth: "Patrimonio Neto Total",
+      spendings: "Gastos",
+      incomeGoal: "Meta de Ingresos",
+      progressToMonth: "Progreso del mes",
+      incomeSource: "Fuentes de Ingresos",
+      income: "Ingresos",
+      notification: "Notificación",
+      noOverdue: "No hay facturas atrasadas.",
+      overdueMsg: "facturas atrasadas. Paga pronto para evitar cargos.",
+      quickAddTransaction: "Añadir transacción",
+      exportCsv: "Exportar CSV",
+      incomeExpenses: "Ingresos y Gastos",
+      assets: "Activos",
+      noAssets: "Sin activos",
+      petsTitle: "Gastos de mis perros y gatos",
+      noPetExpenses: "Sin gastos de mascotas este mes",
+      recentTransactions: "Transacciones recientes",
+      fixedMonthly: "Ingresos/gastos fijos mensuales",
+      noFixed: "Sin elementos fijos mensuales",
+      recurringIncome: "Ingreso fijo",
+      recurringExpense: "Gasto fijo"
+    },
+    "fr-FR": {
+      personalFinanceTracker: "Suivi des Finances Personnelles",
+      availableBalance: "Solde Disponible",
+      dashboard: "Tableau",
+      spreadsheet: "Feuille",
+      totalNetWorth: "Patrimoine Net Total",
+      spendings: "Dépenses",
+      incomeGoal: "Objectif de Revenu",
+      progressToMonth: "Progression du mois",
+      incomeSource: "Sources de Revenu",
+      income: "Revenus",
+      notification: "Notification",
+      noOverdue: "Aucune facture en retard.",
+      overdueMsg: "factures en retard. Payez vite pour éviter des frais.",
+      quickAddTransaction: "Ajouter une transaction",
+      exportCsv: "Exporter CSV",
+      incomeExpenses: "Revenus & Dépenses",
+      assets: "Actifs",
+      noAssets: "Aucun actif",
+      petsTitle: "Dépenses pour mes chiens et chats",
+      noPetExpenses: "Aucune dépense animale ce mois",
+      recentTransactions: "Transactions récentes",
+      fixedMonthly: "Revenus/dépenses mensuels fixes",
+      noFixed: "Aucun élément fixe mensuel",
+      recurringIncome: "Revenu fixe",
+      recurringExpense: "Dépense fixe"
+    }
+  } as const;
+  return copy[lang as keyof typeof copy] || copy["pt-PT"];
 }
 
-function dayMonth(v: string | Date) {
+function monthName(monthIso: string, lang = "pt-PT") {
+  const [year, month] = monthIso.split("-").map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString(lang, { month: "short" });
+}
+
+function dayMonth(v: string | Date, lang = "pt-PT") {
   const d = v instanceof Date ? v : new Date(v);
   if (Number.isNaN(d.getTime())) return String(v);
-  return d.toLocaleDateString("pt-PT", { day: "2-digit", month: "short" });
+  return d.toLocaleDateString(lang, { day: "2-digit", month: "short" });
 }
 
 const spendingBuckets: SpendingBucket[] = [
@@ -243,6 +357,7 @@ export default async function DashboardPage({
   const selectedMonth = parseMonthParam(params?.month);
   const lang = parseLangParam(params?.lang);
   const currency = parseCurrencyParam(params?.currency);
+  const t = getCopy(lang);
   const selectedYear = Number(selectedMonth.slice(0, 4));
   const monthOptions = monthIsoListForYear(selectedYear);
   const db = getDb();
@@ -376,6 +491,15 @@ export default async function DashboardPage({
   }));
 
   const overdueBills = billRows.filter((b) => b.status === "pending" && b.due_day < new Date().getDate()).length;
+  const recurringRules = await safeQueryRows<RecurringRuleRow>(
+    db,
+    `SELECT id, type, amount, category, description, day_of_month, last_applied_month
+     FROM recurring_rules
+     WHERE user_id = ? AND is_active = 1
+     ORDER BY type ASC, day_of_month ASC
+     LIMIT 8`,
+    [user.userId]
+  );
   const initials = user.email.slice(0, 2).toUpperCase();
 
   const sparkSpend = smoothLinePath(expenseSeries.slice(-8), 180, 40);
@@ -396,7 +520,7 @@ export default async function DashboardPage({
                 href={`?month=${m}&lang=${lang}&currency=${currency}`}
                 className={`month-link ${m === selectedMonth ? "active" : ""}`}
               >
-                {monthName(m)}
+                {monthName(m, lang)}
               </Link>
             ))}
           </nav>
@@ -405,8 +529,8 @@ export default async function DashboardPage({
         <main className="main-area">
           <header className="top-row">
             <div className="title-block">
-              <p className="kicker">Personal Finance Tracker</p>
-              <h1>Available Balance</h1>
+              <p className="kicker">{t.personalFinanceTracker}</p>
+              <h1>{t.availableBalance}</h1>
               <p className={`balance ${availableBalance >= 0 ? "income-number" : "expense-number"}`}>
                 {formatMoney(availableBalance, lang, currency)}
               </p>
@@ -420,7 +544,7 @@ export default async function DashboardPage({
                   <rect x="11" y="8" width="7" height="10" rx="1.2" fill="currentColor" />
                   <rect x="2" y="11" width="7" height="7" rx="1.2" fill="currentColor" />
                 </svg>
-                Dashboard
+                {t.dashboard}
               </Link>
               <Link
                 className="tab"
@@ -432,7 +556,7 @@ export default async function DashboardPage({
                   <line x1="7" y1="8" x2="7" y2="17" stroke="currentColor" strokeWidth="1.6" />
                   <line x1="12" y1="8" x2="12" y2="17" stroke="currentColor" strokeWidth="1.6" />
                 </svg>
-                Spreadsheet
+                {t.spreadsheet}
               </Link>
             </div>
 
@@ -455,12 +579,12 @@ export default async function DashboardPage({
 
           <section className="grid-board">
             <article className="card grad card-networth">
-              <p className="card-label">Total Net Worth</p>
+              <p className="card-label">{t.totalNetWorth}</p>
               <p className="card-big">{formatMoney(netWorth, lang, currency)}</p>
             </article>
 
             <article className="card card-spending-spark">
-              <p className="card-label">Spendings</p>
+              <p className="card-label">{t.spendings}</p>
               <p className="card-num expense-number">{formatMoney(expense, lang, currency)}</p>
               <svg className="spark" viewBox="0 0 180 40" preserveAspectRatio="none">
                 <path d={sparkSpend} />
@@ -468,7 +592,7 @@ export default async function DashboardPage({
             </article>
 
             <article className="card card-spending-list">
-              <p className="card-label">Spendings</p>
+              <p className="card-label">{t.spendings}</p>
               <ul className="spend-list">
                 {spendingByBucket.map((row, i) => (
                   <li key={row.key}>
@@ -482,8 +606,8 @@ export default async function DashboardPage({
 
             <article className="card goal card-goal">
               <p className="goal-top">{Math.round(incomeGoalPct)}%</p>
-              <p className="card-label">Income Goal</p>
-              <p className="muted">Progress to month</p>
+              <p className="card-label">{t.incomeGoal}</p>
+              <p className="muted">{t.progressToMonth}</p>
               <p className="goal-value">
                 {formatMoney(income, lang, currency)} / {formatMoney(incomeGoalTarget, lang, currency)}
               </p>
@@ -493,7 +617,7 @@ export default async function DashboardPage({
             </article>
 
             <article className="card card-income-source">
-              <p className="card-label">Income Source</p>
+              <p className="card-label">{t.incomeSource}</p>
               <div className="income-bars">
                 {incomeCategories.map((c, i) => {
                   const max = Math.max(1, ...incomeCategories.map((x) => Number(x.total || 0)));
@@ -513,7 +637,7 @@ export default async function DashboardPage({
             </article>
 
             <article className="card card-income-spark">
-              <p className="card-label">Income</p>
+              <p className="card-label">{t.income}</p>
               <p className="card-num income-number">{formatMoney(income, lang, currency)}</p>
               <svg className="spark orange" viewBox="0 0 180 40" preserveAspectRatio="none">
                 <path d={sparkIncome} />
@@ -521,21 +645,40 @@ export default async function DashboardPage({
             </article>
 
             <article className="card notification card-notice">
-              <p className="card-label">Notification</p>
+              <p className="card-label">{t.notification}</p>
               <div className="notice">
                 {overdueBills > 0
-                  ? `${overdueBills} bills are past due. Pay soon to avoid late fees.`
-                  : "No overdue bills right now."}
+                  ? `${overdueBills} ${t.overdueMsg}`
+                  : t.noOverdue}
               </div>
-              <p className="card-label mt16">Quick add transaction</p>
-              <QuickAddForm />
+              <p className="card-label mt16">{t.quickAddTransaction}</p>
+              <QuickAddForm lang={lang} />
+              <p className="card-label mt16">{t.fixedMonthly}</p>
+              <div className="fixed-list">
+                {recurringRules.length ? (
+                  recurringRules.map((rule) => (
+                    <div key={rule.id} className="fixed-item">
+                      <span>{rule.type === "income" ? t.recurringIncome : t.recurringExpense}</span>
+                      <span>{rule.description || rule.category}</span>
+                      <b className={rule.type === "income" ? "income-number" : "expense-number"}>
+                        {formatMoney(Number(rule.amount || 0), lang, currency)}
+                      </b>
+                    </div>
+                  ))
+                ) : (
+                  <p className="muted">{t.noFixed}</p>
+                )}
+              </div>
             </article>
 
             <article className="card line-chart card-trend">
               <div className="line-head">
-                <p className="card-label">Income & Expenses</p>
-                <Link href={`/api/transactions/export?month=${selectedMonth}`} className="export">
-                  Export CSV
+                <p className="card-label">{t.incomeExpenses}</p>
+                <Link
+                  href={`/api/transactions/export?month=${selectedMonth}`}
+                  className="export"
+                >
+                  {t.exportCsv}
                 </Link>
               </div>
               <svg viewBox="0 0 620 220" preserveAspectRatio="none" className="big-chart">
@@ -550,13 +693,13 @@ export default async function DashboardPage({
               </svg>
               <div className="chart-months">
                 {summary.slice(-12).map((m) => (
-                  <span key={m.month}>{monthName(m.month)}</span>
+                  <span key={m.month}>{monthName(m.month, lang)}</span>
                 ))}
               </div>
             </article>
 
             <article className="card asset card-assets">
-              <p className="card-label">Assets</p>
+              <p className="card-label">{t.assets}</p>
               <div className="asset-wrap">
                 <div className="donut" style={{ background: pieGradient }}>
                   <div className="donut-hole" />
@@ -570,7 +713,7 @@ export default async function DashboardPage({
                   ))}
                   {assetRows.length === 0 ? (
                     <div>
-                      <span>Sem assets</span>
+                      <span>{t.noAssets}</span>
                       <b>{formatMoney(0, lang, currency)}</b>
                     </div>
                   ) : null}
@@ -579,7 +722,7 @@ export default async function DashboardPage({
             </article>
 
             <article className="card pets card-pets">
-              <p className="card-label">Expenses for My Dogs and Cats</p>
+              <p className="card-label">{t.petsTitle}</p>
               <div className="pet-box">
                 <div className="pet-lines">
                   {petList.length ? (
@@ -591,7 +734,7 @@ export default async function DashboardPage({
                     ))
                   ) : (
                     <div>
-                      <span>No pet expenses in this month</span>
+                      <span>{t.noPetExpenses}</span>
                       <b>{formatMoney(0, lang, currency)}</b>
                     </div>
                   )}
@@ -601,12 +744,12 @@ export default async function DashboardPage({
             </article>
 
             <article className="card table card-recent">
-              <p className="card-label">Recent Transactions</p>
+              <p className="card-label">{t.recentTransactions}</p>
               <div className="rows">
                 {txRows.map((tx) => (
                   <div key={tx.id} className="row">
                     <span>{tx.description || tx.category}</span>
-                    <span>{dayMonth(tx.transaction_date)}</span>
+                    <span>{dayMonth(tx.transaction_date, lang)}</span>
                     <span className={tx.type === "income" ? "pos" : "neg"}>
                       {tx.type === "income" ? "+" : "-"}
                       {formatMoney(Math.abs(Number(tx.amount || 0)), lang, currency)}

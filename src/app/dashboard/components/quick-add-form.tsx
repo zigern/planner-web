@@ -3,17 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const expenseCategories = [
-  "Housing",
-  "Personal",
-  "Transportation",
-  "Food",
-  "Bills",
-  "Pets",
-  "Health",
-  "Shopping",
-  "Other"
-];
+const expenseCategories = ["Housing", "Personal", "Transportation", "Food", "Bills", "Pets", "Health", "Shopping", "Other"];
 
 const incomeCategories = ["Salary", "Freelance", "Business", "Investments", "Bonus", "Other"];
 
@@ -33,8 +23,113 @@ const expenseItems = [
 
 const incomeItems = ["Salary", "Freelance", "Bonus", "Business", "Other"];
 
-export function QuickAddForm() {
+const uiByLang = {
+  "pt-PT": {
+    expense: "Despesa",
+    income: "Receita",
+    amount: "Valor",
+    add: "Adicionar",
+    saving: "A guardar...",
+    saved: "Transação guardada.",
+    savedRecurring: "Transação + regra mensal guardadas.",
+    failed: "Falha ao guardar.",
+    fixedIncome: "Salário/entrada fixa mensal",
+    fixedExpense: "Despesa fixa mensal"
+  },
+  "en-US": {
+    expense: "Expense",
+    income: "Income",
+    amount: "Amount",
+    add: "Add",
+    saving: "Saving...",
+    saved: "Transaction saved.",
+    savedRecurring: "Transaction + monthly rule saved.",
+    failed: "Failed to save.",
+    fixedIncome: "Fixed monthly salary/income",
+    fixedExpense: "Fixed monthly expense"
+  },
+  "es-ES": {
+    expense: "Gasto",
+    income: "Ingreso",
+    amount: "Importe",
+    add: "Añadir",
+    saving: "Guardando...",
+    saved: "Transacción guardada.",
+    savedRecurring: "Transacción + regla mensual guardadas.",
+    failed: "Error al guardar.",
+    fixedIncome: "Salario/ingreso mensual fijo",
+    fixedExpense: "Gasto mensual fijo"
+  },
+  "fr-FR": {
+    expense: "Dépense",
+    income: "Revenu",
+    amount: "Montant",
+    add: "Ajouter",
+    saving: "Enregistrement...",
+    saved: "Transaction enregistrée.",
+    savedRecurring: "Transaction + règle mensuelle enregistrées.",
+    failed: "Échec de l'enregistrement.",
+    fixedIncome: "Salaire/revenu mensuel fixe",
+    fixedExpense: "Dépense mensuelle fixe"
+  }
+} as const;
+
+const categoryLabelByLang = {
+  "pt-PT": {
+    Housing: "Habitação",
+    Personal: "Pessoal",
+    Transportation: "Transporte",
+    Food: "Comida",
+    Bills: "Contas",
+    Pets: "Animais",
+    Health: "Saúde",
+    Shopping: "Compras",
+    Other: "Outros",
+    Salary: "Salário",
+    Freelance: "Freelance",
+    Business: "Negócio",
+    Investments: "Investimentos",
+    Bonus: "Bónus"
+  },
+  "en-US": {},
+  "es-ES": {
+    Housing: "Vivienda",
+    Personal: "Personal",
+    Transportation: "Transporte",
+    Food: "Comida",
+    Bills: "Facturas",
+    Pets: "Mascotas",
+    Health: "Salud",
+    Shopping: "Compras",
+    Other: "Otros",
+    Salary: "Salario",
+    Freelance: "Freelance",
+    Business: "Negocio",
+    Investments: "Inversiones",
+    Bonus: "Bono"
+  },
+  "fr-FR": {
+    Housing: "Logement",
+    Personal: "Personnel",
+    Transportation: "Transport",
+    Food: "Alimentation",
+    Bills: "Factures",
+    Pets: "Animaux",
+    Health: "Santé",
+    Shopping: "Achats",
+    Other: "Autres",
+    Salary: "Salaire",
+    Freelance: "Freelance",
+    Business: "Business",
+    Investments: "Investissements",
+    Bonus: "Bonus"
+  }
+} as const;
+
+export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
   const router = useRouter();
+  const text = uiByLang[lang as keyof typeof uiByLang] || uiByLang["pt-PT"];
+  const categoryLabels = categoryLabelByLang[lang as keyof typeof categoryLabelByLang] || categoryLabelByLang["pt-PT"];
   const [type, setType] = useState<"income" | "expense">("expense");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("Housing");
@@ -81,10 +176,10 @@ export function QuickAddForm() {
         setCategory(categories[0]);
         setItem(items[0]);
         setMonthlyFixed(false);
-        setMessage(monthlyFixed ? "Transação + regra mensal guardadas." : "Transação guardada.");
+        setMessage(monthlyFixed ? text.savedRecurring : text.saved);
         router.refresh();
       } else {
-        setMessage("Falha ao guardar.");
+        setMessage(text.failed);
       }
     } finally {
       setLoading(false);
@@ -103,14 +198,14 @@ export function QuickAddForm() {
             setItem(nextType === "income" ? incomeItems[0] : expenseItems[0]);
           }}
         >
-          <option value="expense">Expense</option>
-          <option value="income">Income</option>
+          <option value="expense">{text.expense}</option>
+          <option value="income">{text.income}</option>
         </select>
         <input
           type="number"
           min="0"
           step="0.01"
-          placeholder="Valor"
+          placeholder={text.amount}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           required
@@ -120,7 +215,7 @@ export function QuickAddForm() {
         <select value={category} onChange={(e) => setCategory(e.target.value)}>
           {categories.map((item) => (
             <option key={item} value={item}>
-              {item}
+              {categoryLabels[item as keyof typeof categoryLabels] || item}
             </option>
           ))}
         </select>
@@ -130,17 +225,17 @@ export function QuickAddForm() {
         <select value={item} onChange={(e) => setItem(e.target.value)}>
           {items.map((opt) => (
             <option key={opt} value={opt}>
-              {opt}
+              {categoryLabels[opt as keyof typeof categoryLabels] || opt}
             </option>
           ))}
         </select>
         <label className="q-check">
           <input type="checkbox" checked={monthlyFixed} onChange={(e) => setMonthlyFixed(e.target.checked)} />
-          {type === "income" ? "Salário/entrada fixa mensal" : "Despesa fixa mensal"}
+          {type === "income" ? text.fixedIncome : text.fixedExpense}
         </label>
       </div>
       <button type="submit" disabled={loading}>
-        {loading ? "A guardar..." : "Adicionar"}
+        {loading ? text.saving : text.add}
       </button>
       {message ? <p className="q-msg">{message}</p> : null}
     </form>
