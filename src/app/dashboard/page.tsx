@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { AddTransactionForm } from "./components/add-transaction-form";
 import { LogoutButton } from "./components/logout-button";
+import "./dashboard-theme.css";
 import {
   AddAssetForm,
   AddBillForm,
@@ -331,13 +332,54 @@ AUTH_SECRET=...`}
   const categoryMax = Math.max(1, ...expenseByCategory.map((row) => Number(row.total || 0)));
 
   return (
-    <main className="mx-auto min-h-screen max-w-7xl px-6 py-12">
-      <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-sm text-brand-700">Dashboard</p>
-          <h1 className="text-3xl font-bold tracking-tight">Olá, {user.email}</h1>
+    <div className="bf-shell">
+      <aside className="bf-sidebar">
+        <div className="bf-logo">
+          <div className="bf-logo-mark" />
+          <div>
+            <div className="bf-logo-name">BudgetFlow</div>
+            <div className="bf-logo-year">2026</div>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+
+        <div className="bf-nav-group">
+          <div className="bf-nav-title">Overview</div>
+          <Link className="bf-nav-link active" href="/dashboard">
+            Dashboard
+          </Link>
+        </div>
+        <div className="bf-nav-group">
+          <div className="bf-nav-title">Tracking</div>
+          <a className="bf-nav-link" href="#transactions">
+            Income & Expenses
+          </a>
+          <a className="bf-nav-link" href="#bills">
+            Bills
+          </a>
+          <a className="bf-nav-link" href="#subscriptions">
+            Subscriptions
+          </a>
+        </div>
+        <div className="bf-nav-group">
+          <div className="bf-nav-title">Planning</div>
+          <a className="bf-nav-link" href="#goals">
+            Goals
+          </a>
+          <a className="bf-nav-link" href="#debt">
+            Debt tracker
+          </a>
+          <a className="bf-nav-link" href="#networth">
+            Net worth
+          </a>
+          <a className="bf-nav-link" href="#budget">
+            Monthly budget
+          </a>
+        </div>
+      </aside>
+
+      <main className="bf-main">
+        <header className="bf-topbar">
+          <div className="bf-page-title">Olá, {user.email}</div>
           <form method="get" className="flex items-center gap-2">
             <label htmlFor="month" className="text-sm text-slate-600">
               Mês
@@ -365,8 +407,8 @@ AUTH_SECRET=...`}
             Export CSV
           </Link>
           <LogoutButton />
-        </div>
-      </header>
+        </header>
+        <div className="bf-content">
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {[
@@ -386,7 +428,7 @@ AUTH_SECRET=...`}
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div id="subscriptions" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold">Tendência mensal (Income vs Expenses)</h2>
           <div className="mt-4 space-y-2">
             {chartRows.length === 0 ? (
@@ -447,7 +489,7 @@ AUTH_SECRET=...`}
         </div>
       </section>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.1fr]">
+      <section id="transactions" className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.1fr]">
         <AddTransactionForm />
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -474,7 +516,7 @@ AUTH_SECRET=...`}
         </div>
       </section>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-3">
+      <section id="bills" className="mt-8 grid gap-6 lg:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold">Bills tracker</h2>
           <p className="mt-1 text-sm text-slate-500">Pendente este mês: €{billsPending.toFixed(2)}</p>
@@ -557,8 +599,8 @@ AUTH_SECRET=...`}
         </div>
       </section>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section id="goals" className="mt-8 grid gap-6 lg:grid-cols-3">
+        <div id="debt" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold">Financial goals</h2>
           <div className="mt-3">
             <AddGoalForm />
@@ -585,7 +627,7 @@ AUTH_SECRET=...`}
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div id="networth" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold">Debt tracker</h2>
           <div className="mt-3">
             <AddDebtForm />
@@ -641,7 +683,7 @@ AUTH_SECRET=...`}
         </div>
       </section>
 
-      <section className="mt-8 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section id="budget" className="mt-8 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-lg font-semibold">Resumo dos últimos meses</h2>
         <div className="mt-4 space-y-2">
           {summary.length === 0 ? (
@@ -670,6 +712,8 @@ AUTH_SECRET=...`}
           )}
         </div>
       </section>
-    </main>
+        </div>
+      </main>
+    </div>
   );
 }

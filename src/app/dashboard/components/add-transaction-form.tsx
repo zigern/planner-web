@@ -59,13 +59,13 @@ export function AddTransactionForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <form onSubmit={onSubmit} className="rounded-xl border border-white/10 bg-white p-5 shadow-sm">
       <h2 className="text-lg font-semibold">Nova transação</h2>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <select
           value={type}
           onChange={(e) => onTypeChange(e.target.value as "income" | "expense")}
-          className="rounded-lg border border-slate-300 px-3 py-2"
+          className="rounded-lg border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2"
         >
           <option value="income">Income</option>
           <option value="expense">Expense</option>
@@ -77,13 +77,13 @@ export function AddTransactionForm() {
           placeholder="Amount"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          className="rounded-lg border border-slate-300 px-3 py-2"
+          className="rounded-lg border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2"
           required
         />
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="rounded-lg border border-slate-300 px-3 py-2"
+          className="rounded-lg border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2"
         >
           {categories.map((item) => (
             <option key={item} value={item}>
@@ -96,7 +96,7 @@ export function AddTransactionForm() {
           type="date"
           value={transactionDate}
           onChange={(e) => setTransactionDate(e.target.value)}
-          className="rounded-lg border border-slate-300 px-3 py-2"
+          className="rounded-lg border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2"
           required
         />
       </div>
@@ -105,7 +105,7 @@ export function AddTransactionForm() {
           placeholder="Escreve a categoria"
           value={customCategory}
           onChange={(e) => setCustomCategory(e.target.value)}
-          className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2"
+          className="mt-3 w-full rounded-lg border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2"
           required
         />
       ) : null}
@@ -113,7 +113,7 @@ export function AddTransactionForm() {
         placeholder="Description (optional)"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2"
+        className="mt-3 w-full rounded-lg border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2"
         rows={2}
       />
       <button

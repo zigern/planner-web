@@ -1,0 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&display=swap');
+
+.bf-shell {
+  min-height: 100vh;
+  display: flex;
+  background: #0a0a0a;
+  color: #f0f0f0;
+  font-family: 'Geist', sans-serif;
+}
+
+.bf-sidebar {
+  width: 220px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: #111111;
+  padding: 14px 12px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+}
+
+.bf-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bf-logo-mark {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: #f1f5f9;
+}
+
+.bf-logo-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.bf-logo-year {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.bf-nav-group {
+  margin-top: 14px;
+}
+
+.bf-nav-title {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  margin: 0 8px 6px;
+  text-transform: uppercase;
+}
+
+.bf-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #cbd5e1;
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.bf-nav-link:hover,
+.bf-nav-link.active {
+  background: #1b1b1b;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.bf-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.bf-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0a0a0a;
+}
+
+.bf-page-title {
+  font-size: 14px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.bf-content {
+  padding: 18px 20px 28px;
+}
+
+.bf-content input,
+.bf-content select,
+.bf-content textarea {
+  background: #171717;
+  color: #f8fafc;
+}
+
+.bf-content .bg-white {
+  background: #121212 !important;
+}
+
+.bf-content .text-slate-900 {
+  color: #f8fafc !important;
+}
+
+.bf-content .text-slate-700,
+.bf-content .text-slate-600,
+.bf-content .text-slate-500,
+.bf-content .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+@media (max-width: 1024px) {
+  .bf-shell {
+    display: block;
+  }
+
+  .bf-sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+  }
+}

@@ -57,13 +57,13 @@ export function AddBillForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-2 rounded-lg border border-slate-200 p-3">
+    <form onSubmit={onSubmit} className="grid gap-2 rounded-lg border border-white/10 p-3">
       <h3 className="text-sm font-semibold">Adicionar conta fixa</h3>
       <input
         placeholder="Nome"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+        className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
         required
       />
       <div className="grid grid-cols-2 gap-2">
@@ -74,7 +74,7 @@ export function AddBillForm() {
           placeholder="Valor"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
           required
         />
         <input
@@ -84,7 +84,7 @@ export function AddBillForm() {
           placeholder="Dia"
           value={dueDay}
           onChange={(e) => setDueDay(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
           required
         />
       </div>
@@ -92,13 +92,13 @@ export function AddBillForm() {
         <select
           value={frequency}
           onChange={(e) => setFrequency(e.target.value as "monthly" | "quarterly" | "yearly")}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
         >
           <option value="monthly">Mensal</option>
           <option value="quarterly">Trimestral</option>
           <option value="yearly">Anual</option>
         </select>
-        <label className="flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-sm">
+        <label className="flex items-center gap-2 rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm">
           <input type="checkbox" checked={autoPay} onChange={(e) => setAutoPay(e.target.checked)} />
           Auto-pay
         </label>
@@ -109,7 +109,7 @@ export function AddBillForm() {
       >
         {loading ? "A gravar..." : "Guardar"}
       </button>
-      {message ? <p className={`text-xs ${message.ok ? "text-emerald-700" : "text-rose-700"}`}>{message.text}</p> : null}
+      {message ? <p className={`text-xs ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>{message.text}</p> : null}
     </form>
   );
 }
@@ -148,13 +148,13 @@ export function AddSubscriptionForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-2 rounded-lg border border-slate-200 p-3">
+    <form onSubmit={onSubmit} className="grid gap-2 rounded-lg border border-white/10 p-3">
       <h3 className="text-sm font-semibold">Adicionar subscrição</h3>
       <input
         placeholder="Serviço"
         value={service}
         onChange={(e) => setService(e.target.value)}
-        className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+        className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
         required
       />
       <div className="grid grid-cols-2 gap-2">
@@ -165,13 +165,13 @@ export function AddSubscriptionForm() {
           placeholder="Custo"
           value={cost}
           onChange={(e) => setCost(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
           required
         />
         <select
           value={billingCycle}
           onChange={(e) => setBillingCycle(e.target.value as "monthly" | "yearly")}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
         >
           <option value="monthly">Mensal</option>
           <option value="yearly">Anual</option>
@@ -181,7 +181,7 @@ export function AddSubscriptionForm() {
         placeholder="Categoria"
         value={category}
         onChange={(e) => setCategory(e.target.value)}
-        className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+        className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
         required
       />
       <button
@@ -190,7 +190,7 @@ export function AddSubscriptionForm() {
       >
         {loading ? "A gravar..." : "Guardar"}
       </button>
-      {message ? <p className={`text-xs ${message.ok ? "text-emerald-700" : "text-rose-700"}`}>{message.text}</p> : null}
+      {message ? <p className={`text-xs ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>{message.text}</p> : null}
     </form>
   );
 }
@@ -230,13 +230,13 @@ export function AddGoalForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-2 rounded-lg border border-slate-200 p-3">
+    <form onSubmit={onSubmit} className="grid gap-2 rounded-lg border border-white/10 p-3">
       <h3 className="text-sm font-semibold">Adicionar objetivo</h3>
       <input
         placeholder="Nome do objetivo"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+        className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
         required
       />
       <div className="grid grid-cols-2 gap-2">
@@ -247,7 +247,7 @@ export function AddGoalForm() {
           placeholder="Objetivo €"
           value={targetAmount}
           onChange={(e) => setTargetAmount(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
           required
         />
         <input
@@ -257,14 +257,14 @@ export function AddGoalForm() {
           placeholder="Poupado €"
           value={savedAmount}
           onChange={(e) => setSavedAmount(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
         />
       </div>
       <input
         type="date"
         value={deadline}
         onChange={(e) => setDeadline(e.target.value)}
-        className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+        className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
       />
       <button
         disabled={loading}
@@ -272,7 +272,7 @@ export function AddGoalForm() {
       >
         {loading ? "A gravar..." : "Guardar"}
       </button>
-      {message ? <p className={`text-xs ${message.ok ? "text-emerald-700" : "text-rose-700"}`}>{message.text}</p> : null}
+      {message ? <p className={`text-xs ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>{message.text}</p> : null}
     </form>
   );
 }
@@ -311,13 +311,13 @@ export function AddDebtForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-2 rounded-lg border border-slate-200 p-3">
+    <form onSubmit={onSubmit} className="grid gap-2 rounded-lg border border-white/10 p-3">
       <h3 className="text-sm font-semibold">Adicionar dívida</h3>
       <input
         placeholder="Nome da dívida"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+        className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
         required
       />
       <div className="grid grid-cols-2 gap-2">
@@ -328,7 +328,7 @@ export function AddDebtForm() {
           placeholder="Total em dívida"
           value={totalOwed}
           onChange={(e) => setTotalOwed(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
           required
         />
         <input
@@ -338,7 +338,7 @@ export function AddDebtForm() {
           placeholder="Já pago"
           value={amountPaid}
           onChange={(e) => setAmountPaid(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
         />
       </div>
       <input
@@ -349,7 +349,7 @@ export function AddDebtForm() {
         placeholder="Juro %"
         value={interestRate}
         onChange={(e) => setInterestRate(e.target.value)}
-        className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+        className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
       />
       <button
         disabled={loading}
@@ -357,7 +357,7 @@ export function AddDebtForm() {
       >
         {loading ? "A gravar..." : "Guardar"}
       </button>
-      {message ? <p className={`text-xs ${message.ok ? "text-emerald-700" : "text-rose-700"}`}>{message.text}</p> : null}
+      {message ? <p className={`text-xs ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>{message.text}</p> : null}
     </form>
   );
 }
@@ -393,13 +393,13 @@ export function AddAssetForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-2 rounded-lg border border-slate-200 p-3">
+    <form onSubmit={onSubmit} className="grid gap-2 rounded-lg border border-white/10 p-3">
       <h3 className="text-sm font-semibold">Adicionar ativo</h3>
       <input
         placeholder="Nome do ativo"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+        className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
         required
       />
       <div className="grid grid-cols-2 gap-2">
@@ -407,7 +407,7 @@ export function AddAssetForm() {
           placeholder="Tipo"
           value={assetType}
           onChange={(e) => setAssetType(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
           required
         />
         <input
@@ -417,7 +417,7 @@ export function AddAssetForm() {
           placeholder="Valor"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
           required
         />
       </div>
@@ -427,7 +427,7 @@ export function AddAssetForm() {
       >
         {loading ? "A gravar..." : "Guardar"}
       </button>
-      {message ? <p className={`text-xs ${message.ok ? "text-emerald-700" : "text-rose-700"}`}>{message.text}</p> : null}
+      {message ? <p className={`text-xs ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>{message.text}</p> : null}
     </form>
   );
 }
@@ -461,14 +461,14 @@ export function AddBudgetForm({ month }: { month: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-2 rounded-lg border border-slate-200 p-3">
+    <form onSubmit={onSubmit} className="grid gap-2 rounded-lg border border-white/10 p-3">
       <h3 className="text-sm font-semibold">Orçamento mensal ({month})</h3>
       <div className="grid grid-cols-2 gap-2">
         <input
           placeholder="Categoria"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
           required
         />
         <input
@@ -478,7 +478,7 @@ export function AddBudgetForm({ month }: { month: string }) {
           placeholder="Valor orçamento"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-white/15 bg-[#171717] text-slate-100 placeholder:text-slate-500 px-3 py-2 text-sm"
           required
         />
       </div>
@@ -488,7 +488,7 @@ export function AddBudgetForm({ month }: { month: string }) {
       >
         {loading ? "A gravar..." : "Guardar"}
       </button>
-      {message ? <p className={`text-xs ${message.ok ? "text-emerald-700" : "text-rose-700"}`}>{message.text}</p> : null}
+      {message ? <p className={`text-xs ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>{message.text}</p> : null}
     </form>
   );
 }
