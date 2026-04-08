@@ -2,17 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { getCategoriesForType } from "@/lib/finance/categories";
 
 export function QuickAddForm() {
   const router = useRouter();
   const [type, setType] = useState<"income" | "expense">("expense");
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState(getCategoriesForType("expense")[0]);
+  const [category, setCategory] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(false);
-
-  const categories = getCategoriesForType(type);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -24,14 +21,14 @@ export function QuickAddForm() {
         body: JSON.stringify({
           type,
           amount: Number(amount),
-          category: category.trim() || categories[0],
+          category: category.trim() || (type === "income" ? "Income" : "Expense"),
           description: "",
           transactionDate: date
         })
       });
       if (response.ok) {
         setAmount("");
-        setCategory(categories[0]);
+        setCategory("");
         router.refresh();
       }
     } finally {
@@ -42,14 +39,7 @@ export function QuickAddForm() {
   return (
     <form className="quick-form" onSubmit={onSubmit}>
       <div className="q-row">
-        <select
-          value={type}
-          onChange={(e) => {
-            const nextType = e.target.value as "income" | "expense";
-            setType(nextType);
-            setCategory(getCategoriesForType(nextType)[0]);
-          }}
-        >
+        <select value={type} onChange={(e) => setType(e.target.value as "income" | "expense")}>
           <option value="expense">Expense</option>
           <option value="income">Income</option>
         </select>
@@ -64,13 +54,12 @@ export function QuickAddForm() {
         />
       </div>
       <div className="q-row">
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
-          {categories.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
+        <input
+          placeholder="Categoria"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          required
+        />
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
       </div>
       <button type="submit" disabled={loading}>
@@ -79,3 +68,4 @@ export function QuickAddForm() {
     </form>
   );
 }
+
