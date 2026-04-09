@@ -37,6 +37,10 @@ type SpendingCategoryRow = {
   total: number;
 };
 
+function monthIsoListForYear(year: number) {
+  return Array.from({ length: 12 }).map((_, i) => `${year}-${String(i + 1).padStart(2, "0")}`);
+}
+
 function parseMonthParam(value: string | string[] | undefined) {
   const raw = Array.isArray(value) ? value[0] : value;
   if (!raw) return new Date().toISOString().slice(0, 7);
@@ -63,15 +67,6 @@ function formatMoney(value: number, lang: string, currency: string) {
     currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(value);
-}
-
-function formatCompactMoney(value: number, lang: string, currency: string) {
-  return new Intl.NumberFormat(lang, {
-    style: "currency",
-    currency,
-    notation: "compact",
-    maximumFractionDigits: 1
   }).format(value);
 }
 
@@ -215,6 +210,11 @@ function getCopy(lang: string) {
     }
   } as const;
   return copy[lang as keyof typeof copy] || copy["pt-PT"];
+}
+
+function monthName(monthIso: string, lang = "pt-PT") {
+  const [year, month] = monthIso.split("-").map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString(lang, { month: "short" });
 }
 
 function dayMonth(v: string | Date, lang = "pt-PT") {
@@ -371,69 +371,6 @@ function SpendingIcon({ category }: { category: string }) {
       <circle cx="8" cy="9" r="3" fill="currentColor" />
       <circle cx="16" cy="9" r="3" fill="currentColor" />
       <path d="M3 19a5 5 0 0 1 10 0v1H3zM11 20v-1a5 5 0 0 1 10 0v1z" fill="currentColor" />
-    </svg>
-  );
-}
-
-function SideMenuIcon({ name }: { name: string }) {
-  if (name === "dashboard") {
-    return (
-      <svg viewBox="0 0 20 20" aria-hidden="true">
-        <rect x="2" y="2" width="7" height="7" rx="1.2" fill="currentColor" />
-        <rect x="11" y="2" width="7" height="4" rx="1.2" fill="currentColor" />
-        <rect x="11" y="8" width="7" height="10" rx="1.2" fill="currentColor" />
-        <rect x="2" y="11" width="7" height="7" rx="1.2" fill="currentColor" />
-      </svg>
-    );
-  }
-  if (name === "chart") {
-    return (
-      <svg viewBox="0 0 20 20" aria-hidden="true">
-        <path d="M3 14 7.5 9.5l3 2.5L16.5 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  if (name === "up") {
-    return (
-      <svg viewBox="0 0 20 20" aria-hidden="true">
-        <path d="M10 16V4M10 4l-5 5M10 4l5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  if (name === "down") {
-    return (
-      <svg viewBox="0 0 20 20" aria-hidden="true">
-        <path d="M10 4v12M10 16l-5-5M10 16l5-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  if (name === "card") {
-    return (
-      <svg viewBox="0 0 20 20" aria-hidden="true">
-        <rect x="2.5" y="4.5" width="15" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-        <line x1="2.5" y1="8.5" x2="17.5" y2="8.5" stroke="currentColor" strokeWidth="1.8" />
-      </svg>
-    );
-  }
-  if (name === "clock") {
-    return (
-      <svg viewBox="0 0 20 20" aria-hidden="true">
-        <circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" strokeWidth="1.8" />
-        <path d="M10 6.5v4.2l2.8 1.6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  if (name === "home") {
-    return (
-      <svg viewBox="0 0 20 20" aria-hidden="true">
-        <path d="M3.5 9.5 10 4l6.5 5.5V16h-4.2v-4.2H7.7V16H3.5z" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <rect x="2.5" y="4.5" width="15" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M10 7.5v5M7.5 10h5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
@@ -597,6 +534,8 @@ export default async function DashboardPage({
   const lang = parseLangParam(params?.lang);
   const currency = parseCurrencyParam(params?.currency);
   const t = getCopy(lang);
+  const selectedYear = Number(selectedMonth.slice(0, 4));
+  const monthOptions = monthIsoListForYear(selectedYear);
   const db = getDb();
   await applyRecurringRulesForMonth(db, user.userId, selectedMonth);
 
@@ -699,7 +638,6 @@ export default async function DashboardPage({
 
   const incomeGoalTarget = Math.max(1, income + expense);
   const incomeGoalPct = Math.min(100, (income / incomeGoalTarget) * 100);
-  const incomeCompact = `+${formatCompactMoney(income, lang, currency)}`;
 
   const pieTotal = expenseCategories.reduce((a, r) => a + Number(r.total || 0), 0);
   const pieColors = ["#ef476f", "#6d4dff", "#1fd2ca", "#7ed957", "#f59e0b", "#60a5fa"];
@@ -754,79 +692,16 @@ export default async function DashboardPage({
         <aside className="left-nav">
           <div className="brand-icon">{initials}</div>
           <div className="brand-name">Other Level&apos;s</div>
-          <nav className="side-nav">
-            <p className="side-group-title">Overview</p>
-            <div className="side-group">
-              <Link className="side-link active" href={`/dashboard?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-                <span className="side-link-left">
-                  <span className="side-icon"><SideMenuIcon name="dashboard" /></span>
-                  Dashboard
-                </span>
+          <nav className="month-nav">
+            {monthOptions.map((m) => (
+              <Link
+                key={m}
+                href={`?month=${m}&lang=${lang}&currency=${currency}`}
+                className={`month-link ${m === selectedMonth ? "active" : ""}`}
+              >
+                {monthName(m, lang)}
               </Link>
-              <Link className="side-link" href={`/dashboard/spreadsheet?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-                <span className="side-link-left">
-                  <span className="side-icon"><SideMenuIcon name="chart" /></span>
-                  Annual overview
-                </span>
-              </Link>
-            </div>
-
-            <p className="side-group-title">Tracking</p>
-            <div className="side-group">
-              <a className="side-link" href="#income-source">
-                <span className="side-link-left">
-                  <span className="side-icon"><SideMenuIcon name="up" /></span>
-                  Income
-                </span>
-                <span className="side-badge">{incomeCompact}</span>
-              </a>
-              <a className="side-link" href="#spending-list">
-                <span className="side-link-left">
-                  <span className="side-icon"><SideMenuIcon name="down" /></span>
-                  Expenses
-                </span>
-              </a>
-              <a className="side-link" href="#notification-card">
-                <span className="side-link-left">
-                  <span className="side-icon"><SideMenuIcon name="card" /></span>
-                  Bills
-                </span>
-              </a>
-              <a className="side-link" href="#notification-card">
-                <span className="side-link-left">
-                  <span className="side-icon"><SideMenuIcon name="clock" /></span>
-                  Subscriptions
-                </span>
-              </a>
-            </div>
-
-            <p className="side-group-title">Planning</p>
-            <div className="side-group">
-              <a className="side-link" href="#asset-card">
-                <span className="side-link-left">
-                  <span className="side-icon"><SideMenuIcon name="home" /></span>
-                  Savings
-                </span>
-              </a>
-              <a className="side-link" href="#recent-card">
-                <span className="side-link-left">
-                  <span className="side-icon"><SideMenuIcon name="plus" /></span>
-                  Debt tracker
-                </span>
-              </a>
-              <a className="side-link" href="#goal-card">
-                <span className="side-link-left">
-                  <span className="side-icon"><SideMenuIcon name="clock" /></span>
-                  Goals
-                </span>
-              </a>
-              <a className="side-link" href="#asset-card">
-                <span className="side-link-left">
-                  <span className="side-icon"><SideMenuIcon name="chart" /></span>
-                  Net worth
-                </span>
-              </a>
-            </div>
+            ))}
           </nav>
         </aside>
 
@@ -895,7 +770,7 @@ export default async function DashboardPage({
               </svg>
             </article>
 
-            <article className="card card-spending-list" id="spending-list">
+            <article className="card card-spending-list">
               <p className="card-label">{t.spendings}</p>
               <ul className="spend-list">
                 {spendingRows.map((row) => {
@@ -921,7 +796,7 @@ export default async function DashboardPage({
               </ul>
             </article>
 
-            <article className="card goal card-goal" id="goal-card">
+            <article className="card goal card-goal">
               <p className="goal-top">{Math.round(incomeGoalPct)}%</p>
               <p className="card-label">{t.incomeGoal}</p>
               <p className="muted">{t.progressToMonth}</p>
@@ -933,7 +808,7 @@ export default async function DashboardPage({
               </div>
             </article>
 
-            <article className="card card-income-source" id="income-source">
+            <article className="card card-income-source">
               <p className="card-label">{t.incomeSource}</p>
               <div className="income-bars">
                 {incomeCategories.map((c, i) => {
@@ -961,7 +836,7 @@ export default async function DashboardPage({
               </svg>
             </article>
 
-            <article className="card notification card-notice" id="notification-card">
+            <article className="card notification card-notice">
               <p className="card-label">{t.notification}</p>
               <div className="notice">
                 {overdueBills > 0
@@ -1057,7 +932,7 @@ export default async function DashboardPage({
               </div>
             </article>
 
-            <article className="card asset card-assets" id="asset-card">
+            <article className="card asset card-assets">
               <p className="card-label">{t.assets}</p>
               <div className="asset-wrap">
                 <div className="donut" style={{ background: pieGradient }}>
@@ -1102,7 +977,7 @@ export default async function DashboardPage({
               </div>
             </article>
 
-            <article className="card table card-recent" id="recent-card">
+            <article className="card table card-recent">
               <p className="card-label">{t.recentTransactions}</p>
               <div className="rows">
                 {txRows.map((tx) => (
