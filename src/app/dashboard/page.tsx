@@ -375,21 +375,31 @@ function SpendingIcon({ category }: { category: string }) {
   );
 }
 
-function normalizeSpendingLabel(rawCategory: string, lang: string) {
-  const key = spendingIconKey(rawCategory);
-  if (key === "housing") return lang === "pt-PT" ? "Habitação" : "Housing";
-  if (key === "transportation") return lang === "pt-PT" ? "Transporte" : "Transportation";
-  if (key === "food") return lang === "pt-PT" ? "Comida" : "Food";
-  if (key === "pets") return lang === "pt-PT" ? "Animais" : "Pets";
-  if (key === "health") return lang === "pt-PT" ? "Saúde" : "Health";
-  if (key === "shopping") return lang === "pt-PT" ? "Compras" : "Shopping";
-  return lang === "pt-PT" ? "Pessoal" : "Personal";
+function spendingDisplayLabel(rawCategory: string, lang: string) {
+  const normalized = rawCategory.trim().toLowerCase();
+  const map: Record<string, string> =
+    lang === "pt-PT"
+      ? {
+          housing: "Habitação",
+          personal: "Pessoal",
+          transportation: "Transporte",
+          transport: "Transporte",
+          food: "Comida",
+          bills: "Contas",
+          pets: "Animais",
+          health: "Saúde",
+          shopping: "Compras",
+          other: "Outros"
+        }
+      : {};
+
+  return map[normalized] || rawCategory;
 }
 
 function buildSpendingRows(expenseCategories: CategoryRow[], lang: string): SpendingCategoryRow[] {
   return expenseCategories.map((row) => ({
     key: row.category,
-    label: normalizeSpendingLabel(row.category, lang),
+    label: spendingDisplayLabel(row.category, lang),
     total: Number(row.total || 0)
   }));
 }
@@ -618,6 +628,14 @@ export default async function DashboardPage({
     : "conic-gradient(#293467 0% 100%)";
 
   const spendingRows = buildSpendingRows(expenseCategories, lang);
+  const spendingPalette = [
+    { color: "#ff6b7e", bg: "rgba(255,107,126,0.24)" },
+    { color: "#7f5cff", bg: "rgba(127,92,255,0.28)" },
+    { color: "#1ed6d9", bg: "rgba(30,214,217,0.24)" },
+    { color: "#ff9f40", bg: "rgba(255,159,64,0.26)" },
+    { color: "#4ade80", bg: "rgba(74,222,128,0.24)" },
+    { color: "#f472b6", bg: "rgba(244,114,182,0.24)" }
+  ];
 
   const petKeywords = /(pet|animal|dog|cat|vet|veterin|food treat|kennel|racao|ração|groom|banho)/i;
   const petList = expenseCategories.filter((c) => petKeywords.test(c.category)).map((r) => ({
@@ -738,12 +756,20 @@ export default async function DashboardPage({
               <p className="card-label">{t.spendings}</p>
               <ul className="spend-list">
                 {spendingRows.map((row, i) => (
-                  <li key={row.key}>
-                    <span className={`ico i${(i % 3) + 1}`}>
+                  <li
+                    key={row.key}
+                    style={
+                      {
+                        "--spend-color": spendingPalette[i % spendingPalette.length].color,
+                        "--spend-bg": spendingPalette[i % spendingPalette.length].bg
+                      } as Record<string, string>
+                    }
+                  >
+                    <span className="ico">
                       <SpendingIcon category={row.key} />
                     </span>
                     <span>{row.label}</span>
-                    <b className="expense-number">{formatMoney(row.total, lang, currency)}</b>
+                    <b className="spend-value">{formatMoney(row.total, lang, currency)}</b>
                   </li>
                 ))}
               </ul>

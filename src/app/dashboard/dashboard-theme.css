@@ -366,6 +366,8 @@
 }
 
 .spend-list li {
+  --spend-color: #ff6b7e;
+  --spend-bg: rgba(255, 107, 126, 0.24);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -376,6 +378,10 @@
   margin-left: auto;
 }
 
+.spend-list li .spend-value {
+  color: var(--spend-color);
+}
+
 .ico {
   width: 32px;
   height: 32px;
@@ -384,23 +390,12 @@
   place-items: center;
   font-size: 0;
   color: #f4f7ff;
+  background: var(--spend-bg);
 }
 
 .ico svg {
   width: 18px;
   height: 18px;
-}
-
-.ico.i1 {
-  background: rgba(127, 92, 255, 0.32);
-}
-
-.ico.i2 {
-  background: rgba(239, 71, 111, 0.28);
-}
-
-.ico.i3 {
-  background: rgba(255, 122, 24, 0.28);
 }
 
 .goal-top {
