@@ -227,12 +227,14 @@ const spendingBuckets: SpendingBucket[] = [
   {
     key: "housing",
     label: "Housing",
-    matcher: /(housing|renda|rent|mortgage|casa|home|eletric|electric|agua|water|internet|insurance|luz)/i
+    matcher:
+      /(housing|habita|renda|rent|mortgage|casa|home|bills|contas|utilities|eletric|electric|agua|water|internet|insurance|luz|phone|netflix|gym)/i
   },
   {
     key: "personal",
     label: "Personal",
-    matcher: /(personal|shopping|compras|lazer|saude|saúde|health|beauty|hobby|food|comida)/i
+    matcher:
+      /(personal|pessoal|shopping|compras|lazer|saude|saúde|health|beauty|hobby|food|comida|pets|animais|pet|vet|groom|pharmacy|doctor|farmacia|farmácia|other|outros)/i
   },
   {
     key: "transportation",
