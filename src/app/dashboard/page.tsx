@@ -70,6 +70,11 @@ function formatMoney(value: number, lang: string, currency: string) {
   }).format(value);
 }
 
+function percentChange(current: number, previous: number) {
+  if (previous === 0) return null;
+  return ((current - previous) / Math.abs(previous)) * 100;
+}
+
 function getCopy(lang: string) {
   const copy = {
     "pt-PT": {
@@ -104,7 +109,11 @@ function getCopy(lang: string) {
       noVariableExpenses: "Sem despesas variáveis recentes",
       noVariableIncomes: "Sem receitas variáveis recentes",
       recurringIncome: "Receita fixa",
-      recurringExpense: "Despesa fixa"
+      recurringExpense: "Despesa fixa",
+      monthlyIncome: "Receita Mensal",
+      totalExpenses: "Despesas Totais",
+      savings: "Poupança",
+      currentBalance: "Saldo Atual"
     },
     "en-US": {
       personalFinanceTracker: "Personal Finance Tracker",
@@ -138,7 +147,11 @@ function getCopy(lang: string) {
       noVariableExpenses: "No recent variable expenses",
       noVariableIncomes: "No recent variable incomes",
       recurringIncome: "Fixed income",
-      recurringExpense: "Fixed expense"
+      recurringExpense: "Fixed expense",
+      monthlyIncome: "Monthly Income",
+      totalExpenses: "Total Expenses",
+      savings: "Savings",
+      currentBalance: "Current Balance"
     },
     "es-ES": {
       personalFinanceTracker: "Rastreador de Finanzas Personales",
@@ -172,7 +185,11 @@ function getCopy(lang: string) {
       noVariableExpenses: "Sin gastos variables recientes",
       noVariableIncomes: "Sin ingresos variables recientes",
       recurringIncome: "Ingreso fijo",
-      recurringExpense: "Gasto fijo"
+      recurringExpense: "Gasto fijo",
+      monthlyIncome: "Ingresos Mensuales",
+      totalExpenses: "Gastos Totales",
+      savings: "Ahorro",
+      currentBalance: "Saldo Actual"
     },
     "fr-FR": {
       personalFinanceTracker: "Suivi des Finances Personnelles",
@@ -206,7 +223,11 @@ function getCopy(lang: string) {
       noVariableExpenses: "Aucune dépense variable récente",
       noVariableIncomes: "Aucun revenu variable récent",
       recurringIncome: "Revenu fixe",
-      recurringExpense: "Dépense fixe"
+      recurringExpense: "Dépense fixe",
+      monthlyIncome: "Revenu Mensuel",
+      totalExpenses: "Dépenses Totales",
+      savings: "Épargne",
+      currentBalance: "Solde Actuel"
     }
   } as const;
   return copy[lang as keyof typeof copy] || copy["pt-PT"];
@@ -624,6 +645,17 @@ export default async function DashboardPage({
   const income = Number(totals.income || 0);
   const expense = Number(totals.expense || 0);
   const availableBalance = income - expense;
+  const [year, month] = selectedMonth.split("-").map(Number);
+  const prevDate = new Date(year, month - 2, 1);
+  const previousMonthIso = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}`;
+  const monthMap = new Map(summaryRows.map((r) => [r.month, r]));
+  const prevSummary = monthMap.get(previousMonthIso);
+  const prevIncome = Number(prevSummary?.income || 0);
+  const prevExpense = Number(prevSummary?.expense || 0);
+  const prevSavings = prevIncome - prevExpense;
+  const incomeDelta = percentChange(income, prevIncome);
+  const expenseDelta = percentChange(expense, prevExpense);
+  const savingsDelta = percentChange(availableBalance, prevSavings);
 
   const assetsTotal = assetRows.reduce((a, r) => a + Number(r.value || 0), 0);
   const liabilities = debtRows.reduce(
@@ -709,10 +741,7 @@ export default async function DashboardPage({
           <header className="top-row">
             <div className="title-block">
               <p className="kicker">{t.personalFinanceTracker}</p>
-              <h1>{t.availableBalance}</h1>
-              <p className={`balance ${availableBalance >= 0 ? "income-number" : "expense-number"}`}>
-                {formatMoney(availableBalance, lang, currency)}
-              </p>
+              <p className="title-mini">{t.dashboard}</p>
             </div>
 
             <div className="center-tabs">
@@ -756,10 +785,49 @@ export default async function DashboardPage({
             </div>
           </header>
 
+          <section className="kpi-row">
+            <article className="card kpi-card">
+              <p className="card-label">{t.monthlyIncome}</p>
+              <p className="kpi-value income-number">{formatMoney(income, lang, currency)}</p>
+              <p className={`kpi-delta ${(incomeDelta ?? 0) >= 0 ? "up" : "down"}`}>
+                {(incomeDelta ?? 0) >= 0 ? "+" : ""}
+                {incomeDelta?.toFixed(1) ?? "0.0"}% vs mês ant.
+              </p>
+            </article>
+
+            <article className="card kpi-card">
+              <p className="card-label">{t.totalExpenses}</p>
+              <p className="kpi-value expense-number">{formatMoney(expense, lang, currency)}</p>
+              <p className={`kpi-delta ${(expenseDelta ?? 0) <= 0 ? "up" : "down"}`}>
+                {(expenseDelta ?? 0) >= 0 ? "+" : ""}
+                {expenseDelta?.toFixed(1) ?? "0.0"}% vs mês ant.
+              </p>
+            </article>
+
+            <article className="card kpi-card">
+              <p className="card-label">{t.savings}</p>
+              <p className={`kpi-value ${availableBalance >= 0 ? "income-number" : "expense-number"}`}>
+                {formatMoney(availableBalance, lang, currency)}
+              </p>
+              <p className={`kpi-delta ${(savingsDelta ?? 0) >= 0 ? "up" : "down"}`}>
+                {(savingsDelta ?? 0) >= 0 ? "+" : ""}
+                {savingsDelta?.toFixed(1) ?? "0.0"}% vs mês ant.
+              </p>
+            </article>
+
+            <article className="card kpi-card">
+              <p className="card-label">Net Worth</p>
+              <p className="kpi-value">{formatMoney(netWorth, lang, currency)}</p>
+              <p className="kpi-delta neutral">acumulado</p>
+            </article>
+          </section>
+
           <section className="grid-board">
             <article className="card grad card-networth">
-              <p className="card-label">{t.totalNetWorth}</p>
-              <p className="card-big">{formatMoney(netWorth, lang, currency)}</p>
+              <p className="card-label">{t.currentBalance}</p>
+              <p className={`card-big ${availableBalance >= 0 ? "income-number" : "expense-number"}`}>
+                {formatMoney(availableBalance, lang, currency)}
+              </p>
             </article>
 
             <article className="card card-spending-spark">
