@@ -32,16 +32,17 @@
   overflow: hidden;
   background: var(--bg-2);
   display: grid;
-  grid-template-columns: 106px 1fr;
+  grid-template-columns: 286px 1fr;
 }
 
 .left-nav {
   background: #181b21;
   border-right: 1px solid var(--line);
-  padding: 16px 8px;
+  padding: 16px 12px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
+  overflow: auto;
 }
 
 .brand-icon {
@@ -58,32 +59,81 @@
 }
 
 .brand-name {
-  text-align: center;
+  text-align: left;
   font-weight: 600;
   line-height: 1.2;
-  font-size: 13px;
+  font-size: 14px;
+  padding-left: 6px;
 }
 
-.month-nav {
-  margin-top: 8px;
+.side-nav {
+  margin-top: 6px;
+  display: grid;
+  gap: 10px;
+}
+
+.side-group-title {
+  color: rgba(255, 255, 255, 0.26);
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin: 6px 2px 2px;
+}
+
+.side-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
-.month-link {
+.side-link {
   text-decoration: none;
-  color: var(--muted);
-  font-size: 13px;
-  border-radius: 10px;
-  padding: 8px 10px;
-  text-align: center;
+  color: #f1f4fb;
+  font-size: 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
-.month-link:hover,
-.month-link.active {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
+.side-link-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.side-icon {
+  width: 22px;
+  height: 22px;
+  color: rgba(255, 255, 255, 0.7);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.side-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.side-link:hover,
+.side-link.active {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.side-badge {
+  background: rgba(34, 197, 94, 0.18);
+  color: #4df099;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  font-size: 16px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 10px;
 }
 
 .main-area {
