@@ -31,10 +31,10 @@ type RecurringRuleRow = {
   day_of_month: number;
   last_applied_month: string | null;
 };
-type SpendingBucket = {
-  key: "housing" | "personal" | "transportation";
+type SpendingCategoryRow = {
+  key: string;
   label: string;
-  matcher: RegExp;
+  total: number;
 };
 
 function monthIsoListForYear(year: number) {
@@ -223,26 +223,6 @@ function dayMonth(v: string | Date, lang = "pt-PT") {
   return d.toLocaleDateString(lang, { day: "2-digit", month: "short" });
 }
 
-const spendingBuckets: SpendingBucket[] = [
-  {
-    key: "housing",
-    label: "Housing",
-    matcher:
-      /(housing|habita|renda|rent|mortgage|casa|home|bills|contas|utilities|eletric|electric|agua|water|internet|insurance|luz|phone|netflix|gym)/i
-  },
-  {
-    key: "personal",
-    label: "Personal",
-    matcher:
-      /(personal|pessoal|shopping|compras|lazer|saude|saúde|health|beauty|hobby|food|comida|pets|animais|pet|vet|groom|pharmacy|doctor|farmacia|farmácia|other|outros)/i
-  },
-  {
-    key: "transportation",
-    label: "Transportation",
-    matcher: /(transport|transporte|car|carro|fuel|gas|uber|bolt|parking|viagem|trip)/i
-  }
-];
-
 function smoothLinePath(data: number[], w: number, h: number) {
   if (data.length === 0) return "";
   const max = Math.max(...data, 1);
@@ -318,7 +298,23 @@ function buildMonthLabels(selectedMonth: string, length: number, lang: string) {
   return out;
 }
 
-function SpendingIcon({ kind }: { kind: SpendingBucket["key"] }) {
+function spendingIconKey(rawCategory: string) {
+  const value = rawCategory.toLowerCase();
+  if (/(housing|habita|renda|rent|mortgage|home|casa|bills|contas|utilities|electric|eletric|water|agua|internet|insurance|luz|phone|netflix|gym)/i.test(value)) {
+    return "housing";
+  }
+  if (/(transport|transporte|car|carro|fuel|gas|uber|bolt|parking|viagem|trip)/i.test(value)) {
+    return "transportation";
+  }
+  if (/(food|comida)/i.test(value)) return "food";
+  if (/(pets|animais|pet|vet|groom)/i.test(value)) return "pets";
+  if (/(health|saude|saúde|pharmacy|doctor|farmacia|farmácia)/i.test(value)) return "health";
+  if (/(shopping|compras|beauty|hobby)/i.test(value)) return "shopping";
+  return "personal";
+}
+
+function SpendingIcon({ category }: { category: string }) {
+  const kind = spendingIconKey(category);
   if (kind === "housing") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -326,25 +322,76 @@ function SpendingIcon({ kind }: { kind: SpendingBucket["key"] }) {
       </svg>
     );
   }
-  if (kind === "personal") {
+  if (kind === "transportation") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="8" cy="9" r="3" fill="currentColor" />
-        <circle cx="16" cy="9" r="3" fill="currentColor" />
-        <path d="M3 19a5 5 0 0 1 10 0v1H3zM11 20v-1a5 5 0 0 1 10 0v1z" fill="currentColor" />
+        <path
+          d="M4 13.5 6.5 8h11l2.5 5.5v5a1 1 0 0 1-1 1h-1.5a2.5 2.5 0 0 1-5 0h-1a2.5 2.5 0 0 1-5 0H5a1 1 0 0 1-1-1z"
+          fill="currentColor"
+        />
+        <circle cx="8.5" cy="18" r="1.3" fill="#0f173f" />
+        <circle cx="15.5" cy="18" r="1.3" fill="#0f173f" />
+      </svg>
+    );
+  }
+  if (kind === "food") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 3h2v7a2 2 0 0 1-2 2zM10 3h2v7a2 2 0 0 1-2 2zM17 3h2v18h-2z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (kind === "pets") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="7" cy="8" r="2.2" fill="currentColor" />
+        <circle cx="12" cy="6.8" r="2.2" fill="currentColor" />
+        <circle cx="17" cy="8" r="2.2" fill="currentColor" />
+        <path d="M6 16a6 5 0 0 1 12 0c0 2.4-2.2 4-6 4s-6-1.6-6-4z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (kind === "health") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (kind === "shopping") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 8h12l-1 11H7z" fill="currentColor" />
+        <path d="M9 8V6a3 3 0 1 1 6 0v2" fill="none" stroke="currentColor" strokeWidth="2" />
       </svg>
     );
   }
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M4 13.5 6.5 8h11l2.5 5.5v5a1 1 0 0 1-1 1h-1.5a2.5 2.5 0 0 1-5 0h-1a2.5 2.5 0 0 1-5 0H5a1 1 0 0 1-1-1z"
-        fill="currentColor"
-      />
-      <circle cx="8.5" cy="18" r="1.3" fill="#0f173f" />
-      <circle cx="15.5" cy="18" r="1.3" fill="#0f173f" />
+      <circle cx="8" cy="9" r="3" fill="currentColor" />
+      <circle cx="16" cy="9" r="3" fill="currentColor" />
+      <path d="M3 19a5 5 0 0 1 10 0v1H3zM11 20v-1a5 5 0 0 1 10 0v1z" fill="currentColor" />
     </svg>
   );
+}
+
+function normalizeSpendingLabel(rawCategory: string, lang: string) {
+  const key = spendingIconKey(rawCategory);
+  if (key === "housing") return lang === "pt-PT" ? "Habitação" : "Housing";
+  if (key === "transportation") return lang === "pt-PT" ? "Transporte" : "Transportation";
+  if (key === "food") return lang === "pt-PT" ? "Comida" : "Food";
+  if (key === "pets") return lang === "pt-PT" ? "Animais" : "Pets";
+  if (key === "health") return lang === "pt-PT" ? "Saúde" : "Health";
+  if (key === "shopping") return lang === "pt-PT" ? "Compras" : "Shopping";
+  return lang === "pt-PT" ? "Pessoal" : "Personal";
+}
+
+function buildSpendingRows(expenseCategories: CategoryRow[], lang: string): SpendingCategoryRow[] {
+  return expenseCategories.map((row) => ({
+    key: row.category,
+    label: normalizeSpendingLabel(row.category, lang),
+    total: Number(row.total || 0)
+  }));
 }
 
 async function safeQueryRows<T>(db: ReturnType<typeof getDb>, sql: string, params: unknown[]): Promise<T[]> {
@@ -570,12 +617,7 @@ export default async function DashboardPage({
         .join(", ")})`
     : "conic-gradient(#293467 0% 100%)";
 
-  const spendingByBucket = spendingBuckets.map((bucket) => {
-    const total = expenseCategories.reduce((acc, row) => {
-      return bucket.matcher.test(row.category) ? acc + Number(row.total || 0) : acc;
-    }, 0);
-    return { ...bucket, total };
-  });
+  const spendingRows = buildSpendingRows(expenseCategories, lang);
 
   const petKeywords = /(pet|animal|dog|cat|vet|veterin|food treat|kennel|racao|ração|groom|banho)/i;
   const petList = expenseCategories.filter((c) => petKeywords.test(c.category)).map((r) => ({
@@ -695,10 +737,10 @@ export default async function DashboardPage({
             <article className="card card-spending-list">
               <p className="card-label">{t.spendings}</p>
               <ul className="spend-list">
-                {spendingByBucket.map((row, i) => (
+                {spendingRows.map((row, i) => (
                   <li key={row.key}>
                     <span className={`ico i${(i % 3) + 1}`}>
-                      <SpendingIcon kind={row.key} />
+                      <SpendingIcon category={row.key} />
                     </span>
                     <span>{row.label}</span>
                     <b className="expense-number">{formatMoney(row.total, lang, currency)}</b>
