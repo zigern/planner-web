@@ -404,6 +404,32 @@ function buildSpendingRows(expenseCategories: CategoryRow[], lang: string): Spen
   }));
 }
 
+function spendingColorForCategory(rawCategory: string) {
+  const normalized = rawCategory.trim().toLowerCase();
+  const fixed: Record<string, { color: string; bg: string }> = {
+    housing: { color: "#8b5cf6", bg: "rgba(139,92,246,0.28)" },
+    personal: { color: "#f43f5e", bg: "rgba(244,63,94,0.28)" },
+    transportation: { color: "#fb923c", bg: "rgba(251,146,60,0.28)" },
+    transport: { color: "#fb923c", bg: "rgba(251,146,60,0.28)" },
+    food: { color: "#22c55e", bg: "rgba(34,197,94,0.28)" },
+    bills: { color: "#06b6d4", bg: "rgba(6,182,212,0.28)" },
+    pets: { color: "#f59e0b", bg: "rgba(245,158,11,0.28)" },
+    health: { color: "#ef4444", bg: "rgba(239,68,68,0.28)" },
+    shopping: { color: "#3b82f6", bg: "rgba(59,130,246,0.28)" },
+    other: { color: "#a3a3a3", bg: "rgba(163,163,163,0.24)" }
+  };
+
+  if (fixed[normalized]) return fixed[normalized];
+
+  let hash = 0;
+  for (let i = 0; i < normalized.length; i += 1) hash = (hash * 31 + normalized.charCodeAt(i)) % 360;
+  const hue = hash;
+  return {
+    color: `hsl(${hue} 88% 62%)`,
+    bg: `hsl(${hue} 88% 62% / 0.26)`
+  };
+}
+
 async function safeQueryRows<T>(db: ReturnType<typeof getDb>, sql: string, params: unknown[]): Promise<T[]> {
   try {
     const [rows] = await db.query(sql, params);
@@ -628,14 +654,6 @@ export default async function DashboardPage({
     : "conic-gradient(#293467 0% 100%)";
 
   const spendingRows = buildSpendingRows(expenseCategories, lang);
-  const spendingPalette = [
-    { color: "#ff6b7e", bg: "rgba(255,107,126,0.24)" },
-    { color: "#7f5cff", bg: "rgba(127,92,255,0.28)" },
-    { color: "#1ed6d9", bg: "rgba(30,214,217,0.24)" },
-    { color: "#ff9f40", bg: "rgba(255,159,64,0.26)" },
-    { color: "#4ade80", bg: "rgba(74,222,128,0.24)" },
-    { color: "#f472b6", bg: "rgba(244,114,182,0.24)" }
-  ];
 
   const petKeywords = /(pet|animal|dog|cat|vet|veterin|food treat|kennel|racao|ração|groom|banho)/i;
   const petList = expenseCategories.filter((c) => petKeywords.test(c.category)).map((r) => ({
@@ -755,13 +773,15 @@ export default async function DashboardPage({
             <article className="card card-spending-list">
               <p className="card-label">{t.spendings}</p>
               <ul className="spend-list">
-                {spendingRows.map((row, i) => (
+                {spendingRows.map((row) => {
+                  const spendColor = spendingColorForCategory(row.key);
+                  return (
                   <li
                     key={row.key}
                     style={
                       {
-                        "--spend-color": spendingPalette[i % spendingPalette.length].color,
-                        "--spend-bg": spendingPalette[i % spendingPalette.length].bg
+                        "--spend-color": spendColor.color,
+                        "--spend-bg": spendColor.bg
                       } as Record<string, string>
                     }
                   >
@@ -771,7 +791,8 @@ export default async function DashboardPage({
                     <span>{row.label}</span>
                     <b className="spend-value">{formatMoney(row.total, lang, currency)}</b>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </article>
 
