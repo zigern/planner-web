@@ -30,3 +30,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Falha ao criar asset." }, { status: 500 });
   }
 }
+
+export async function GET() {
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+
+  const db = getDb();
+  const [rows] = await db.query(
+    `SELECT id, name, asset_type, value, as_of_date, created_at
+     FROM assets
+     WHERE user_id = ?
+     ORDER BY created_at DESC, id DESC`,
+    [user.userId]
+  );
+
+  return NextResponse.json({ items: rows });
+}

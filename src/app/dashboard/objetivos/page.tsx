@@ -130,6 +130,9 @@ export default async function ObjetivosPage({
             <Link className="nav-item active" href={`/dashboard/objetivos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Goals
             </Link>
+            <Link className="nav-item" href={`/dashboard/patrimonio?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+              Net Worth
+            </Link>
             <Link className="nav-item" href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Activity
             </Link>

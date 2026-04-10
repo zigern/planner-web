@@ -4,14 +4,22 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "../components/logout-button";
 import { ViewControls } from "../components/view-controls";
-import { BudgetsManager } from "../components/budgets-manager";
+import { WealthManager } from "../components/wealth-manager";
 import "../dashboard-theme.css";
 
-type BudgetRow = {
+type AssetRow = {
   id: number;
-  category: string;
-  budget_amount: string;
-  spent: string;
+  name: string;
+  asset_type: string;
+  value: string;
+};
+
+type DebtRow = {
+  id: number;
+  name: string;
+  total_owed: string;
+  amount_paid: string;
+  interest_rate: string;
 };
 
 function parseMonthParam(value: string | string[] | undefined) {
@@ -34,20 +42,16 @@ function parseCurrencyParam(value: string | string[] | undefined) {
   return allowed.has(raw) ? raw : "USD";
 }
 
-function getText(lang: string) {
-  if (lang === "pt-PT") {
-    return {
-      title: "Orçamentos",
-      subtitle: "Limites por categoria e controlo mensal"
-    };
-  }
-  return {
-    title: "Budgets",
-    subtitle: "Category limits and monthly control"
-  };
+function formatMoney(value: number, lang: string, currency: string) {
+  return new Intl.NumberFormat(lang, {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
 }
 
-export default async function OrcamentosPage({
+export default async function PatrimonioPage({
   searchParams
 }: {
   searchParams?: Promise<{
@@ -74,33 +78,41 @@ export default async function OrcamentosPage({
   const selectedMonth = parseMonthParam(params?.month);
   const lang = parseLangParam(params?.lang);
   const currency = parseCurrencyParam(params?.currency);
-  const text = getText(lang);
 
   const db = getDb();
-  const [rows] = await db.query(
-    `SELECT b.id, b.category, b.budget_amount, COALESCE(SUM(t.amount), 0) as spent
-     FROM monthly_budgets b
-     LEFT JOIN transactions t
-       ON t.user_id = b.user_id
-      AND t.type = 'expense'
-      AND DATE_FORMAT(t.transaction_date, '%Y-%m') = b.budget_month
-      AND t.category = b.category
-     WHERE b.user_id = ?
-       AND b.budget_month = ?
-     GROUP BY b.id, b.category, b.budget_amount
-     ORDER BY b.category ASC`,
-    [user.userId, selectedMonth]
+  const [assetRows] = await db.query(
+    `SELECT id, name, asset_type, value
+     FROM assets
+     WHERE user_id = ?
+     ORDER BY created_at DESC, id DESC`,
+    [user.userId]
+  );
+  const [debtRows] = await db.query(
+    `SELECT id, name, total_owed, amount_paid, interest_rate
+     FROM debts
+     WHERE user_id = ?
+     ORDER BY created_at DESC, id DESC`,
+    [user.userId]
   );
 
-  const budgetRows = (rows as BudgetRow[]).map((row) => ({
+  const assets = (assetRows as AssetRow[]).map((row) => ({
     id: Number(row.id),
-    category: row.category,
-    budgetAmount: Number(row.budget_amount || 0),
-    spent: Number(row.spent || 0)
+    name: row.name,
+    assetType: row.asset_type,
+    value: Number(row.value || 0)
+  }));
+  const debts = (debtRows as DebtRow[]).map((row) => ({
+    id: Number(row.id),
+    name: row.name,
+    totalOwed: Number(row.total_owed || 0),
+    amountPaid: Number(row.amount_paid || 0),
+    interestRate: Number(row.interest_rate || 0)
   }));
 
-  const name = user.email.split("@")[0];
-  const initials = name.slice(0, 2).toUpperCase();
+  const assetsTotal = assets.reduce((acc, row) => acc + row.value, 0);
+  const liabilitiesTotal = debts.reduce((acc, row) => acc + Math.max(0, row.totalOwed - row.amountPaid), 0);
+  const netWorth = assetsTotal - liabilitiesTotal;
+  const initials = user.email.slice(0, 2).toUpperCase();
 
   return (
     <div className="casha-wrap">
@@ -128,13 +140,13 @@ export default async function OrcamentosPage({
             <Link className="nav-item" href={`/dashboard/recorrentes?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Recurring
             </Link>
-            <Link className="nav-item active" href={`/dashboard/orcamentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+            <Link className="nav-item" href={`/dashboard/orcamentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Budgets
             </Link>
             <Link className="nav-item" href={`/dashboard/objetivos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Goals
             </Link>
-            <Link className="nav-item" href={`/dashboard/patrimonio?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+            <Link className="nav-item active" href={`/dashboard/patrimonio?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Net Worth
             </Link>
             <Link className="nav-item" href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
@@ -151,14 +163,28 @@ export default async function OrcamentosPage({
         </div>
 
         <main className="dash-main">
-          <section className="greeting-row">
-            <div>
-              <h1>{text.title}</h1>
-              <p>{text.subtitle}</p>
-            </div>
+          <section className="metrics-grid wealth-metrics">
+            <article className="panel">
+              <div className="panel-head">
+                <h3>Total Assets</h3>
+              </div>
+              <p className="mid-number money-in">{formatMoney(assetsTotal, lang, currency)}</p>
+            </article>
+            <article className="panel">
+              <div className="panel-head">
+                <h3>Total Liabilities</h3>
+              </div>
+              <p className="mid-number money-out">{formatMoney(liabilitiesTotal, lang, currency)}</p>
+            </article>
+            <article className="panel">
+              <div className="panel-head">
+                <h3>Net Worth</h3>
+              </div>
+              <p className={`mid-number ${netWorth >= 0 ? "money-in" : "money-out"}`}>{formatMoney(netWorth, lang, currency)}</p>
+            </article>
           </section>
 
-          <BudgetsManager lang={lang} currency={currency} month={selectedMonth} initialRows={budgetRows} />
+          <WealthManager lang={lang} currency={currency} assets={assets} debts={debts} />
         </main>
       </div>
     </div>
