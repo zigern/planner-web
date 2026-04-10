@@ -202,6 +202,39 @@
   gap: 12px;
 }
 
+.metrics-grid .panel {
+  padding: 10px;
+}
+
+.metrics-grid .panel-head h3 {
+  font-size: 18px;
+}
+
+.metrics-grid .safe-pill {
+  height: 20px;
+  font-size: 10px;
+}
+
+.metrics-grid .big-number {
+  font-size: 38px;
+}
+
+.metrics-grid .mid-number {
+  font-size: 32px;
+}
+
+.metrics-grid .delta {
+  font-size: 11px;
+}
+
+.metrics-grid .sub-copy {
+  font-size: 13px;
+}
+
+.metrics-grid .burn-row {
+  font-size: 14px;
+}
+
 .panel {
   border: 1px solid var(--line);
   border-radius: 14px;
