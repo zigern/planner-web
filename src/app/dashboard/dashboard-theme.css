@@ -475,6 +475,19 @@
   margin-bottom: 6px;
 }
 
+.break-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.break-emoji {
+  width: 20px;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1;
+}
+
 .break-track {
   height: 14px;
   border-radius: 999px;
