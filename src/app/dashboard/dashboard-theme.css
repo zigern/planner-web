@@ -297,6 +297,12 @@
   min-height: 176px;
 }
 
+.card-monthly-trend {
+  grid-column: 4 / span 3;
+  grid-row: 1 / span 2;
+  min-height: 366px;
+}
+
 .card-spending-list {
   grid-column: 7 / span 3;
   grid-row: 1 / span 2;
@@ -407,6 +413,90 @@
 
 .spark.orange path {
   stroke: #ff8b2d;
+}
+
+.trend-bars-wrap {
+  margin-top: 16px;
+  min-height: 182px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.trend-col {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+
+.trend-pair {
+  height: 146px;
+  width: 100%;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: 7px;
+}
+
+.trend-bar {
+  width: 14px;
+  border-radius: 8px 8px 2px 2px;
+  display: block;
+}
+
+.trend-bar.income {
+  background: #4ade80;
+}
+
+.trend-bar.expense {
+  background: #f87171;
+}
+
+.trend-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.trend-footer {
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.trend-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot.income {
+  background: #4ade80;
+}
+
+.dot.expense {
+  background: #f87171;
+}
+
+.trend-max {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .spend-list {
@@ -909,10 +999,11 @@
   }
 
   .card-networth,
-  .card-spending-spark,
-  .card-spending-list,
-  .card-goal,
-  .card-income-source,
+.card-spending-spark,
+.card-monthly-trend,
+.card-spending-list,
+.card-goal,
+.card-income-source,
   .card-income-spark,
   .card-notice,
   .card-trend,
@@ -962,10 +1053,11 @@
   }
 
   .card-networth,
-  .card-spending-spark,
-  .card-spending-list,
-  .card-goal,
-  .card-income-source,
+.card-spending-spark,
+.card-monthly-trend,
+.card-spending-list,
+.card-goal,
+.card-income-source,
   .card-income-spark,
   .card-notice,
   .card-trend,

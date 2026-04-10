@@ -113,7 +113,10 @@ function getCopy(lang: string) {
       monthlyIncome: "Receita Mensal",
       totalExpenses: "Despesas Totais",
       savings: "Poupança",
-      currentBalance: "Saldo Atual"
+      currentBalance: "Saldo Atual",
+      monthlyTrend: "Tendência mensal",
+      incomeVsExpenses6m: "Income vs Expenses - últimos 6 meses",
+      maxValue: "máx"
     },
     "en-US": {
       personalFinanceTracker: "Personal Finance Tracker",
@@ -151,7 +154,10 @@ function getCopy(lang: string) {
       monthlyIncome: "Monthly Income",
       totalExpenses: "Total Expenses",
       savings: "Savings",
-      currentBalance: "Current Balance"
+      currentBalance: "Current Balance",
+      monthlyTrend: "Monthly trend",
+      incomeVsExpenses6m: "Income vs Expenses - last 6 months",
+      maxValue: "max"
     },
     "es-ES": {
       personalFinanceTracker: "Rastreador de Finanzas Personales",
@@ -189,7 +195,10 @@ function getCopy(lang: string) {
       monthlyIncome: "Ingresos Mensuales",
       totalExpenses: "Gastos Totales",
       savings: "Ahorro",
-      currentBalance: "Saldo Actual"
+      currentBalance: "Saldo Actual",
+      monthlyTrend: "Tendencia mensual",
+      incomeVsExpenses6m: "Ingresos vs Gastos - últimos 6 meses",
+      maxValue: "máx"
     },
     "fr-FR": {
       personalFinanceTracker: "Suivi des Finances Personnelles",
@@ -227,7 +236,10 @@ function getCopy(lang: string) {
       monthlyIncome: "Revenu Mensuel",
       totalExpenses: "Dépenses Totales",
       savings: "Épargne",
-      currentBalance: "Solde Actuel"
+      currentBalance: "Solde Actuel",
+      monthlyTrend: "Tendance mensuelle",
+      incomeVsExpenses6m: "Revenus vs Dépenses - 6 derniers mois",
+      maxValue: "max"
     }
   } as const;
   return copy[lang as keyof typeof copy] || copy["pt-PT"];
@@ -242,6 +254,25 @@ function dayMonth(v: string | Date, lang = "pt-PT") {
   const d = v instanceof Date ? v : new Date(v);
   if (Number.isNaN(d.getTime())) return String(v);
   return d.toLocaleDateString(lang, { day: "2-digit", month: "short" });
+}
+
+function buildMonthlyTrendRows(rows: MonthSummaryRow[], selectedMonth: string, lang: string) {
+  const [year, month] = selectedMonth.split("-").map(Number);
+  const map = new Map(rows.map((r) => [r.month, { income: Number(r.income || 0), expense: Number(r.expense || 0) }]));
+  const out: Array<{ label: string; income: number; expense: number }> = [];
+
+  for (let i = 5; i >= 0; i -= 1) {
+    const d = new Date(year, month - 1 - i, 1);
+    const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const data = map.get(m) || { income: 0, expense: 0 };
+    out.push({
+      label: d.toLocaleDateString(lang, { month: "short" }),
+      income: data.income,
+      expense: data.expense
+    });
+  }
+
+  return out;
 }
 
 function smoothLinePath(data: number[], w: number, h: number) {
@@ -713,8 +744,11 @@ export default async function DashboardPage({
   );
   const initials = user.email.slice(0, 2).toUpperCase();
 
-  const sparkSpend = smoothLinePath(expenseSeries.slice(-8), 180, 40);
-  const sparkIncome = smoothLinePath(incomeSeries.slice(-8), 180, 40);
+  const monthlyTrendRows = buildMonthlyTrendRows(summaryRows, selectedMonth, lang);
+  const monthlyTrendMax = Math.max(
+    1,
+    ...monthlyTrendRows.flatMap((item) => [item.income, item.expense])
+  );
   const bigIncome = smoothLinePath(incomeSeries.slice(-12), 620, 220);
   const bigExpense = smoothLinePath(expenseSeries.slice(-12), 620, 220);
 
@@ -830,12 +864,37 @@ export default async function DashboardPage({
               </p>
             </article>
 
-            <article className="card card-spending-spark">
-              <p className="card-label">{t.spendings}</p>
-              <p className="card-num expense-number">{formatMoney(expense, lang, currency)}</p>
-              <svg className="spark" viewBox="0 0 180 40" preserveAspectRatio="none">
-                <path d={sparkSpend} />
-              </svg>
+            <article className="card card-monthly-trend">
+              <p className="card-label">{t.monthlyTrend}</p>
+              <p className="muted">{t.incomeVsExpenses6m}</p>
+              <div className="trend-bars-wrap">
+                {monthlyTrendRows.map((row) => {
+                  const incomeH = Math.max(8, (row.income / monthlyTrendMax) * 100);
+                  const expenseH = Math.max(8, (row.expense / monthlyTrendMax) * 100);
+                  return (
+                    <div key={row.label} className="trend-col">
+                      <div className="trend-pair">
+                        <span className="trend-bar income" style={{ height: `${incomeH}%` }} />
+                        <span className="trend-bar expense" style={{ height: `${expenseH}%` }} />
+                      </div>
+                      <span className="trend-label">{row.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="trend-footer">
+                <div className="trend-legend">
+                  <span className="dot income" />
+                  <span>{t.income}</span>
+                </div>
+                <div className="trend-legend">
+                  <span className="dot expense" />
+                  <span>{t.totalExpenses}</span>
+                </div>
+                <span className="trend-max">
+                  {t.maxValue} {formatMoney(monthlyTrendMax, lang, currency)}
+                </span>
+              </div>
             </article>
 
             <article className="card card-spending-list">
@@ -894,14 +953,6 @@ export default async function DashboardPage({
                   );
                 })}
               </div>
-            </article>
-
-            <article className="card card-income-spark">
-              <p className="card-label">{t.income}</p>
-              <p className="card-num income-number">{formatMoney(income, lang, currency)}</p>
-              <svg className="spark orange" viewBox="0 0 180 40" preserveAspectRatio="none">
-                <path d={sparkIncome} />
-              </svg>
             </article>
 
             <article className="card notification card-notice">
