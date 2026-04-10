@@ -49,7 +49,7 @@ export function SubscriptionAddForm() {
     <form className="sub-form" onSubmit={onSubmit}>
       <input
         type="text"
-        placeholder="Netflix"
+        placeholder="Service name"
         value={service}
         onChange={(e) => setService(e.target.value)}
         required
@@ -70,4 +70,3 @@ export function SubscriptionAddForm() {
     </form>
   );
 }
-

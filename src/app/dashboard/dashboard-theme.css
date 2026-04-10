@@ -346,6 +346,9 @@
   padding: 0;
   display: grid;
   gap: 10px;
+  max-height: 260px;
+  overflow: auto;
+  padding-right: 4px;
 }
 
 .list-simple li,
@@ -392,8 +395,8 @@
 }
 
 .sub-logo img {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
   object-fit: contain;
   display: block;
 }
@@ -406,7 +409,7 @@
 .sub-form {
   margin-top: 10px;
   display: grid;
-  grid-template-columns: 1fr 92px auto;
+  grid-template-columns: 1fr 100px auto;
   gap: 8px;
   align-items: center;
 }
