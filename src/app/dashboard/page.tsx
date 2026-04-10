@@ -140,19 +140,6 @@ function iconByCategory(name: string) {
   return "dot";
 }
 
-function breakdownIcon(category: string) {
-  const k = categoryKey(category);
-  if (/(housing|habita|rent|mortgage|home|house|utilities|bills)/i.test(k)) return "🏠";
-  if (/(transport|car|fuel|uber|parking|trip)/i.test(k)) return "🚗";
-  if (/(food|dining|restaurant|comida)/i.test(k)) return "🍽️";
-  if (/(shopping|store|compras)/i.test(k)) return "🛍️";
-  if (/(health|saude|doctor|pharmacy)/i.test(k)) return "❤️";
-  if (/(pets|animal|dog|cat|vet)/i.test(k)) return "🐾";
-  if (/(entertainment|movie|fun|games)/i.test(k)) return "🎬";
-  if (/(personal|pessoal)/i.test(k)) return "👤";
-  return "•";
-}
-
 function Icon({ kind }: { kind: string }) {
   if (kind === "home") {
     return (
@@ -677,8 +664,15 @@ export default async function DashboardPage({
                       <li key={row.category}>
                         <div className="break-label-row">
                           <span className="break-name">
-                            <span className="break-emoji" aria-hidden="true">
-                              {breakdownIcon(row.category)}
+                            <span
+                              className="icon-badge break-badge"
+                              style={{
+                                backgroundColor: `${color}20`,
+                                color
+                              }}
+                              aria-hidden="true"
+                            >
+                              <Icon kind={iconByCategory(row.category)} />
                             </span>
                             <span>{row.category}</span>
                           </span>

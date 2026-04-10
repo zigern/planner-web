@@ -481,11 +481,15 @@
   gap: 8px;
 }
 
-.break-emoji {
-  width: 20px;
-  text-align: center;
-  font-size: 15px;
-  line-height: 1;
+.break-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+}
+
+.break-badge svg {
+  width: 13px;
+  height: 13px;
 }
 
 .break-track {
