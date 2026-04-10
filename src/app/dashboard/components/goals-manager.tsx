@@ -15,6 +15,8 @@ type GoalItem = {
 type Dict = {
   createTitle: string;
   listTitle: string;
+  templateTitle: string;
+  templateHint: string;
   name: string;
   target: string;
   saved: string;
@@ -42,6 +44,8 @@ const textByLang: Record<string, Dict> = {
   "pt-PT": {
     createTitle: "Criar objetivo",
     listTitle: "Metas de poupança",
+    templateTitle: "Templates de metas",
+    templateHint: "Seleciona uma meta comum para pré-preencher os campos.",
     name: "Nome",
     target: "Objetivo",
     saved: "Poupado",
@@ -67,6 +71,8 @@ const textByLang: Record<string, Dict> = {
   "en-US": {
     createTitle: "Create goal",
     listTitle: "Savings goals",
+    templateTitle: "Goal templates",
+    templateHint: "Select a common goal to prefill fields.",
     name: "Name",
     target: "Target",
     saved: "Saved",
@@ -90,6 +96,50 @@ const textByLang: Record<string, Dict> = {
     completed: "Completed"
   }
 };
+
+type GoalTemplate = {
+  id: string;
+  namePt: string;
+  nameEn: string;
+  targetAmount: number;
+  savedAmount: number;
+  monthsToDeadline: number;
+};
+
+const goalTemplates: GoalTemplate[] = [
+  {
+    id: "emergency",
+    namePt: "Fundo de emergência",
+    nameEn: "Emergency fund",
+    targetAmount: 3000,
+    savedAmount: 0,
+    monthsToDeadline: 12
+  },
+  {
+    id: "travel",
+    namePt: "Viagem",
+    nameEn: "Travel",
+    targetAmount: 1500,
+    savedAmount: 0,
+    monthsToDeadline: 8
+  },
+  {
+    id: "car",
+    namePt: "Entrada do carro",
+    nameEn: "Car down payment",
+    targetAmount: 5000,
+    savedAmount: 0,
+    monthsToDeadline: 18
+  },
+  {
+    id: "house",
+    namePt: "Entrada da casa",
+    nameEn: "Home down payment",
+    targetAmount: 20000,
+    savedAmount: 0,
+    monthsToDeadline: 36
+  }
+];
 
 function formatMoney(value: number, lang: string, currency: string) {
   return new Intl.NumberFormat(lang, {
@@ -125,6 +175,17 @@ export function GoalsManager({
   const [loading, setLoading] = useState(false);
   const [savingId, setSavingId] = useState<number | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  function applyTemplate(template: GoalTemplate) {
+    const date = new Date();
+    date.setMonth(date.getMonth() + template.monthsToDeadline);
+    const nextDeadline = date.toISOString().slice(0, 10);
+    setName(lang === "pt-PT" ? template.namePt : template.nameEn);
+    setTargetAmount(template.targetAmount.toString());
+    setSavedAmount(template.savedAmount.toString());
+    setDeadline(nextDeadline);
+    setMessage(null);
+  }
 
   async function createGoal(e: React.FormEvent) {
     e.preventDefault();
@@ -205,6 +266,17 @@ export function GoalsManager({
         <div className="panel-head">
           <h3>{t.createTitle}</h3>
         </div>
+        <div className="goal-templates">
+          <p className="goal-templates-title">{t.templateTitle}</p>
+          <p className="goal-templates-hint">{t.templateHint}</p>
+          <div className="goal-template-list">
+            {goalTemplates.map((template) => (
+              <button key={template.id} type="button" className="goal-template-btn" onClick={() => applyTemplate(template)}>
+                {lang === "pt-PT" ? template.namePt : template.nameEn}
+              </button>
+            ))}
+          </div>
+        </div>
         <form className="recurring-form" onSubmit={createGoal}>
           <label className="q-field">
             <span>{t.name}</span>
@@ -280,6 +352,12 @@ export function GoalsManager({
                     <small>
                       {t.progress}: {pct}%
                     </small>
+                    <div className="goal-milestones" aria-hidden="true">
+                      <span className={pct >= 25 ? "done" : ""}>25%</span>
+                      <span className={pct >= 50 ? "done" : ""}>50%</span>
+                      <span className={pct >= 75 ? "done" : ""}>75%</span>
+                      <span className={pct >= 100 ? "done" : ""}>100%</span>
+                    </div>
                   </div>
 
                   <div className="goals-actions-row">

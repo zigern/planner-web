@@ -958,6 +958,49 @@
   gap: 12px;
 }
 
+.goal-templates {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.goal-templates-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #33333c;
+}
+
+.goal-templates-hint {
+  margin: 4px 0 8px 0;
+  font-size: 12px;
+  color: #70707a;
+}
+
+.goal-template-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.goal-template-btn {
+  height: 30px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: #2a2a31;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.goal-template-btn:hover {
+  background: #f0f0f2;
+}
+
 .goals-list-panel {
   display: grid;
   grid-template-rows: auto 1fr;
@@ -1003,6 +1046,20 @@
   grid-template-columns: 1fr auto;
   gap: 8px;
   align-items: end;
+}
+
+.goal-milestones {
+  margin-top: 4px;
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  color: #8b8b92;
+  font-size: 11px;
+}
+
+.goal-milestones span.done {
+  color: #179559;
+  font-weight: 700;
 }
 
 .wealth-metrics {
