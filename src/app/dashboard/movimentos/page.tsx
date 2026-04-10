@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "../components/logout-button";
-import { QuickAddForm } from "../components/quick-add-form";
+import { MovementEntrySwitcher } from "../components/movement-entry-switcher";
 import { ViewControls } from "../components/view-controls";
 import { ActivityDeleteButton } from "../components/activity-delete-button";
 import { DashboardSidebar } from "../components/sidebar-nav";
@@ -176,7 +175,7 @@ export default async function MovimentosPage({
               <div className="panel-head">
                 <h3>{text.formTitle}</h3>
               </div>
-              <QuickAddForm lang={lang} />
+              <MovementEntrySwitcher lang={lang} />
             </article>
 
             <article className="panel activity-panel">
