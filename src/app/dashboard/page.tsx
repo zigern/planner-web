@@ -1,17 +1,19 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "./components/logout-button";
-import { QuickAddForm } from "./components/quick-add-form";
-import { ViewControls } from "./components/view-controls";
 import "./dashboard-theme.css";
 
 type TotalsRow = { income: string | null; expense: string | null };
 type MonthSummaryRow = { month: string; income: string; expense: string };
-type CategoryRow = { category: string; total: string };
-type BudgetAlertRow = { category: string; budget_amount: string; spent: string };
-type SubRow = { id: number; service: string; cost: string; renewal_date: string | Date | null };
+type TxRow = {
+  id: number;
+  type: "income" | "expense";
+  amount: string;
+  category: string;
+  description: string | null;
+  transaction_date: string | Date;
+};
 type AssetRow = { asset_type: string; value: string };
 type DebtRow = { total_owed: string; amount_paid: string };
 
@@ -39,23 +41,9 @@ function formatMoney(value: number, lang: string, currency: string) {
   return new Intl.NumberFormat(lang, {
     style: "currency",
     currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value);
-}
-
-function formatMoneySmall(value: number, lang: string, currency: string) {
-  return new Intl.NumberFormat(lang, {
-    style: "currency",
-    currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(value);
-}
-
-function percentChange(current: number, previous: number) {
-  if (previous === 0) return 0;
-  return ((current - previous) / Math.abs(previous)) * 100;
 }
 
 function smoothLinePath(data: number[], w: number, h: number) {
@@ -67,7 +55,7 @@ function smoothLinePath(data: number[], w: number, h: number) {
 
   const points = data.map((value, index) => {
     const x = data.length === 1 ? w / 2 : index * step;
-    const y = h - ((value - min) / range) * (h - 14) - 8;
+    const y = h - ((value - min) / range) * (h - 16) - 8;
     return { x, y };
   });
 
@@ -84,10 +72,8 @@ function smoothLinePath(data: number[], w: number, h: number) {
     const cp1y = p1.y + (p2.y - p0.y) / 6;
     const cp2x = p2.x - (p3.x - p1.x) / 6;
     const cp2y = p2.y - (p3.y - p1.y) / 6;
-
     d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
   }
-
   return d;
 }
 
@@ -95,113 +81,40 @@ function buildMonthlySeries(rows: MonthSummaryRow[], selectedMonth: string, leng
   const [year, month] = selectedMonth.split("-").map(Number);
   const map = new Map(rows.map((r) => [r.month, Number(r[key] || 0)]));
   const out: number[] = [];
-
   for (let i = length - 1; i >= 0; i -= 1) {
     const d = new Date(year, month - 1 - i, 1);
     const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     out.push(map.get(m) ?? 0);
   }
-
   return out;
 }
 
 function buildMonthLabels(selectedMonth: string, length: number, lang: string) {
   const [year, month] = selectedMonth.split("-").map(Number);
   const out: string[] = [];
-
   for (let i = length - 1; i >= 0; i -= 1) {
     const d = new Date(year, month - 1 - i, 1);
     out.push(d.toLocaleDateString(lang, { month: "short" }));
   }
-
   return out;
 }
 
-function dayText(v: string | Date | null, lang: string) {
-  if (!v) return "—";
+function percent(current: number, previous: number) {
+  if (previous === 0) return 0;
+  return ((current - previous) / Math.abs(previous)) * 100;
+}
+
+function formatDate(v: string | Date, lang: string) {
   const d = v instanceof Date ? v : new Date(v);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString(lang, { day: "numeric", month: "short", year: "numeric" });
+  return d.toLocaleDateString(lang, { day: "2-digit", month: "short" });
 }
 
-function categoryKey(name: string) {
-  return name.trim().toLowerCase();
+function formatTime(v: string | Date, lang: string) {
+  const d = v instanceof Date ? v : new Date(v);
+  if (Number.isNaN(d.getTime())) return "--:--";
+  return d.toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
 }
-
-function iconByCategory(name: string) {
-  const k = categoryKey(name);
-  if (/(housing|habita|rent|mortgage|home|house|utilities|bills)/i.test(k)) return "home";
-  if (/(transport|car|fuel|uber|parking|trip)/i.test(k)) return "car";
-  if (/(food|dining|restaurant|comida)/i.test(k)) return "food";
-  if (/(shopping|store|compras)/i.test(k)) return "bag";
-  if (/(health|saude|doctor|pharmacy)/i.test(k)) return "plus";
-  if (/(pets|animal|dog|cat|vet)/i.test(k)) return "paw";
-  if (/(entertainment|movie|fun|games)/i.test(k)) return "play";
-  return "dot";
-}
-
-function Icon({ kind }: { kind: string }) {
-  if (kind === "home") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 11.5 12 5l8 6.5V20h-5v-5h-6v5H4z" fill="currentColor" />
-      </svg>
-    );
-  }
-  if (kind === "car") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M5 13 7.5 8h9L19 13v6h-2a2 2 0 0 1-4 0h-2a2 2 0 0 1-4 0H5z" fill="currentColor" />
-      </svg>
-    );
-  }
-  if (kind === "food") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M6 3h2v8a2 2 0 0 1-2 2zM10 3h2v8a2 2 0 0 1-2 2zM17 3h2v18h-2z" fill="currentColor" />
-      </svg>
-    );
-  }
-  if (kind === "bag") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M6 8h12l-1 11H7z" fill="currentColor" />
-        <path d="M9 8V6a3 3 0 1 1 6 0v2" stroke="currentColor" strokeWidth="2" fill="none" />
-      </svg>
-    );
-  }
-  if (kind === "plus") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6z" fill="currentColor" />
-      </svg>
-    );
-  }
-  if (kind === "paw") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="7" cy="8" r="2" fill="currentColor" />
-        <circle cx="12" cy="6.8" r="2" fill="currentColor" />
-        <circle cx="17" cy="8" r="2" fill="currentColor" />
-        <path d="M6 16a6 4.6 0 0 1 12 0c0 2.2-2.2 3.6-6 3.6S6 18.2 6 16Z" fill="currentColor" />
-      </svg>
-    );
-  }
-  if (kind === "play") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M8 6v12l10-6z" fill="currentColor" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="6" fill="currentColor" />
-    </svg>
-  );
-}
-
-const accent = ["#46d369", "#f0a474", "#5f89ff", "#f15eaa", "#b07cff", "#ff6b6b", "#45b4ff", "#9bd664"];
 
 async function safeQueryRows<T>(db: ReturnType<typeof getDb>, sql: string, params: unknown[]): Promise<T[]> {
   try {
@@ -271,27 +184,25 @@ export default async function DashboardPage({
     [user.userId]
   );
 
-  const expenseCategories = await safeQueryRows<CategoryRow>(
+  const txRows = await safeQueryRows<TxRow>(
+    db,
+    `SELECT id, type, amount, category, description, transaction_date
+     FROM transactions
+     WHERE user_id = ?
+     ORDER BY transaction_date DESC, id DESC
+     LIMIT 5`,
+    [user.userId]
+  );
+
+  const expenseCategories = await safeQueryRows<{ category: string; total: string }>(
     db,
     `SELECT category, SUM(amount) AS total
      FROM transactions
-     WHERE user_id = ?
-       AND type = 'expense'
-       AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
+     WHERE user_id = ? AND type = 'expense' AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
      GROUP BY category
      ORDER BY total DESC
-     LIMIT 6`,
+     LIMIT 5`,
     [user.userId, selectedMonth]
-  );
-
-  const subsRows = await safeQueryRows<SubRow>(
-    db,
-    `SELECT id, service, cost, renewal_date
-     FROM subscriptions
-     WHERE user_id = ? AND status = 'active'
-     ORDER BY cost DESC
-     LIMIT 3`,
-    [user.userId]
   );
 
   const assetRows = await safeQueryRows<AssetRow>(
@@ -304,388 +215,196 @@ export default async function DashboardPage({
     user.userId
   ]);
 
-  const budgetRows = await safeQueryRows<BudgetAlertRow>(
-    db,
-    `SELECT b.category, b.budget_amount, COALESCE(SUM(t.amount), 0) as spent
-      FROM monthly_budgets b
-      LEFT JOIN transactions t
-        ON t.user_id = b.user_id
-       AND t.type = 'expense'
-       AND DATE_FORMAT(t.transaction_date, '%Y-%m') = b.budget_month
-       AND t.category = b.category
-      WHERE b.user_id = ? AND b.budget_month = ?
-      GROUP BY b.category, b.budget_amount
-      ORDER BY spent DESC
-      LIMIT 4`,
-    [user.userId, selectedMonth]
-  );
-
   const totals = totalsRows[0] ?? { income: "0", expense: "0" };
   const income = Number(totals.income || 0);
   const expense = Number(totals.expense || 0);
   const netBalance = income - expense;
 
   const [year, month] = selectedMonth.split("-").map(Number);
-  const previousDate = new Date(year, month - 2, 1);
-  const previousMonthIso = `${previousDate.getFullYear()}-${String(previousDate.getMonth() + 1).padStart(2, "0")}`;
-  const monthMap = new Map(summaryRows.map((r) => [r.month, r]));
-  const prev = monthMap.get(previousMonthIso);
+  const prevDate = new Date(year, month - 2, 1);
+  const prevIso = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}`;
+  const summaryMap = new Map(summaryRows.map((r) => [r.month, r]));
+  const prev = summaryMap.get(prevIso);
   const prevIncome = Number(prev?.income || 0);
   const prevExpense = Number(prev?.expense || 0);
-  const prevBalance = prevIncome - prevExpense;
 
-  const incomeDelta = percentChange(income, prevIncome);
-  const expenseDelta = percentChange(expense, prevExpense);
-  const netDelta = percentChange(netBalance, prevBalance);
-
-  const savingsRatio = income > 0 ? (Math.max(netBalance, 0) / income) * 100 : 0;
-  const burnRate = income > 0 ? (expense / income) * 100 : 0;
+  const incomePct = percent(income, prevIncome);
+  const expensePct = percent(expense, prevExpense);
 
   const assetsTotal = assetRows.reduce((sum, row) => sum + Number(row.value || 0), 0);
   const liabilitiesTotal = debtRows.reduce(
     (sum, row) => sum + Math.max(0, Number(row.total_owed || 0) - Number(row.amount_paid || 0)),
     0
   );
-  const netWorth = assetsTotal - liabilitiesTotal + netBalance;
-  const remainingBalance = Math.max(netBalance, 0);
+  const savings = Math.max(0, netBalance);
+  const investments = Math.max(0, assetsTotal);
+  const totalBalance = netBalance + assetsTotal - liabilitiesTotal;
 
-  const incomeSeries = buildMonthlySeries(summaryRows, selectedMonth, 12, "income");
-  const expenseSeries = buildMonthlySeries(summaryRows, selectedMonth, 12, "expense");
-  const labels = buildMonthLabels(selectedMonth, 12, lang);
-  const maxY = Math.max(1, ...incomeSeries, ...expenseSeries);
+  const lineIncome = buildMonthlySeries(summaryRows, selectedMonth, 12, "income");
+  const lineExpense = buildMonthlySeries(summaryRows, selectedMonth, 12, "expense");
+  const accountBalanceSeries = lineIncome.map((v, i) => v - lineExpense[i]);
+  const maxGraph = Math.max(1, ...accountBalanceSeries, ...lineIncome, ...lineExpense);
+  const path = smoothLinePath(accountBalanceSeries, 760, 220);
+  const monthLabels = buildMonthLabels(selectedMonth, 12, lang);
+  const centerIndex = Math.floor(accountBalanceSeries.length / 2);
+  const centerValue = accountBalanceSeries[centerIndex] ?? 0;
 
-  const pathIncome = smoothLinePath(incomeSeries, 760, 240);
-  const pathExpense = smoothLinePath(expenseSeries, 760, 240);
-  const areaIncome = `${pathIncome} L 760 240 L 0 240 Z`;
-  const areaExpense = `${pathExpense} L 760 240 L 0 240 Z`;
-
-  const totalSpent = Math.max(1, expenseCategories.reduce((sum, row) => sum + Number(row.total || 0), 0));
-  const thisMonthDay = new Date().getDate();
-  const overSpending = expenseCategories.slice(0, 3).map((row) => {
-    const current = Number(row.total || 0);
-    const weeklyIncrease = Math.round((current / Math.max(1, thisMonthDay)) * 7 * 0.14);
-    return {
-      category: row.category,
-      pct: Math.max(8, Math.min(68, Math.round((weeklyIncrease / Math.max(1, current)) * 100))),
-      amount: weeklyIncrease
-    };
-  });
-
-  const budgetAlerts = budgetRows
-    .map((row) => {
-      const budget = Number(row.budget_amount || 0);
-      const spent = Number(row.spent || 0);
-      const left = Math.max(0, budget - spent);
-      const pct = budget > 0 ? Math.round((spent / budget) * 100) : 0;
-      return { category: row.category, left, pct };
-    })
-    .filter((row) => row.pct >= 70)
-    .sort((a, b) => b.pct - a.pct)
-    .slice(0, 3);
+  const spentTotal = Math.max(1, expenseCategories.reduce((sum, row) => sum + Number(row.total || 0), 0));
+  const portfolio = assetRows.slice(0, 4);
+  const portfolioGain = portfolio.reduce((sum, row) => sum + Number(row.value || 0), 0) * 0.07;
 
   const name = user.email.split("@")[0];
-  const initials = name.slice(0, 2).toUpperCase();
 
   return (
-    <div className="casha-wrap">
-      <div className="casha-shell">
-        <div className="app-top">
-          <div className="app-brand">
-            <div className="logo-box">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M5 6h14v2H5zm0 5h10v2H5zm0 5h14v2H5z" fill="currentColor" />
-              </svg>
-            </div>
-            <span>Casha</span>
-          </div>
-
-          <nav className="main-nav">
-            <a className="nav-item active" href="#">
-              Dashboard
+    <div className="wwe-wrap">
+      <div className="wwe-shell">
+        <aside className="wwe-sidebar">
+          <div className="wwe-brand">wwealty</div>
+          <nav className="wwe-menu">
+            <a className="active" href="#">
+              Overview
             </a>
-            <a className="nav-item" href="#">
-              Analytics
-            </a>
-            <a className="nav-item" href="#">
-              Wallet
-            </a>
-            <a className="nav-item" href="#">
-              Goals
-            </a>
-            <a className="nav-item" href="#">
-              Activity
-            </a>
+            <a href="#">Budgets</a>
+            <a href="#">Expenses</a>
+            <a href="#">Investments</a>
+            <a href="#">Reports</a>
+            <a href="#">Settings</a>
           </nav>
-
-          <div className="top-actions">
-            <div className="search-box">Search</div>
-            <ViewControls lang={lang} currency={currency} />
-            <div className="avatar-mini">{initials}</div>
-            <LogoutButton className="logout-light" label="Logout" />
+          <div className="wwe-help">
+            <strong>Have a question?</strong>
+            <p>Send us a message and we will get back to you in no time.</p>
+            <button type="button">Contact us</button>
           </div>
-        </div>
+          <LogoutButton className="wwe-logout" label="Log out" />
+        </aside>
 
-        <main className="dash-main">
-          <section className="greeting-row">
+        <main className="wwe-main">
+          <header className="wwe-top">
             <div>
-              <h1>Good evening, {name}👋</h1>
-              <p>Your finances are looking healthy this month.</p>
+              <h1>Welcome back, {name}</h1>
+              <p>Here’s an overview of all of your balances.</p>
             </div>
-            <div className="cta-row">
-              <a href="#quick-add" className="btn btn-dark">
-                Add Expense
-              </a>
-              <a href="#quick-add" className="btn">
-                Add Income
-              </a>
-              <Link href={`/dashboard/spreadsheet?month=${selectedMonth}&lang=${lang}&currency=${currency}`} className="btn">
-                More
-              </Link>
+            <div className="wwe-top-right">
+              <div className="wwe-icon-btn">⌕</div>
+              <div className="wwe-icon-btn">◌</div>
+              <div className="wwe-avatar">{name.slice(0, 2).toUpperCase()}</div>
             </div>
-          </section>
+          </header>
 
-          <section className="metrics-grid">
-            <article className="panel panel-net-balance">
-              <div className="panel-head">
-                <h3>Net Balance</h3>
-                <span className="safe-pill">SAFE</span>
-              </div>
-              <p className="big-number">
-                {netBalance >= 0 ? "+" : "-"}
-                {formatMoney(Math.abs(netBalance), lang, currency)}
-              </p>
-              <p className={`delta ${netDelta >= 0 ? "up" : "down"}`}>
-                {netDelta >= 0 ? "↑" : "↓"}
-                {Math.abs(netDelta).toFixed(1)}% vs last month
-              </p>
-              <div className="hr" />
-              <div className="burn-row">
-                <span>Burn Rate</span>
-                <span>{Math.round(burnRate)}%</span>
-              </div>
-              <div className="burn-track">
-                <div style={{ width: `${Math.min(100, burnRate)}%` }} />
-              </div>
-              <p className="sub-copy">You are on track to grow your savings this month.</p>
-            </article>
-
-            <article className="panel">
-              <div className="panel-head">
-                <h3>Income</h3>
-              </div>
-              <p className="mid-number">{formatMoney(income, lang, currency)}</p>
-              <p className={`delta ${incomeDelta >= 0 ? "up" : "down"}`}>
-                {incomeDelta >= 0 ? "↑" : "↓"}
-                {Math.abs(incomeDelta).toFixed(1)}% vs last month
-              </p>
-            </article>
-
-            <article className="panel">
-              <div className="panel-head">
-                <h3>Expense</h3>
-              </div>
-              <p className="mid-number">{formatMoney(expense, lang, currency)}</p>
-              <p className={`delta ${expenseDelta <= 0 ? "up" : "down"}`}>
-                {expenseDelta <= 0 ? "↑" : "↓"}
-                {Math.abs(expenseDelta).toFixed(1)}% vs last month
-              </p>
-            </article>
-
-            <article className="panel">
-              <div className="panel-head">
-                <h3>Savings Ratio</h3>
-              </div>
-              <p className="mid-number">{Math.max(0, savingsRatio).toFixed(0)}%</p>
-              <p className="delta up">↑{Math.max(0, netDelta).toFixed(1)}% vs last month</p>
-            </article>
-
-            <article className="panel">
-              <div className="panel-head">
-                <h3>Remaining Balance</h3>
-              </div>
-              <p className="mid-number">{formatMoney(remainingBalance, lang, currency)}</p>
-              <p className="sub-copy">Net Worth: {formatMoney(netWorth, lang, currency)}</p>
-            </article>
-          </section>
-
-          <section className="insight-grid">
-            <article className="panel">
-              <div className="panel-head">
-                <h3>Overspending</h3>
-              </div>
-              <ul className="list-simple">
-                {overSpending.length ? (
-                  overSpending.map((item, i) => (
-                    <li key={`${item.category}-${i}`}>
-                      <span
-                        className="icon-badge"
-                        style={{ backgroundColor: `${accent[i % accent.length]}20`, color: accent[i % accent.length] }}
-                      >
-                        <Icon kind={iconByCategory(item.category)} />
-                      </span>
-                      <div>
-                        <b>{item.category}</b>
-                        <p>
-                          increased <strong>{item.pct}%</strong> this week. You spent{" "}
-                          <strong>{formatMoneySmall(item.amount, lang, currency)}</strong> more.
-                        </p>
-                      </div>
-                    </li>
-                  ))
-                ) : (
-                  <li>
-                    <div>
-                      <b>No overspending detected</b>
-                    </div>
-                  </li>
-                )}
-              </ul>
-            </article>
-
-            <article className="panel">
-              <div className="panel-head">
-                <h3>Subscription</h3>
-              </div>
-              <ul className="list-money">
-                {subsRows.length ? (
-                  subsRows.map((sub, idx) => (
-                    <li key={sub.id}>
-                      <span
-                        className="icon-badge"
-                        style={{ backgroundColor: `${accent[idx % accent.length]}20`, color: accent[idx % accent.length] }}
-                      >
-                        <Icon kind="dot" />
-                      </span>
-                      <div>
-                        <b>{sub.service}</b>
-                        <p>Renews on {dayText(sub.renewal_date, lang)}</p>
-                      </div>
-                      <strong>{formatMoneySmall(Number(sub.cost || 0), lang, currency)}</strong>
-                    </li>
-                  ))
-                ) : (
-                  <li>
-                    <div>
-                      <b>No active subscriptions</b>
-                    </div>
-                  </li>
-                )}
-              </ul>
-            </article>
-
-            <article className="panel">
-              <div className="panel-head">
-                <h3>Budget Almost Exceeded</h3>
-              </div>
-              <ul className="list-simple">
-                {budgetAlerts.length ? (
-                  budgetAlerts.map((alert, i) => (
-                    <li key={`${alert.category}-${i}`}>
-                      <span
-                        className="icon-badge"
-                        style={{
-                          backgroundColor: `${accent[(i + 3) % accent.length]}20`,
-                          color: accent[(i + 3) % accent.length]
-                        }}
-                      >
-                        <Icon kind={iconByCategory(alert.category)} />
-                      </span>
-                      <div>
-                        <b>
-                          {alert.category} <strong>{formatMoneySmall(alert.left, lang, currency)} left</strong>
-                        </b>
-                        <p>
-                          Budget reached <strong>{alert.pct}%</strong> usage.
-                        </p>
-                      </div>
-                    </li>
-                  ))
-                ) : (
-                  <li>
-                    <div>
-                      <b>No budget alerts this month</b>
-                    </div>
-                  </li>
-                )}
-              </ul>
-            </article>
-          </section>
-
-          <section className="bottom-grid">
-            <article className="panel panel-chart">
-              <div className="panel-head">
-                <h3>Income vs Expense Chart</h3>
-                <div className="filters">
-                  <span>All</span>
-                  <span>Last 6 months</span>
+          <section className="wwe-grid-top">
+            <article className="wwe-card wwe-card-chart">
+              <div className="wwe-card-head">
+                <h3>Account Balance</h3>
+                <div className="wwe-tabs">
+                  <span>Day</span>
+                  <span>Week</span>
+                  <span>Month</span>
+                  <span className="active">Year</span>
                 </div>
               </div>
-              <svg viewBox="0 0 760 240" preserveAspectRatio="none" className="wave-chart">
-                <defs>
-                  <linearGradient id="incomeFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#2f6be8" stopOpacity="0.35" />
-                    <stop offset="100%" stopColor="#2f6be8" stopOpacity="0.03" />
-                  </linearGradient>
-                  <linearGradient id="expenseFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#e35b4d" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="#e35b4d" stopOpacity="0.03" />
-                  </linearGradient>
-                </defs>
+
+              <svg viewBox="0 0 760 220" className="wwe-line-chart" preserveAspectRatio="none">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <line key={`h-${i}`} x1="0" x2="760" y1={i * 48} y2={i * 48} className="grid" />
+                  <line key={`h-${i}`} x1="0" x2="760" y1={i * 44} y2={i * 44} className="wwe-grid-line" />
                 ))}
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <line key={`v-${i}`} y1="0" y2="240" x1={i * (760 / 11)} x2={i * (760 / 11)} className="grid" />
-                ))}
-                <path d={areaIncome} className="area-income" />
-                <path d={areaExpense} className="area-expense" />
-                <path d={pathIncome} className="line-income" />
-                <path d={pathExpense} className="line-expense" />
+                <path d={path} className="wwe-line" />
               </svg>
-              <div className="months-row">
-                {labels.map((label, i) => (
-                  <span key={`${label}-${i}`}>{label}</span>
+
+              <div className="wwe-tooltip">
+                <small>{monthLabels[centerIndex]}</small>
+                <strong>{formatMoney(centerValue, lang, currency)}</strong>
+              </div>
+
+              <div className="wwe-months">
+                {monthLabels.map((m, i) => (
+                  <span key={`${m}-${i}`}>{m}</span>
                 ))}
               </div>
-              <div className="y-max">max {formatMoney(maxY, lang, currency)}</div>
             </article>
 
-            <article className="panel">
-              <div className="panel-head">
-                <h3>Spending Breakdown</h3>
-              </div>
-              <ul className="breakdown-list">
-                {expenseCategories.length ? (
-                  expenseCategories.map((row, idx) => {
-                    const value = Number(row.total || 0);
-                    const pct = Math.round((value / totalSpent) * 100);
-                    const color = accent[idx % accent.length];
-                    return (
-                      <li key={row.category}>
-                        <div className="break-label-row">
-                          <span>{row.category}</span>
-                          <b>{formatMoneySmall(value, lang, currency)}</b>
-                        </div>
-                        <div className="break-track">
-                          <div style={{ width: `${pct}%`, backgroundColor: color }} />
-                        </div>
-                        <small>{pct}%</small>
-                      </li>
-                    );
-                  })
-                ) : (
-                  <li>No expense data for this month.</li>
-                )}
-              </ul>
-            </article>
+            <div className="wwe-kpi-col">
+              <article className="wwe-card wwe-kpi">
+                <h4>Total Balance</h4>
+                <p>{formatMoney(totalBalance, lang, currency)}</p>
+                <small className="up">+{Math.max(0, incomePct).toFixed(1)}%</small>
+              </article>
+              <article className="wwe-card wwe-kpi">
+                <h4>Main Account</h4>
+                <p>{formatMoney(netBalance, lang, currency)}</p>
+              </article>
+              <article className="wwe-card wwe-kpi">
+                <h4>Savings</h4>
+                <p>{formatMoney(savings, lang, currency)}</p>
+                <small className="up">+{Math.max(0, incomePct - expensePct).toFixed(1)}%</small>
+              </article>
+              <article className="wwe-card wwe-kpi wwe-invest-card">
+                <h4>Investments</h4>
+                <p>{formatMoney(investments, lang, currency)}</p>
+                <small className="up">+{Math.max(0, (portfolioGain / Math.max(1, investments)) * 100).toFixed(2)}%</small>
+                <div className="wwe-gauge" />
+                <div className="wwe-return">Return {formatMoney(portfolioGain, lang, currency)}</div>
+              </article>
+            </div>
           </section>
 
-          <section id="quick-add" className="quick-add-shell">
-            <article className="panel">
-              <div className="panel-head">
-                <h3>Quick Add</h3>
+          <section className="wwe-grid-bottom">
+            <article className="wwe-card wwe-table-card">
+              <div className="wwe-card-head">
+                <h3>Recent Transactions</h3>
+                <a href="#">See all</a>
               </div>
-              <QuickAddForm lang={lang} />
+              <table className="wwe-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {txRows.map((tx) => {
+                    const status = tx.type === "expense" && Number(tx.amount || 0) > maxGraph * 0.05 ? "Pending" : "Completed";
+                    return (
+                      <tr key={tx.id}>
+                        <td>{tx.description || tx.category}</td>
+                        <td>{formatDate(tx.transaction_date, lang)}</td>
+                        <td>{formatTime(tx.transaction_date, lang)}</td>
+                        <td>
+                          <span className={`wwe-status ${status === "Pending" ? "pending" : "done"}`}>{status}</span>
+                        </td>
+                        <td className={tx.type === "expense" ? "neg" : "pos"}>
+                          {tx.type === "expense" ? "-" : "+"}
+                          {formatMoney(Number(tx.amount || 0), lang, currency)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </article>
+
+            <article className="wwe-card wwe-breakdown-card">
+              <h3>Spending Breakdown</h3>
+              <ul>
+                {expenseCategories.map((row) => {
+                  const value = Number(row.total || 0);
+                  const pct = Math.round((value / spentTotal) * 100);
+                  return (
+                    <li key={row.category}>
+                      <div className="head">
+                        <span>{row.category}</span>
+                        <strong>{pct}%</strong>
+                      </div>
+                      <div className="bar">
+                        <div style={{ width: `${pct}%` }} />
+                      </div>
+                      <small>{formatMoney(value, lang, currency)}</small>
+                    </li>
+                  );
+                })}
+              </ul>
             </article>
           </section>
         </main>
