@@ -17,6 +17,8 @@ type TxRow = {
   transaction_date: string | Date;
 };
 
+type CategoryRow = { category: string };
+
 function parseMonthParam(value: string | string[] | undefined) {
   const raw = Array.isArray(value) ? value[0] : value;
   if (!raw) return new Date().toISOString().slice(0, 7);
@@ -35,6 +37,24 @@ function parseCurrencyParam(value: string | string[] | undefined) {
   if (!raw) return "USD";
   const allowed = new Set(["EUR", "USD", "GBP", "BRL"]);
   return allowed.has(raw) ? raw : "USD";
+}
+
+function parseTypeParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "all";
+  return raw === "income" || raw === "expense" ? raw : "all";
+}
+
+function parseDateParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "";
+  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : "";
+}
+
+function parseTextParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "";
+  return raw.trim().slice(0, 80);
 }
 
 function formatMoney(value: number, lang: string, currency: string) {
@@ -61,6 +81,15 @@ function getText(lang: string) {
     return {
       title: "Activity",
       subtitle: "Entradas e saídas de dinheiro",
+      filters: "Filtros",
+      search: "Pesquisar",
+      searchPlaceholder: "Categoria ou detalhe",
+      from: "De",
+      to: "Até",
+      all: "Todos",
+      apply: "Aplicar",
+      reset: "Limpar",
+      export: "Exportar CSV",
       noItems: "Sem movimentos para este mês.",
       date: "Data",
       kind: "Tipo",
@@ -78,6 +107,15 @@ function getText(lang: string) {
   return {
     title: "Activity",
     subtitle: "Money in and money out",
+    filters: "Filters",
+    search: "Search",
+    searchPlaceholder: "Category or detail",
+    from: "From",
+    to: "To",
+    all: "All",
+    apply: "Apply",
+    reset: "Clear",
+    export: "Export CSV",
     noItems: "No transactions found for this month.",
     date: "Date",
     kind: "Type",
@@ -99,6 +137,11 @@ export default async function ActivityPage({
     month?: string | string[];
     lang?: string | string[];
     currency?: string | string[];
+    type?: string | string[];
+    category?: string | string[];
+    from?: string | string[];
+    to?: string | string[];
+    q?: string | string[];
   }>;
 }) {
   if (!hasDatabaseConfig() || !process.env.AUTH_SECRET) {
@@ -119,20 +162,76 @@ export default async function ActivityPage({
   const selectedMonth = parseMonthParam(params?.month);
   const lang = parseLangParam(params?.lang);
   const currency = parseCurrencyParam(params?.currency);
+  const typeFilter = parseTypeParam(params?.type);
+  const categoryFilterRaw = parseTextParam(params?.category);
+  const categoryFilter = categoryFilterRaw || "all";
+  const fromFilter = parseDateParam(params?.from);
+  const toFilter = parseDateParam(params?.to);
+  const queryFilter = parseTextParam(params?.q);
   const text = getText(lang);
 
   const db = getDb();
+  const where: string[] = ["user_id = ?", "DATE_FORMAT(transaction_date, '%Y-%m') = ?"];
+  const values: unknown[] = [user.userId, selectedMonth];
+  if (typeFilter !== "all") {
+    where.push("type = ?");
+    values.push(typeFilter);
+  }
+  if (categoryFilter !== "all") {
+    where.push("category = ?");
+    values.push(categoryFilter);
+  }
+  if (fromFilter) {
+    where.push("DATE(transaction_date) >= ?");
+    values.push(fromFilter);
+  }
+  if (toFilter) {
+    where.push("DATE(transaction_date) <= ?");
+    values.push(toFilter);
+  }
+  if (queryFilter) {
+    where.push("(LOWER(category) LIKE ? OR LOWER(COALESCE(description, '')) LIKE ?)");
+    const q = `%${queryFilter.toLowerCase()}%`;
+    values.push(q, q);
+  }
+
   const [rows] = await db.query(
     `SELECT id, type, amount, category, description, transaction_date
      FROM transactions
+     WHERE ${where.join(" AND ")}
+     ORDER BY transaction_date DESC, id DESC
+     LIMIT 500`,
+    values
+  );
+
+  const [categoryRows] = await db.query(
+    `SELECT DISTINCT category
+     FROM transactions
      WHERE user_id = ?
        AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
-     ORDER BY transaction_date DESC, id DESC
-     LIMIT 300`,
+     ORDER BY category ASC`,
     [user.userId, selectedMonth]
   );
 
   const items = rows as TxRow[];
+  const categories = (categoryRows as CategoryRow[]).map((r) => r.category).filter(Boolean);
+  const csvHeader = [text.date, text.kind, text.category, text.detail, text.amount];
+  const csvEscape = (value: string) => `"${value.replace(/"/g, '""')}"`;
+  const csvLines = [
+    csvHeader.map(csvEscape).join(","),
+    ...items.map((tx) =>
+      [
+        formatDate(tx.transaction_date, lang),
+        tx.type === "income" ? text.income : text.expense,
+        tx.category,
+        tx.description || "",
+        `${tx.type === "income" ? "+" : "-"}${Math.abs(Number(tx.amount || 0)).toFixed(2)}`
+      ]
+        .map((v) => csvEscape(String(v)))
+        .join(",")
+    )
+  ];
+  const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(csvLines.join("\n"))}`;
   const name = user.email.split("@")[0];
   const initials = name.slice(0, 2).toUpperCase();
 
@@ -167,6 +266,66 @@ export default async function ActivityPage({
           </section>
 
           <section className="panel activity-panel">
+            <div className="activity-toolbar">
+              <form method="get" className="activity-filters">
+                <input type="hidden" name="month" value={selectedMonth} />
+                <input type="hidden" name="lang" value={lang} />
+                <input type="hidden" name="currency" value={currency} />
+
+                <label className="q-field">
+                  <span>{text.kind}</span>
+                  <select name="type" defaultValue={typeFilter}>
+                    <option value="all">{text.all}</option>
+                    <option value="income">{text.income}</option>
+                    <option value="expense">{text.expense}</option>
+                  </select>
+                </label>
+
+                <label className="q-field">
+                  <span>{text.category}</span>
+                  <select name="category" defaultValue={categoryFilter}>
+                    <option value="all">{text.all}</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="q-field">
+                  <span>{text.from}</span>
+                  <input type="date" name="from" defaultValue={fromFilter} />
+                </label>
+
+                <label className="q-field">
+                  <span>{text.to}</span>
+                  <input type="date" name="to" defaultValue={toFilter} />
+                </label>
+
+                <label className="q-field">
+                  <span>{text.search}</span>
+                  <input name="q" defaultValue={queryFilter} placeholder={text.searchPlaceholder} />
+                </label>
+
+                <div className="activity-filter-actions">
+                  <button type="submit" className="btn btn-dark">
+                    {text.apply}
+                  </button>
+                  <Link href={`?month=${selectedMonth}&lang=${lang}&currency=${currency}`} className="btn">
+                    {text.reset}
+                  </Link>
+                </div>
+              </form>
+              <a
+                href={csvHref}
+                download={`activity-${selectedMonth}.csv`}
+                className="btn"
+                aria-label={text.export}
+              >
+                {text.export}
+              </a>
+            </div>
             <div className="activity-table-wrap">
               <table className="activity-table">
                 <thead>
