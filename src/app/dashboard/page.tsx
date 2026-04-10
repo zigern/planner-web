@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "./components/logout-button";
 import { QuickAddForm } from "./components/quick-add-form";
+import { SubscriptionAddForm } from "./components/subscription-add-form";
 import { ViewControls } from "./components/view-controls";
 import "./dashboard-theme.css";
 
@@ -138,6 +139,47 @@ function iconByCategory(name: string) {
   if (/(pets|animal|dog|cat|vet)/i.test(k)) return "paw";
   if (/(entertainment|movie|fun|games)/i.test(k)) return "play";
   return "dot";
+}
+
+type SubscriptionVisual = {
+  logoUrl: string | null;
+  bg: string;
+  fg: string;
+  initials: string;
+};
+
+function getSubscriptionVisual(service: string): SubscriptionVisual {
+  const value = service.trim().toLowerCase();
+  const catalog: Array<{ pattern: RegExp; logoUrl: string; bg: string; fg: string }> = [
+    { pattern: /netflix/, logoUrl: "https://cdn.simpleicons.org/netflix/E50914", bg: "rgba(229,9,20,0.12)", fg: "#b50710" },
+    { pattern: /spotify/, logoUrl: "https://cdn.simpleicons.org/spotify/1DB954", bg: "rgba(29,185,84,0.14)", fg: "#14833d" },
+    { pattern: /youtube|yt premium/, logoUrl: "https://cdn.simpleicons.org/youtube/FF0000", bg: "rgba(255,0,0,0.12)", fg: "#c10000" },
+    { pattern: /disney/, logoUrl: "https://cdn.simpleicons.org/disneyplus/113CCF", bg: "rgba(17,60,207,0.12)", fg: "#113ccf" },
+    { pattern: /amazon prime|prime video/, logoUrl: "https://cdn.simpleicons.org/primevideo/1399FF", bg: "rgba(19,153,255,0.12)", fg: "#0f79c9" },
+    { pattern: /hbo|max/, logoUrl: "https://cdn.simpleicons.org/max/5252f2", bg: "rgba(82,82,242,0.12)", fg: "#4a4ad6" },
+    { pattern: /apple music|apple one|icloud/, logoUrl: "https://cdn.simpleicons.org/apple/111111", bg: "rgba(17,17,17,0.08)", fg: "#111111" },
+    { pattern: /google drive|google one/, logoUrl: "https://cdn.simpleicons.org/googledrive/4285F4", bg: "rgba(66,133,244,0.12)", fg: "#2e69c7" },
+    { pattern: /dropbox/, logoUrl: "https://cdn.simpleicons.org/dropbox/0061FF", bg: "rgba(0,97,255,0.12)", fg: "#0054de" },
+    { pattern: /notion/, logoUrl: "https://cdn.simpleicons.org/notion/000000", bg: "rgba(17,17,17,0.08)", fg: "#111111" },
+    { pattern: /adobe/, logoUrl: "https://cdn.simpleicons.org/adobe/FF0000", bg: "rgba(255,0,0,0.12)", fg: "#ca0000" },
+    { pattern: /canva/, logoUrl: "https://cdn.simpleicons.org/canva/00C4CC", bg: "rgba(0,196,204,0.12)", fg: "#0097a0" },
+    { pattern: /figma/, logoUrl: "https://cdn.simpleicons.org/figma/F24E1E", bg: "rgba(242,78,30,0.12)", fg: "#d74416" },
+    { pattern: /chatgpt|openai/, logoUrl: "https://cdn.simpleicons.org/openai/412991", bg: "rgba(65,41,145,0.12)", fg: "#412991" }
+  ];
+
+  const match = catalog.find((item) => item.pattern.test(value));
+  const initials = service
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((v) => v[0]?.toUpperCase() ?? "")
+    .join("");
+
+  if (match) {
+    return { logoUrl: match.logoUrl, bg: match.bg, fg: match.fg, initials: initials || "S" };
+  }
+
+  return { logoUrl: null, bg: "rgba(47,107,232,0.12)", fg: "#2f6be8", initials: initials || "S" };
 }
 
 function Icon({ kind }: { kind: string }) {
@@ -548,21 +590,25 @@ export default async function DashboardPage({
               </div>
               <ul className="list-money">
                 {subsRows.length ? (
-                  subsRows.map((sub, idx) => (
-                    <li key={sub.id}>
-                      <span
-                        className="icon-badge"
-                        style={{ backgroundColor: `${accent[idx % accent.length]}20`, color: accent[idx % accent.length] }}
-                      >
-                        <Icon kind="dot" />
-                      </span>
-                      <div>
-                        <b>{sub.service}</b>
-                        <p>Renews on {dayText(sub.renewal_date, lang)}</p>
-                      </div>
-                      <strong>{formatMoneySmall(Number(sub.cost || 0), lang, currency)}</strong>
-                    </li>
-                  ))
+                  subsRows.map((sub) => {
+                    const visual = getSubscriptionVisual(sub.service);
+                    return (
+                      <li key={sub.id}>
+                        <span className="icon-badge sub-logo" style={{ backgroundColor: visual.bg, color: visual.fg }}>
+                          {visual.logoUrl ? (
+                            <img src={visual.logoUrl} alt={`${sub.service} logo`} loading="lazy" />
+                          ) : (
+                            <span className="sub-logo-fallback">{visual.initials}</span>
+                          )}
+                        </span>
+                        <div>
+                          <b>{sub.service}</b>
+                          <p>Renews on {dayText(sub.renewal_date, lang)}</p>
+                        </div>
+                        <strong>{formatMoneySmall(Number(sub.cost || 0), lang, currency)}</strong>
+                      </li>
+                    );
+                  })
                 ) : (
                   <li>
                     <div>
@@ -571,6 +617,7 @@ export default async function DashboardPage({
                   </li>
                 )}
               </ul>
+              <SubscriptionAddForm />
             </article>
 
             <article className="panel">
