@@ -39,7 +39,7 @@
   height: 76px;
   border-bottom: 1px solid var(--line);
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   align-items: center;
   gap: 24px;
   padding: 0 18px;
@@ -69,10 +69,7 @@
 }
 
 .main-nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
+  display: none;
 }
 
 .nav-item {
@@ -95,6 +92,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  justify-self: end;
 }
 
 .search-box {
@@ -148,6 +146,68 @@
   padding: 18px;
   display: grid;
   gap: 14px;
+}
+
+.workspace-shell {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: calc(100vh - 76px);
+}
+
+.side-nav {
+  border-right: 1px solid var(--line);
+  background: #f7f7f9;
+  padding: 14px 10px;
+}
+
+.side-nav-label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #7e7e88;
+  font-weight: 700;
+  margin: 4px 6px 10px 6px;
+}
+
+.side-nav-items {
+  display: grid;
+  gap: 6px;
+}
+
+.side-nav-item {
+  text-decoration: none;
+  color: #50505a;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  min-height: 38px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.side-nav-item:hover {
+  background: #fff;
+  border-color: var(--line);
+}
+
+.side-nav-item.active {
+  background: #fff;
+  border-color: var(--line);
+  color: #1e1e22;
+}
+
+.side-nav-icon {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+}
+
+.side-nav-icon svg {
+  width: 16px;
+  height: 16px;
 }
 
 .greeting-row {
@@ -994,6 +1054,20 @@
   .wealth-metrics {
     grid-template-columns: 1fr;
   }
+
+  .workspace-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .side-nav {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 10px;
+  }
+
+  .side-nav-items {
+    grid-template-columns: repeat(4, minmax(120px, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
@@ -1029,5 +1103,9 @@
 
   .sub-form {
     grid-template-columns: 1fr;
+  }
+
+  .side-nav-items {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
   }
 }

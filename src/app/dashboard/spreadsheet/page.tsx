@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "../components/logout-button";
 import { ViewControls } from "../components/view-controls";
+import { DashboardSidebar } from "../components/sidebar-nav";
 import "../dashboard-theme.css";
 
 type TxRow = {
@@ -17,10 +18,6 @@ type TxRow = {
 type AssetRow = { asset_type: string; value: string };
 type MonthSummaryRow = { month: string; income: string; expense: string };
 type BillRow = { name: string; due_day: number; status: "pending" | "paid" };
-
-function monthIsoListForYear(year: number) {
-  return Array.from({ length: 12 }).map((_, i) => `${year}-${String(i + 1).padStart(2, "0")}`);
-}
 
 function parseMonthParam(value: string | string[] | undefined) {
   const raw = Array.isArray(value) ? value[0] : value;
@@ -113,8 +110,6 @@ export default async function SpreadsheetPage({
   const selectedMonth = parseMonthParam(params?.month);
   const lang = parseLangParam(params?.lang);
   const currency = parseCurrencyParam(params?.currency);
-  const selectedYear = Number(selectedMonth.slice(0, 4));
-  const monthOptions = monthIsoListForYear(selectedYear);
 
   const db = getDb();
   const txRows = await safeQueryRows<TxRow>(
@@ -165,25 +160,11 @@ export default async function SpreadsheetPage({
   );
 
   return (
-    <div className="dash-wrap">
-      <div className="dash-shell">
-        <aside className="left-nav">
-          <div className="brand-icon">{initials}</div>
-          <div className="brand-name">Other Level&apos;s</div>
-          <nav className="month-nav">
-            {monthOptions.map((m) => (
-              <Link
-                key={m}
-                href={`?month=${m}&lang=${lang}&currency=${currency}`}
-                className={`month-link ${m === selectedMonth ? "active" : ""}`}
-              >
-                {monthName(m)}
-              </Link>
-            ))}
-          </nav>
-        </aside>
-
-        <main className="main-area spreadsheet-mode">
+    <div className="casha-wrap">
+      <div className="casha-shell">
+        <div className="workspace-shell">
+          <DashboardSidebar current="spreadsheet" selectedMonth={selectedMonth} lang={lang} currency={currency} />
+          <main className="dash-main spreadsheet-mode">
           <header className="top-row">
             <div className="title-block">
               <p className="kicker">Personal Finance Tracker</p>
@@ -324,7 +305,8 @@ export default async function SpreadsheetPage({
               </div>
             </aside>
           </section>
-        </main>
+          </main>
+        </div>
       </div>
     </div>
   );

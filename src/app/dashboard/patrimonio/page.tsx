@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "../components/logout-button";
 import { ViewControls } from "../components/view-controls";
 import { WealthManager } from "../components/wealth-manager";
+import { DashboardSidebar } from "../components/sidebar-nav";
 import "../dashboard-theme.css";
 
 type AssetRow = {
@@ -127,33 +127,6 @@ export default async function PatrimonioPage({
             <span>Casha</span>
           </div>
 
-          <nav className="main-nav">
-            <Link className="nav-item" href={`/dashboard?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Dashboard
-            </Link>
-            <a className="nav-item" href="#">
-              Analytics
-            </a>
-            <Link className="nav-item" href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Movements
-            </Link>
-            <Link className="nav-item" href={`/dashboard/recorrentes?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Recurring
-            </Link>
-            <Link className="nav-item" href={`/dashboard/orcamentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Budgets
-            </Link>
-            <Link className="nav-item" href={`/dashboard/objetivos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Goals
-            </Link>
-            <Link className="nav-item active" href={`/dashboard/patrimonio?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Net Worth
-            </Link>
-            <Link className="nav-item" href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Activity
-            </Link>
-          </nav>
-
           <div className="top-actions">
             <div className="search-box">Search</div>
             <ViewControls lang={lang} currency={currency} />
@@ -161,31 +134,35 @@ export default async function PatrimonioPage({
             <LogoutButton className="logout-light" label={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
           </div>
         </div>
+        <div className="workspace-shell">
+          <DashboardSidebar current="networth" selectedMonth={selectedMonth} lang={lang} currency={currency} />
+          <main className="dash-main">
+            <section className="metrics-grid wealth-metrics">
+              <article className="panel">
+                <div className="panel-head">
+                  <h3>Total Assets</h3>
+                </div>
+                <p className="mid-number money-in">{formatMoney(assetsTotal, lang, currency)}</p>
+              </article>
+              <article className="panel">
+                <div className="panel-head">
+                  <h3>Total Liabilities</h3>
+                </div>
+                <p className="mid-number money-out">{formatMoney(liabilitiesTotal, lang, currency)}</p>
+              </article>
+              <article className="panel">
+                <div className="panel-head">
+                  <h3>Net Worth</h3>
+                </div>
+                <p className={`mid-number ${netWorth >= 0 ? "money-in" : "money-out"}`}>
+                  {formatMoney(netWorth, lang, currency)}
+                </p>
+              </article>
+            </section>
 
-        <main className="dash-main">
-          <section className="metrics-grid wealth-metrics">
-            <article className="panel">
-              <div className="panel-head">
-                <h3>Total Assets</h3>
-              </div>
-              <p className="mid-number money-in">{formatMoney(assetsTotal, lang, currency)}</p>
-            </article>
-            <article className="panel">
-              <div className="panel-head">
-                <h3>Total Liabilities</h3>
-              </div>
-              <p className="mid-number money-out">{formatMoney(liabilitiesTotal, lang, currency)}</p>
-            </article>
-            <article className="panel">
-              <div className="panel-head">
-                <h3>Net Worth</h3>
-              </div>
-              <p className={`mid-number ${netWorth >= 0 ? "money-in" : "money-out"}`}>{formatMoney(netWorth, lang, currency)}</p>
-            </article>
-          </section>
-
-          <WealthManager lang={lang} currency={currency} assets={assets} debts={debts} />
-        </main>
+            <WealthManager lang={lang} currency={currency} assets={assets} debts={debts} />
+          </main>
+        </div>
       </div>
     </div>
   );

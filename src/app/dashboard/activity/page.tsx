@@ -5,6 +5,7 @@ import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "../components/logout-button";
 import { ViewControls } from "../components/view-controls";
 import { ActivityDeleteButton } from "../components/activity-delete-button";
+import { DashboardSidebar } from "../components/sidebar-nav";
 import "../dashboard-theme.css";
 
 type TxRow = {
@@ -148,36 +149,6 @@ export default async function ActivityPage({
             <span>Casha</span>
           </div>
 
-          <nav className="main-nav">
-            <Link className="nav-item" href={`/dashboard?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Dashboard
-            </Link>
-            <a className="nav-item" href="#">
-              Analytics
-            </a>
-            <Link className="nav-item" href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Movements
-            </Link>
-            <Link className="nav-item" href={`/dashboard/recorrentes?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Recurring
-            </Link>
-            <Link className="nav-item" href={`/dashboard/orcamentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Budgets
-            </Link>
-            <Link className="nav-item" href={`/dashboard/objetivos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Goals
-            </Link>
-            <Link className="nav-item" href={`/dashboard/patrimonio?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Net Worth
-            </Link>
-            <Link
-              className="nav-item active"
-              href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}`}
-            >
-              Activity
-            </Link>
-          </nav>
-
           <div className="top-actions">
             <div className="search-box">Search</div>
             <ViewControls lang={lang} currency={currency} />
@@ -185,8 +156,9 @@ export default async function ActivityPage({
             <LogoutButton className="logout-light" label={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
           </div>
         </div>
-
-        <main className="dash-main">
+        <div className="workspace-shell">
+          <DashboardSidebar current="activity" selectedMonth={selectedMonth} lang={lang} currency={currency} />
+          <main className="dash-main">
           <section className="greeting-row">
             <div>
               <h1>{text.title}</h1>
@@ -242,7 +214,8 @@ export default async function ActivityPage({
               </table>
             </div>
           </section>
-        </main>
+          </main>
+        </div>
       </div>
     </div>
   );

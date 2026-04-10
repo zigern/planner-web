@@ -5,6 +5,7 @@ import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "./components/logout-button";
 import { SubscriptionAddForm } from "./components/subscription-add-form";
 import { ViewControls } from "./components/view-controls";
+import { DashboardSidebar } from "./components/sidebar-nav";
 import "./dashboard-theme.css";
 
 type TotalsRow = { income: string | null; expense: string | null };
@@ -452,33 +453,6 @@ export default async function DashboardPage({
             <span>Casha</span>
           </div>
 
-          <nav className="main-nav">
-            <a className="nav-item active" href="#">
-              Dashboard
-            </a>
-            <a className="nav-item" href="#">
-              Analytics
-            </a>
-            <Link className="nav-item" href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Movements
-            </Link>
-            <Link className="nav-item" href={`/dashboard/recorrentes?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Recurring
-            </Link>
-            <Link className="nav-item" href={`/dashboard/orcamentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Budgets
-            </Link>
-            <Link className="nav-item" href={`/dashboard/objetivos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Goals
-            </Link>
-            <Link className="nav-item" href={`/dashboard/patrimonio?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Net Worth
-            </Link>
-            <Link className="nav-item" href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-              Activity
-            </Link>
-          </nav>
-
           <div className="top-actions">
             <div className="search-box">Search</div>
             <ViewControls lang={lang} currency={currency} />
@@ -486,8 +460,9 @@ export default async function DashboardPage({
             <LogoutButton className="logout-light" label="Logout" />
           </div>
         </div>
-
-        <main className="dash-main">
+        <div className="workspace-shell">
+          <DashboardSidebar current="dashboard" selectedMonth={selectedMonth} lang={lang} currency={currency} />
+          <main className="dash-main">
           <section className="greeting-row">
             <div>
               <h1>Good evening, {name}👋</h1>
@@ -762,7 +737,8 @@ export default async function DashboardPage({
             </article>
           </section>
 
-        </main>
+          </main>
+        </div>
       </div>
     </div>
   );
