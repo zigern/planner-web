@@ -869,6 +869,49 @@
   gap: 12px;
 }
 
+.budget-templates {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.budget-templates-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #33333c;
+}
+
+.budget-templates-hint {
+  margin: 4px 0 8px 0;
+  font-size: 12px;
+  color: #70707a;
+}
+
+.budget-template-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.budget-template-btn {
+  height: 30px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: #2a2a31;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.budget-template-btn:hover {
+  background: #f0f0f2;
+}
+
 .budgets-list-panel {
   display: grid;
   grid-template-rows: auto 1fr;

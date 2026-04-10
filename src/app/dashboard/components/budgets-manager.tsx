@@ -15,6 +15,8 @@ const expenseCategories = ["Housing", "Personal", "Transportation", "Food", "Bil
 type Dict = {
   addTitle: string;
   listTitle: string;
+  templateTitle: string;
+  templateHint: string;
   category: string;
   amount: string;
   save: string;
@@ -40,6 +42,8 @@ const textByLang: Record<string, Dict> = {
   "pt-PT": {
     addTitle: "Definir orçamento",
     listTitle: "Acompanhamento do mês",
+    templateTitle: "Templates rápidos",
+    templateHint: "Escolhe um valor base para começar mais rápido.",
     category: "Categoria",
     amount: "Valor orçamento",
     save: "Guardar orçamento",
@@ -63,6 +67,8 @@ const textByLang: Record<string, Dict> = {
   "en-US": {
     addTitle: "Set budget",
     listTitle: "Month tracking",
+    templateTitle: "Quick templates",
+    templateHint: "Choose a starter amount for faster setup.",
     category: "Category",
     amount: "Budget amount",
     save: "Save budget",
@@ -84,6 +90,23 @@ const textByLang: Record<string, Dict> = {
     confirmRemove: "Do you want to remove this budget?"
   }
 };
+
+type BudgetTemplate = {
+  id: string;
+  category: string;
+  amount: number;
+  labelPt: string;
+  labelEn: string;
+};
+
+const budgetTemplates: BudgetTemplate[] = [
+  { id: "housing", category: "Housing", amount: 650, labelPt: "Habitação", labelEn: "Housing" },
+  { id: "food", category: "Food", amount: 350, labelPt: "Comida", labelEn: "Food" },
+  { id: "transport", category: "Transportation", amount: 180, labelPt: "Transporte", labelEn: "Transport" },
+  { id: "bills", category: "Bills", amount: 220, labelPt: "Contas", labelEn: "Bills" },
+  { id: "health", category: "Health", amount: 120, labelPt: "Saúde", labelEn: "Health" },
+  { id: "shopping", category: "Shopping", amount: 150, labelPt: "Compras", labelEn: "Shopping" }
+];
 
 function formatMoney(value: number, lang: string, currency: string) {
   return new Intl.NumberFormat(lang, {
@@ -111,6 +134,12 @@ export function BudgetsManager({
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  function applyTemplate(template: BudgetTemplate) {
+    setCategory(template.category);
+    setAmount(template.amount.toFixed(2));
+    setMessage(null);
+  }
 
   async function onSave(e: React.FormEvent) {
     e.preventDefault();
@@ -161,6 +190,17 @@ export function BudgetsManager({
       <article className="panel">
         <div className="panel-head">
           <h3>{t.addTitle}</h3>
+        </div>
+        <div className="budget-templates">
+          <p className="budget-templates-title">{t.templateTitle}</p>
+          <p className="budget-templates-hint">{t.templateHint}</p>
+          <div className="budget-template-list">
+            {budgetTemplates.map((template) => (
+              <button key={template.id} type="button" className="budget-template-btn" onClick={() => applyTemplate(template)}>
+                {lang === "pt-PT" ? template.labelPt : template.labelEn}
+              </button>
+            ))}
+          </div>
         </div>
         <form className="recurring-form" onSubmit={onSave}>
           <div className="q-grid">
