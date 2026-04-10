@@ -3,7 +3,6 @@ import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "./components/logout-button";
-import { SubscriptionAddForm } from "./components/subscription-add-form";
 import { ViewControls } from "./components/view-controls";
 import { DashboardSidebar } from "./components/sidebar-nav";
 import "./dashboard-theme.css";
@@ -585,6 +584,9 @@ export default async function DashboardPage({
             <article className="panel">
               <div className="panel-head">
                 <h3>Subscription</h3>
+                <Link className="panel-manage-link" href={`/dashboard/recorrentes?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+                  Manage
+                </Link>
               </div>
               <ul className="list-money">
                 {subsRows.length ? (
@@ -615,12 +617,14 @@ export default async function DashboardPage({
                   </li>
                 )}
               </ul>
-              <SubscriptionAddForm />
             </article>
 
             <article className="panel">
               <div className="panel-head">
                 <h3>Budget Almost Exceeded</h3>
+                <Link className="panel-manage-link" href={`/dashboard/orcamentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+                  Manage
+                </Link>
               </div>
               <ul className="list-simple">
                 {budgetAlerts.length ? (
@@ -693,6 +697,14 @@ export default async function DashboardPage({
                 ))}
               </div>
               <div className="y-max">max {formatMoney(maxY, lang, currency)}</div>
+              <div className="panel-actions-row">
+                <Link className="panel-manage-link" href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+                  Add movements
+                </Link>
+                <Link className="panel-manage-link" href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+                  View activity
+                </Link>
+              </div>
             </article>
 
             <article className="panel">

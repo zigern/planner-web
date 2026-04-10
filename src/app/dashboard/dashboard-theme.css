@@ -321,6 +321,24 @@
   font-weight: 600;
 }
 
+.panel-manage-link {
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+  color: #4b4b54;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  border-radius: 999px;
+  height: 26px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.panel-manage-link:hover {
+  background: #efefef;
+}
+
 .safe-pill {
   height: 22px;
   border-radius: 999px;
@@ -570,6 +588,13 @@
   text-align: right;
   color: var(--muted);
   font-size: 12px;
+}
+
+.panel-actions-row {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .breakdown-list {
