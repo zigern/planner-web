@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "../components/logout-button";
+import { QuickAddForm } from "../components/quick-add-form";
 import { ViewControls } from "../components/view-controls";
 import { ActivityDeleteButton } from "../components/activity-delete-button";
 import "../dashboard-theme.css";
@@ -58,8 +59,10 @@ function formatDate(value: string | Date, lang: string) {
 function getText(lang: string) {
   if (lang === "pt-PT") {
     return {
-      title: "Activity",
-      subtitle: "Entradas e saídas de dinheiro",
+      title: "Movimentos",
+      subtitle: "Adicionar entradas e saídas",
+      formTitle: "Novo movimento",
+      listTitle: "Registos do mês",
       noItems: "Sem movimentos para este mês.",
       date: "Data",
       kind: "Tipo",
@@ -75,8 +78,10 @@ function getText(lang: string) {
   }
 
   return {
-    title: "Activity",
-    subtitle: "Money in and money out",
+    title: "Movements",
+    subtitle: "Add money in and out records",
+    formTitle: "New movement",
+    listTitle: "Month records",
     noItems: "No transactions found for this month.",
     date: "Date",
     kind: "Type",
@@ -91,7 +96,7 @@ function getText(lang: string) {
   };
 }
 
-export default async function ActivityPage({
+export default async function MovimentosPage({
   searchParams
 }: {
   searchParams?: Promise<{
@@ -155,16 +160,13 @@ export default async function ActivityPage({
             <a className="nav-item" href="#">
               Analytics
             </a>
-            <Link className="nav-item" href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+            <Link className="nav-item active" href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Movements
             </Link>
             <a className="nav-item" href="#">
               Goals
             </a>
-            <Link
-              className="nav-item active"
-              href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}`}
-            >
+            <Link className="nav-item" href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Activity
             </Link>
           </nav>
@@ -185,53 +187,65 @@ export default async function ActivityPage({
             </div>
           </section>
 
-          <section className="panel activity-panel">
-            <div className="activity-table-wrap">
-              <table className="activity-table">
-                <thead>
-                  <tr>
-                    <th>{text.date}</th>
-                    <th>{text.kind}</th>
-                    <th>{text.category}</th>
-                    <th>{text.detail}</th>
-                    <th>{text.amount}</th>
-                    <th>{text.action}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.length ? (
-                    items.map((tx) => {
-                      const isIncome = tx.type === "income";
-                      return (
-                        <tr key={tx.id}>
-                          <td>{formatDate(tx.transaction_date, lang)}</td>
-                          <td>
-                            <span className={`activity-kind ${isIncome ? "in" : "out"}`}>
-                              {isIncome ? text.income : text.expense}
-                            </span>
-                          </td>
-                          <td>{tx.category}</td>
-                          <td>{tx.description || "—"}</td>
-                          <td className={isIncome ? "money-in" : "money-out"}>
-                            {isIncome ? "+" : "-"}
-                            {formatMoney(Math.abs(Number(tx.amount || 0)), lang, currency)}
-                          </td>
-                          <td>
-                            <ActivityDeleteButton id={tx.id} label={text.cancel} confirmText={text.cancelConfirm} />
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
+          <section className="movement-grid">
+            <article className="panel">
+              <div className="panel-head">
+                <h3>{text.formTitle}</h3>
+              </div>
+              <QuickAddForm lang={lang} />
+            </article>
+
+            <article className="panel activity-panel">
+              <div className="panel-head movement-list-head">
+                <h3>{text.listTitle}</h3>
+              </div>
+              <div className="activity-table-wrap">
+                <table className="activity-table">
+                  <thead>
                     <tr>
-                      <td colSpan={6} className="activity-empty">
-                        {text.noItems}
-                      </td>
+                      <th>{text.date}</th>
+                      <th>{text.kind}</th>
+                      <th>{text.category}</th>
+                      <th>{text.detail}</th>
+                      <th>{text.amount}</th>
+                      <th>{text.action}</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {items.length ? (
+                      items.map((tx) => {
+                        const isIncome = tx.type === "income";
+                        return (
+                          <tr key={tx.id}>
+                            <td>{formatDate(tx.transaction_date, lang)}</td>
+                            <td>
+                              <span className={`activity-kind ${isIncome ? "in" : "out"}`}>
+                                {isIncome ? text.income : text.expense}
+                              </span>
+                            </td>
+                            <td>{tx.category}</td>
+                            <td>{tx.description || "—"}</td>
+                            <td className={isIncome ? "money-in" : "money-out"}>
+                              {isIncome ? "+" : "-"}
+                              {formatMoney(Math.abs(Number(tx.amount || 0)), lang, currency)}
+                            </td>
+                            <td>
+                              <ActivityDeleteButton id={tx.id} label={text.cancel} confirmText={text.cancelConfirm} />
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="activity-empty">
+                          {text.noItems}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </article>
           </section>
         </main>
       </div>

@@ -639,6 +639,18 @@
   overflow: hidden;
 }
 
+.movement-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.6fr);
+  gap: 12px;
+}
+
+.movement-list-head {
+  padding: 10px 12px;
+  margin: 0;
+  border-bottom: 1px solid var(--line);
+}
+
 .activity-table-wrap {
   width: 100%;
   overflow: auto;
@@ -755,6 +767,10 @@
 
   .insight-grid,
   .bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .movement-grid {
     grid-template-columns: 1fr;
   }
 }

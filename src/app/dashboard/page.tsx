@@ -3,7 +3,6 @@ import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "./components/logout-button";
-import { QuickAddForm } from "./components/quick-add-form";
 import { SubscriptionAddForm } from "./components/subscription-add-form";
 import { ViewControls } from "./components/view-controls";
 import "./dashboard-theme.css";
@@ -460,9 +459,9 @@ export default async function DashboardPage({
             <a className="nav-item" href="#">
               Analytics
             </a>
-            <a className="nav-item" href="#">
-              Wallet
-            </a>
+            <Link className="nav-item" href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+              Movements
+            </Link>
             <a className="nav-item" href="#">
               Goals
             </a>
@@ -486,12 +485,15 @@ export default async function DashboardPage({
               <p>Your finances are looking healthy this month.</p>
             </div>
             <div className="cta-row">
-              <a href="#quick-add" className="btn btn-dark">
+              <Link
+                href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}
+                className="btn btn-dark"
+              >
                 Add Expense
-              </a>
-              <a href="#quick-add" className="btn">
+              </Link>
+              <Link href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`} className="btn">
                 Add Income
-              </a>
+              </Link>
               <Link href={`/dashboard/spreadsheet?month=${selectedMonth}&lang=${lang}&currency=${currency}`} className="btn">
                 More
               </Link>
@@ -751,14 +753,6 @@ export default async function DashboardPage({
             </article>
           </section>
 
-          <section id="quick-add" className="quick-add-shell">
-            <article className="panel">
-              <div className="panel-head">
-                <h3>Quick Add</h3>
-              </div>
-              <QuickAddForm lang={lang} />
-            </article>
-          </section>
         </main>
       </div>
     </div>
