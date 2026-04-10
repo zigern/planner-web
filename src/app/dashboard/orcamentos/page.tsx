@@ -4,16 +4,14 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "../components/logout-button";
 import { ViewControls } from "../components/view-controls";
-import { ActivityDeleteButton } from "../components/activity-delete-button";
+import { BudgetsManager } from "../components/budgets-manager";
 import "../dashboard-theme.css";
 
-type TxRow = {
+type BudgetRow = {
   id: number;
-  type: "income" | "expense";
-  amount: string;
   category: string;
-  description: string | null;
-  transaction_date: string | Date;
+  budget_amount: string;
+  spent: string;
 };
 
 function parseMonthParam(value: string | string[] | undefined) {
@@ -36,62 +34,20 @@ function parseCurrencyParam(value: string | string[] | undefined) {
   return allowed.has(raw) ? raw : "USD";
 }
 
-function formatMoney(value: number, lang: string, currency: string) {
-  return new Intl.NumberFormat(lang, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
-}
-
-function formatDate(value: string | Date, lang: string) {
-  const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(d.getTime())) return String(value);
-  return d.toLocaleDateString(lang, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  });
-}
-
 function getText(lang: string) {
   if (lang === "pt-PT") {
     return {
-      title: "Activity",
-      subtitle: "Entradas e saídas de dinheiro",
-      noItems: "Sem movimentos para este mês.",
-      date: "Data",
-      kind: "Tipo",
-      category: "Categoria",
-      detail: "Detalhe",
-      amount: "Valor",
-      action: "Ação",
-      income: "Entrada",
-      expense: "Saída",
-      cancel: "Anular",
-      cancelConfirm: "Queres anular este registo?"
+      title: "Orçamentos",
+      subtitle: "Limites por categoria e controlo mensal"
     };
   }
-
   return {
-    title: "Activity",
-    subtitle: "Money in and money out",
-    noItems: "No transactions found for this month.",
-    date: "Date",
-    kind: "Type",
-    category: "Category",
-    detail: "Detail",
-    amount: "Amount",
-    action: "Action",
-    income: "Income",
-    expense: "Expense",
-    cancel: "Cancel",
-    cancelConfirm: "Do you want to cancel this record?"
+    title: "Budgets",
+    subtitle: "Category limits and monthly control"
   };
 }
 
-export default async function ActivityPage({
+export default async function OrcamentosPage({
   searchParams
 }: {
   searchParams?: Promise<{
@@ -122,16 +78,27 @@ export default async function ActivityPage({
 
   const db = getDb();
   const [rows] = await db.query(
-    `SELECT id, type, amount, category, description, transaction_date
-     FROM transactions
-     WHERE user_id = ?
-       AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
-     ORDER BY transaction_date DESC, id DESC
-     LIMIT 300`,
+    `SELECT b.id, b.category, b.budget_amount, COALESCE(SUM(t.amount), 0) as spent
+     FROM monthly_budgets b
+     LEFT JOIN transactions t
+       ON t.user_id = b.user_id
+      AND t.type = 'expense'
+      AND DATE_FORMAT(t.transaction_date, '%Y-%m') = b.budget_month
+      AND t.category = b.category
+     WHERE b.user_id = ?
+       AND b.budget_month = ?
+     GROUP BY b.id, b.category, b.budget_amount
+     ORDER BY b.category ASC`,
     [user.userId, selectedMonth]
   );
 
-  const items = rows as TxRow[];
+  const budgetRows = (rows as BudgetRow[]).map((row) => ({
+    id: Number(row.id),
+    category: row.category,
+    budgetAmount: Number(row.budget_amount || 0),
+    spent: Number(row.spent || 0)
+  }));
+
   const name = user.email.split("@")[0];
   const initials = name.slice(0, 2).toUpperCase();
 
@@ -161,13 +128,10 @@ export default async function ActivityPage({
             <Link className="nav-item" href={`/dashboard/recorrentes?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Recurring
             </Link>
-            <Link className="nav-item" href={`/dashboard/orcamentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+            <Link className="nav-item active" href={`/dashboard/orcamentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Budgets
             </Link>
-            <Link
-              className="nav-item active"
-              href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}`}
-            >
+            <Link className="nav-item" href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Activity
             </Link>
           </nav>
@@ -188,54 +152,7 @@ export default async function ActivityPage({
             </div>
           </section>
 
-          <section className="panel activity-panel">
-            <div className="activity-table-wrap">
-              <table className="activity-table">
-                <thead>
-                  <tr>
-                    <th>{text.date}</th>
-                    <th>{text.kind}</th>
-                    <th>{text.category}</th>
-                    <th>{text.detail}</th>
-                    <th>{text.amount}</th>
-                    <th>{text.action}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.length ? (
-                    items.map((tx) => {
-                      const isIncome = tx.type === "income";
-                      return (
-                        <tr key={tx.id}>
-                          <td>{formatDate(tx.transaction_date, lang)}</td>
-                          <td>
-                            <span className={`activity-kind ${isIncome ? "in" : "out"}`}>
-                              {isIncome ? text.income : text.expense}
-                            </span>
-                          </td>
-                          <td>{tx.category}</td>
-                          <td>{tx.description || "—"}</td>
-                          <td className={isIncome ? "money-in" : "money-out"}>
-                            {isIncome ? "+" : "-"}
-                            {formatMoney(Math.abs(Number(tx.amount || 0)), lang, currency)}
-                          </td>
-                          <td>
-                            <ActivityDeleteButton id={tx.id} label={text.cancel} confirmText={text.cancelConfirm} />
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={6} className="activity-empty">
-                        {text.noItems}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          <BudgetsManager lang={lang} currency={currency} month={selectedMonth} initialRows={budgetRows} />
         </main>
       </div>
     </div>
