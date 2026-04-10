@@ -17,6 +17,8 @@ type Dict = {
   modeTitle: string;
   createTitle: string;
   applyTitle: string;
+  templateTitle: string;
+  templateHint: string;
   type: string;
   income: string;
   expense: string;
@@ -46,6 +48,8 @@ const textByLang: Record<string, Dict> = {
     modeTitle: "Recorrentes",
     createTitle: "Nova regra mensal",
     applyTitle: "Aplicar regras ao mês",
+    templateTitle: "Templates rápidos",
+    templateHint: "Seleciona um template para pré-preencher os campos.",
     type: "Tipo",
     income: "Receita",
     expense: "Despesa",
@@ -73,6 +77,8 @@ const textByLang: Record<string, Dict> = {
     modeTitle: "Recurring",
     createTitle: "New monthly rule",
     applyTitle: "Apply rules to month",
+    templateTitle: "Quick templates",
+    templateHint: "Pick a template to prefill the rule.",
     type: "Type",
     income: "Income",
     expense: "Expense",
@@ -100,6 +106,82 @@ const textByLang: Record<string, Dict> = {
 
 const expenseCategories = ["Housing", "Personal", "Transportation", "Food", "Bills", "Pets", "Health", "Shopping", "Other"];
 const incomeCategories = ["Salary", "Freelance", "Business", "Investments", "Bonus", "Other"];
+
+type RecurringTemplate = {
+  id: string;
+  label: string;
+  type: "income" | "expense";
+  category: string;
+  description: string;
+  dayOfMonth: number;
+  amount: number;
+};
+
+const recurringTemplates: RecurringTemplate[] = [
+  {
+    id: "salary",
+    label: "Salário",
+    type: "income",
+    category: "Salary",
+    description: "Salário mensal",
+    dayOfMonth: 1,
+    amount: 1300
+  },
+  {
+    id: "rent",
+    label: "Renda",
+    type: "expense",
+    category: "Housing",
+    description: "Renda",
+    dayOfMonth: 1,
+    amount: 650
+  },
+  {
+    id: "electricity",
+    label: "Luz",
+    type: "expense",
+    category: "Bills",
+    description: "Eletricidade",
+    dayOfMonth: 5,
+    amount: 55
+  },
+  {
+    id: "water",
+    label: "Água",
+    type: "expense",
+    category: "Bills",
+    description: "Água",
+    dayOfMonth: 6,
+    amount: 25
+  },
+  {
+    id: "internet",
+    label: "Internet",
+    type: "expense",
+    category: "Bills",
+    description: "Internet",
+    dayOfMonth: 7,
+    amount: 35
+  },
+  {
+    id: "netflix",
+    label: "Netflix",
+    type: "expense",
+    category: "Bills",
+    description: "Netflix",
+    dayOfMonth: 8,
+    amount: 12.99
+  },
+  {
+    id: "gym",
+    label: "Ginásio",
+    type: "expense",
+    category: "Health",
+    description: "Ginásio",
+    dayOfMonth: 10,
+    amount: 35
+  }
+];
 
 function formatMoney(value: number, lang: string, currency: string) {
   return new Intl.NumberFormat(lang, {
@@ -134,6 +216,23 @@ export function RecurringRulesManager({
   const [message, setMessage] = useState<string | null>(null);
 
   const categories = useMemo(() => (type === "expense" ? expenseCategories : incomeCategories), [type]);
+  const templates = useMemo(
+    () =>
+      recurringTemplates.map((template) => ({
+        ...template,
+        label: lang === "pt-PT" ? template.label : template.id === "salary" ? "Salary" : template.label
+      })),
+    [lang]
+  );
+
+  function applyTemplate(template: RecurringTemplate) {
+    setType(template.type);
+    setCategory(template.category);
+    setDescription(template.description);
+    setDayOfMonth(String(template.dayOfMonth));
+    setAmount(template.amount.toFixed(2));
+    setMessage(null);
+  }
 
   async function createRule(e: React.FormEvent) {
     e.preventDefault();
@@ -214,6 +313,22 @@ export function RecurringRulesManager({
       <article className="panel">
         <div className="panel-head">
           <h3>{t.createTitle}</h3>
+        </div>
+        <div className="recurring-templates">
+          <p className="recurring-templates-title">{t.templateTitle}</p>
+          <p className="recurring-templates-hint">{t.templateHint}</p>
+          <div className="recurring-template-list">
+            {templates.map((template) => (
+              <button
+                key={template.id}
+                type="button"
+                className="recurring-template-btn"
+                onClick={() => applyTemplate(template)}
+              >
+                {template.label}
+              </button>
+            ))}
+          </div>
         </div>
         <form className="recurring-form" onSubmit={createRule}>
           <div className="q-grid">
