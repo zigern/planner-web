@@ -164,6 +164,9 @@ export default async function ActivityPage({
             <Link className="nav-item" href={`/dashboard/orcamentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Budgets
             </Link>
+            <Link className="nav-item" href={`/dashboard/objetivos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+              Goals
+            </Link>
             <Link
               className="nav-item active"
               href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}`}

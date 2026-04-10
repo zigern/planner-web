@@ -4,17 +4,16 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "../components/logout-button";
 import { ViewControls } from "../components/view-controls";
-import { RecurringRulesManager } from "../components/recurring-rules-manager";
+import { GoalsManager } from "../components/goals-manager";
 import "../dashboard-theme.css";
 
-type RecurringRuleRow = {
+type GoalRow = {
   id: number;
-  type: "income" | "expense";
-  amount: string;
-  category: string;
-  description: string | null;
-  day_of_month: number;
-  last_applied_month: string | null;
+  name: string;
+  target_amount: string;
+  saved_amount: string;
+  deadline: string | null;
+  status: "not_started" | "in_progress" | "completed";
 };
 
 function parseMonthParam(value: string | string[] | undefined) {
@@ -40,17 +39,17 @@ function parseCurrencyParam(value: string | string[] | undefined) {
 function getText(lang: string) {
   if (lang === "pt-PT") {
     return {
-      title: "Recorrentes",
-      subtitle: "Salário, rendas e contas fixas mensais"
+      title: "Objetivos",
+      subtitle: "Planeia metas e acompanha a tua poupança"
     };
   }
   return {
-    title: "Recurring",
-    subtitle: "Salary, rent and fixed monthly costs"
+    title: "Goals",
+    subtitle: "Plan targets and track your savings"
   };
 }
 
-export default async function RecorrentesPage({
+export default async function ObjetivosPage({
   searchParams
 }: {
   searchParams?: Promise<{
@@ -80,44 +79,24 @@ export default async function RecorrentesPage({
   const text = getText(lang);
 
   const db = getDb();
-  await db.query(`
-    CREATE TABLE IF NOT EXISTS recurring_rules (
-      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      user_id BIGINT UNSIGNED NOT NULL,
-      type ENUM('income','expense') NOT NULL,
-      amount DECIMAL(12,2) NOT NULL,
-      category VARCHAR(80) NOT NULL,
-      description VARCHAR(255) NULL,
-      day_of_month TINYINT UNSIGNED NOT NULL DEFAULT 1,
-      is_active TINYINT(1) NOT NULL DEFAULT 1,
-      last_applied_month CHAR(7) NULL,
-      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (id),
-      KEY idx_recurring_user (user_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-  `);
-
   const [rows] = await db.query(
-    `SELECT id, type, amount, category, description, day_of_month, last_applied_month
-     FROM recurring_rules
+    `SELECT id, name, target_amount, saved_amount, deadline, status
+     FROM goals
      WHERE user_id = ?
-       AND is_active = 1
      ORDER BY created_at DESC, id DESC`,
     [user.userId]
   );
 
-  const rules = (rows as RecurringRuleRow[]).map((row) => ({
+  const goals = (rows as GoalRow[]).map((row) => ({
     id: Number(row.id),
-    type: row.type,
-    amount: Number(row.amount || 0),
-    category: row.category,
-    description: row.description,
-    dayOfMonth: Number(row.day_of_month || 1),
-    lastAppliedMonth: row.last_applied_month
+    name: row.name,
+    targetAmount: Number(row.target_amount || 0),
+    savedAmount: Number(row.saved_amount || 0),
+    deadline: row.deadline,
+    status: row.status
   }));
 
-  const name = user.email.split("@")[0];
-  const initials = name.slice(0, 2).toUpperCase();
+  const initials = user.email.slice(0, 2).toUpperCase();
 
   return (
     <div className="casha-wrap">
@@ -142,13 +121,13 @@ export default async function RecorrentesPage({
             <Link className="nav-item" href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Movements
             </Link>
-            <Link className="nav-item active" href={`/dashboard/recorrentes?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+            <Link className="nav-item" href={`/dashboard/recorrentes?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Recurring
             </Link>
             <Link className="nav-item" href={`/dashboard/orcamentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Budgets
             </Link>
-            <Link className="nav-item" href={`/dashboard/objetivos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+            <Link className="nav-item active" href={`/dashboard/objetivos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Goals
             </Link>
             <Link className="nav-item" href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
@@ -172,7 +151,7 @@ export default async function RecorrentesPage({
             </div>
           </section>
 
-          <RecurringRulesManager lang={lang} currency={currency} selectedMonth={selectedMonth} initialRules={rules} />
+          <GoalsManager lang={lang} currency={currency} initialGoals={goals} />
         </main>
       </div>
     </div>

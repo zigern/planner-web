@@ -131,6 +131,9 @@ export default async function OrcamentosPage({
             <Link className="nav-item active" href={`/dashboard/orcamentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Budgets
             </Link>
+            <Link className="nav-item" href={`/dashboard/objetivos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+              Goals
+            </Link>
             <Link className="nav-item" href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Activity
             </Link>
