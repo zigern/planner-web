@@ -634,6 +634,94 @@
   color: #188d54;
 }
 
+.activity-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.activity-table-wrap {
+  width: 100%;
+  overflow: auto;
+}
+
+.activity-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 880px;
+}
+
+.activity-table th,
+.activity-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-size: 14px;
+}
+
+.activity-table th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--surface-2);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.activity-kind {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.activity-kind.in {
+  color: var(--green);
+  background: var(--green-bg);
+}
+
+.activity-kind.out {
+  color: var(--red);
+  background: var(--red-bg);
+}
+
+.money-in {
+  color: var(--green);
+  font-weight: 700;
+}
+
+.money-out {
+  color: var(--red);
+  font-weight: 700;
+}
+
+.activity-delete-btn {
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid #f1b7af;
+  background: #fff4f2;
+  color: #b23d2f;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+.activity-delete-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.activity-empty {
+  color: var(--muted);
+  text-align: center !important;
+  padding: 20px !important;
+}
+
 @media (max-width: 1180px) {
   .app-top {
     grid-template-columns: 1fr;

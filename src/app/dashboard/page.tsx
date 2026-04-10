@@ -466,9 +466,9 @@ export default async function DashboardPage({
             <a className="nav-item" href="#">
               Goals
             </a>
-            <a className="nav-item" href="#">
+            <Link className="nav-item" href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Activity
-            </a>
+            </Link>
           </nav>
 
           <div className="top-actions">
