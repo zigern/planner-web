@@ -6,14 +6,12 @@ import { AddTransactionForm } from "./add-transaction-form";
 
 const textByLang = {
   "pt-PT": {
-    title: "Entrada de dados",
     quick: "Rápido",
     advanced: "Avançado",
     quickHint: "Inserção rápida para o dia a dia.",
     advancedHint: "Inserção completa com descrição e categoria livre."
   },
   "en-US": {
-    title: "Data entry",
     quick: "Quick",
     advanced: "Advanced",
     quickHint: "Fast entry for day-to-day records.",
@@ -27,11 +25,9 @@ export function MovementEntrySwitcher({ lang = "pt-PT" }: { lang?: string }) {
 
   return (
     <section className="entry-switch">
-      <div className="entry-tabbar" role="tablist" aria-label={text.title}>
+      <div className="entry-tabbar">
         <button
           type="button"
-          role="tab"
-          aria-selected={mode === "quick"}
           className={`entry-tab ${mode === "quick" ? "active" : ""}`}
           onClick={() => setMode("quick")}
         >
@@ -39,8 +35,6 @@ export function MovementEntrySwitcher({ lang = "pt-PT" }: { lang?: string }) {
         </button>
         <button
           type="button"
-          role="tab"
-          aria-selected={mode === "advanced"}
           className={`entry-tab ${mode === "advanced" ? "active" : ""}`}
           onClick={() => setMode("advanced")}
         >
@@ -54,4 +48,3 @@ export function MovementEntrySwitcher({ lang = "pt-PT" }: { lang?: string }) {
     </section>
   );
 }
-
