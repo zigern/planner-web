@@ -18,6 +18,7 @@ type TxRow = {
 type AssetRow = { asset_type: string; value: string };
 type MonthSummaryRow = { month: string; income: string; expense: string };
 type BillRow = { name: string; due_day: number; status: "pending" | "paid" };
+type CategoryRow = { category: string };
 
 function parseMonthParam(value: string | string[] | undefined) {
   const raw = Array.isArray(value) ? value[0] : value;
@@ -37,6 +38,37 @@ function parseCurrencyParam(value: string | string[] | undefined) {
   if (!raw) return "EUR";
   const allowed = new Set(["EUR", "USD", "GBP", "BRL"]);
   return allowed.has(raw) ? raw : "EUR";
+}
+
+function parseTypeParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "all";
+  return raw === "income" || raw === "expense" ? raw : "all";
+}
+
+function parseStatusParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "all";
+  return raw === "late" || raw === "paid" ? raw : "all";
+}
+
+function parseDateParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "";
+  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : "";
+}
+
+function parseTextParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "";
+  return raw.trim().slice(0, 80);
+}
+
+function parsePageParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < 1) return 1;
+  return Math.floor(parsed);
 }
 
 function monthName(monthIso: string) {
@@ -90,6 +122,13 @@ export default async function SpreadsheetPage({
     month?: string | string[];
     lang?: string | string[];
     currency?: string | string[];
+    type?: string | string[];
+    category?: string | string[];
+    status?: string | string[];
+    from?: string | string[];
+    to?: string | string[];
+    q?: string | string[];
+    page?: string | string[];
   }>;
 }) {
   if (!hasDatabaseConfig() || !process.env.AUTH_SECRET) {
@@ -110,16 +149,56 @@ export default async function SpreadsheetPage({
   const selectedMonth = parseMonthParam(params?.month);
   const lang = parseLangParam(params?.lang);
   const currency = parseCurrencyParam(params?.currency);
+  const typeFilter = parseTypeParam(params?.type);
+  const categoryFilter = parseTextParam(params?.category) || "all";
+  const statusFilter = parseStatusParam(params?.status);
+  const fromFilter = parseDateParam(params?.from);
+  const toFilter = parseDateParam(params?.to);
+  const queryFilter = parseTextParam(params?.q);
+  const currentPage = parsePageParam(params?.page);
+  const pageSize = 25;
 
   const db = getDb();
+  const where: string[] = ["user_id = ?", "DATE_FORMAT(transaction_date, '%Y-%m') = ?"];
+  const values: unknown[] = [user.userId, selectedMonth];
+  if (typeFilter !== "all") {
+    where.push("type = ?");
+    values.push(typeFilter);
+  }
+  if (categoryFilter !== "all") {
+    where.push("category = ?");
+    values.push(categoryFilter);
+  }
+  if (fromFilter) {
+    where.push("DATE(transaction_date) >= ?");
+    values.push(fromFilter);
+  }
+  if (toFilter) {
+    where.push("DATE(transaction_date) <= ?");
+    values.push(toFilter);
+  }
+  if (queryFilter) {
+    where.push("(LOWER(category) LIKE ? OR LOWER(COALESCE(description, '')) LIKE ?)");
+    const q = `%${queryFilter.toLowerCase()}%`;
+    values.push(q, q);
+  }
+
   const txRows = await safeQueryRows<TxRow>(
     db,
     `SELECT id, type, amount, category, description, transaction_date
      FROM transactions
+     WHERE ${where.join(" AND ")}
+     ORDER BY transaction_date DESC, id DESC
+     LIMIT 500`,
+    values
+  );
+  const categoryRows = await safeQueryRows<CategoryRow>(
+    db,
+    `SELECT DISTINCT category
+     FROM transactions
      WHERE user_id = ?
        AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
-     ORDER BY transaction_date ASC, id ASC
-     LIMIT 80`,
+     ORDER BY category ASC`,
     [user.userId, selectedMonth]
   );
   const assets = await safeQueryRows<AssetRow>(
@@ -158,6 +237,55 @@ export default async function SpreadsheetPage({
       .filter((b) => b.status === "pending" && b.due_day < new Date().getDate())
       .map((b) => b.name.toLowerCase())
   );
+  const categories = categoryRows.map((row) => row.category).filter(Boolean);
+
+  const txWithStatus = txRows.map((tx) => {
+    const lower = `${tx.category} ${tx.description || ""}`.toLowerCase();
+    const isLate = Array.from(lateBillSet).some((b) => lower.includes(b));
+    return {
+      ...tx,
+      uiStatus: (isLate ? "late" : "paid") as "late" | "paid"
+    };
+  });
+
+  const filteredByStatus = statusFilter === "all" ? txWithStatus : txWithStatus.filter((tx) => tx.uiStatus === statusFilter);
+  const totalItems = filteredByStatus.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const start = (safePage - 1) * pageSize;
+  const pagedItems = filteredByStatus.slice(start, start + pageSize);
+
+  const queryBase = new URLSearchParams({
+    month: selectedMonth,
+    lang,
+    currency,
+    type: typeFilter,
+    category: categoryFilter,
+    status: statusFilter,
+    from: fromFilter,
+    to: toFilter,
+    q: queryFilter
+  });
+
+  const csvHeader = ["Month", "Main Type", "Category", "Sub-category", "Amount", "Bill Due Date", "Status"];
+  const csvEscape = (value: string) => `"${value.replace(/"/g, '""')}"`;
+  const csvLines = [
+    csvHeader.map(csvEscape).join(","),
+    ...filteredByStatus.map((tx) =>
+      [
+        monthShort,
+        tx.type === "income" ? "Income" : "Expenses",
+        tx.category,
+        tx.description || "-",
+        Math.abs(Number(tx.amount || 0)).toFixed(2),
+        dayMonthYear(tx.transaction_date),
+        tx.uiStatus === "late" ? "Late" : "Paid"
+      ]
+        .map((v) => csvEscape(String(v)))
+        .join(",")
+    )
+  ];
+  const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(csvLines.join("\n"))}`;
 
   return (
     <div className="casha-wrap">
@@ -221,6 +349,43 @@ export default async function SpreadsheetPage({
 
           <section className="sheet-grid">
             <article className="sheet-main">
+              <form className="sheet-filters" method="get">
+                <input type="hidden" name="month" value={selectedMonth} />
+                <input type="hidden" name="lang" value={lang} />
+                <input type="hidden" name="currency" value={currency} />
+
+                <select name="type" defaultValue={typeFilter}>
+                  <option value="all">All Types</option>
+                  <option value="income">Income</option>
+                  <option value="expense">Expense</option>
+                </select>
+
+                <select name="category" defaultValue={categoryFilter}>
+                  <option value="all">All Categories</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+
+                <select name="status" defaultValue={statusFilter}>
+                  <option value="all">All Status</option>
+                  <option value="paid">Paid</option>
+                  <option value="late">Late</option>
+                </select>
+
+                <input type="date" name="from" defaultValue={fromFilter} />
+                <input type="date" name="to" defaultValue={toFilter} />
+                <input type="text" name="q" defaultValue={queryFilter} placeholder="Search category/detail" />
+
+                <button type="submit">Apply</button>
+                <Link href={`?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>Clear</Link>
+                <a href={csvHref} download={`spreadsheet-${selectedMonth}.csv`}>
+                  Export CSV
+                </a>
+              </form>
+
               <table className="sheet-table">
                 <thead>
                   <tr>
@@ -234,23 +399,53 @@ export default async function SpreadsheetPage({
                   </tr>
                 </thead>
                 <tbody>
-                  {txRows.map((tx) => {
-                    const lower = `${tx.category} ${tx.description || ""}`.toLowerCase();
-                    const isLate = Array.from(lateBillSet).some((b) => lower.includes(b));
-                    return (
-                      <tr key={tx.id}>
-                        <td>{monthShort}</td>
-                        <td>{tx.type === "income" ? "Income" : "Expenses"}</td>
-                        <td>{tx.category}</td>
-                        <td>{tx.description || "-"}</td>
-                        <td>{fmt(Math.abs(Number(tx.amount || 0)), lang, currency)}</td>
-                        <td>{dayMonthYear(tx.transaction_date)}</td>
-                        <td className={isLate ? "late" : "paid"}>{isLate ? "Late" : "Paid"}</td>
-                      </tr>
-                    );
-                  })}
+                  {pagedItems.length ? (
+                    pagedItems.map((tx) => {
+                      return (
+                        <tr key={tx.id}>
+                          <td>{monthShort}</td>
+                          <td>{tx.type === "income" ? "Income" : "Expenses"}</td>
+                          <td>{tx.category}</td>
+                          <td>{tx.description || "-"}</td>
+                          <td>{fmt(Math.abs(Number(tx.amount || 0)), lang, currency)}</td>
+                          <td>{dayMonthYear(tx.transaction_date)}</td>
+                          <td className={tx.uiStatus === "late" ? "late" : "paid"}>
+                            {tx.uiStatus === "late" ? "Late" : "Paid"}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={7}>No rows for this filter.</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
+              <div className="sheet-pagination">
+                <span>
+                  Showing {totalItems ? start + 1 : 0}-{Math.min(start + pageSize, totalItems)} of {totalItems}
+                </span>
+                <div className="sheet-pagination-actions">
+                  {safePage > 1 ? (
+                    <Link href={`?${new URLSearchParams({ ...Object.fromEntries(queryBase.entries()), page: String(safePage - 1) }).toString()}`}>
+                      Previous
+                    </Link>
+                  ) : (
+                    <span className="disabled">Previous</span>
+                  )}
+                  <span>
+                    Page {safePage}/{totalPages}
+                  </span>
+                  {safePage < totalPages ? (
+                    <Link href={`?${new URLSearchParams({ ...Object.fromEntries(queryBase.entries()), page: String(safePage + 1) }).toString()}`}>
+                      Next
+                    </Link>
+                  ) : (
+                    <span className="disabled">Next</span>
+                  )}
+                </div>
+              </div>
             </article>
 
             <aside className="sheet-side">
