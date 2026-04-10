@@ -11,6 +11,45 @@ const createSchema = z.object({
   dayOfMonth: z.number().int().min(1).max(28).optional()
 });
 
+async function ensureRecurringTable(db: ReturnType<typeof getDb>) {
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS recurring_rules (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      user_id BIGINT UNSIGNED NOT NULL,
+      type ENUM('income','expense') NOT NULL,
+      amount DECIMAL(12,2) NOT NULL,
+      category VARCHAR(80) NOT NULL,
+      description VARCHAR(255) NULL,
+      day_of_month TINYINT UNSIGNED NOT NULL DEFAULT 1,
+      is_active TINYINT(1) NOT NULL DEFAULT 1,
+      last_applied_month CHAR(7) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      KEY idx_recurring_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+}
+
+export async function GET() {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  }
+
+  const db = getDb();
+  await ensureRecurringTable(db);
+
+  const [rows] = await db.query(
+    `SELECT id, type, amount, category, description, day_of_month, is_active, last_applied_month, created_at
+     FROM recurring_rules
+     WHERE user_id = ?
+     ORDER BY is_active DESC, created_at DESC, id DESC`,
+    [user.userId]
+  );
+
+  return NextResponse.json({ items: rows });
+}
+
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) {
@@ -21,22 +60,7 @@ export async function POST(request: Request) {
     const payload = createSchema.parse(await request.json());
     const db = getDb();
 
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS recurring_rules (
-        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-        user_id BIGINT UNSIGNED NOT NULL,
-        type ENUM('income','expense') NOT NULL,
-        amount DECIMAL(12,2) NOT NULL,
-        category VARCHAR(80) NOT NULL,
-        description VARCHAR(255) NULL,
-        day_of_month TINYINT UNSIGNED NOT NULL DEFAULT 1,
-        is_active TINYINT(1) NOT NULL DEFAULT 1,
-        last_applied_month CHAR(7) NULL,
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (id),
-        KEY idx_recurring_user (user_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    `);
+    await ensureRecurringTable(db);
 
     await db.query(
       `INSERT INTO recurring_rules (user_id, type, amount, category, description, day_of_month)
@@ -60,4 +84,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Falha ao criar regra mensal." }, { status: 500 });
   }
 }
-

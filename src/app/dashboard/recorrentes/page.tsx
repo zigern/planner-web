@@ -4,16 +4,17 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "../components/logout-button";
 import { ViewControls } from "../components/view-controls";
-import { ActivityDeleteButton } from "../components/activity-delete-button";
+import { RecurringRulesManager } from "../components/recurring-rules-manager";
 import "../dashboard-theme.css";
 
-type TxRow = {
+type RecurringRuleRow = {
   id: number;
   type: "income" | "expense";
   amount: string;
   category: string;
   description: string | null;
-  transaction_date: string | Date;
+  day_of_month: number;
+  last_applied_month: string | null;
 };
 
 function parseMonthParam(value: string | string[] | undefined) {
@@ -36,62 +37,20 @@ function parseCurrencyParam(value: string | string[] | undefined) {
   return allowed.has(raw) ? raw : "USD";
 }
 
-function formatMoney(value: number, lang: string, currency: string) {
-  return new Intl.NumberFormat(lang, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
-}
-
-function formatDate(value: string | Date, lang: string) {
-  const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(d.getTime())) return String(value);
-  return d.toLocaleDateString(lang, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  });
-}
-
 function getText(lang: string) {
   if (lang === "pt-PT") {
     return {
-      title: "Activity",
-      subtitle: "Entradas e saídas de dinheiro",
-      noItems: "Sem movimentos para este mês.",
-      date: "Data",
-      kind: "Tipo",
-      category: "Categoria",
-      detail: "Detalhe",
-      amount: "Valor",
-      action: "Ação",
-      income: "Entrada",
-      expense: "Saída",
-      cancel: "Anular",
-      cancelConfirm: "Queres anular este registo?"
+      title: "Recorrentes",
+      subtitle: "Salário, rendas e contas fixas mensais"
     };
   }
-
   return {
-    title: "Activity",
-    subtitle: "Money in and money out",
-    noItems: "No transactions found for this month.",
-    date: "Date",
-    kind: "Type",
-    category: "Category",
-    detail: "Detail",
-    amount: "Amount",
-    action: "Action",
-    income: "Income",
-    expense: "Expense",
-    cancel: "Cancel",
-    cancelConfirm: "Do you want to cancel this record?"
+    title: "Recurring",
+    subtitle: "Salary, rent and fixed monthly costs"
   };
 }
 
-export default async function ActivityPage({
+export default async function RecorrentesPage({
   searchParams
 }: {
   searchParams?: Promise<{
@@ -121,17 +80,42 @@ export default async function ActivityPage({
   const text = getText(lang);
 
   const db = getDb();
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS recurring_rules (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      user_id BIGINT UNSIGNED NOT NULL,
+      type ENUM('income','expense') NOT NULL,
+      amount DECIMAL(12,2) NOT NULL,
+      category VARCHAR(80) NOT NULL,
+      description VARCHAR(255) NULL,
+      day_of_month TINYINT UNSIGNED NOT NULL DEFAULT 1,
+      is_active TINYINT(1) NOT NULL DEFAULT 1,
+      last_applied_month CHAR(7) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      KEY idx_recurring_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
   const [rows] = await db.query(
-    `SELECT id, type, amount, category, description, transaction_date
-     FROM transactions
+    `SELECT id, type, amount, category, description, day_of_month, last_applied_month
+     FROM recurring_rules
      WHERE user_id = ?
-       AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
-     ORDER BY transaction_date DESC, id DESC
-     LIMIT 300`,
-    [user.userId, selectedMonth]
+       AND is_active = 1
+     ORDER BY created_at DESC, id DESC`,
+    [user.userId]
   );
 
-  const items = rows as TxRow[];
+  const rules = (rows as RecurringRuleRow[]).map((row) => ({
+    id: Number(row.id),
+    type: row.type,
+    amount: Number(row.amount || 0),
+    category: row.category,
+    description: row.description,
+    dayOfMonth: Number(row.day_of_month || 1),
+    lastAppliedMonth: row.last_applied_month
+  }));
+
   const name = user.email.split("@")[0];
   const initials = name.slice(0, 2).toUpperCase();
 
@@ -158,13 +142,10 @@ export default async function ActivityPage({
             <Link className="nav-item" href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Movements
             </Link>
-            <Link className="nav-item" href={`/dashboard/recorrentes?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+            <Link className="nav-item active" href={`/dashboard/recorrentes?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Recurring
             </Link>
-            <Link
-              className="nav-item active"
-              href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}`}
-            >
+            <Link className="nav-item" href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
               Activity
             </Link>
           </nav>
@@ -185,54 +166,7 @@ export default async function ActivityPage({
             </div>
           </section>
 
-          <section className="panel activity-panel">
-            <div className="activity-table-wrap">
-              <table className="activity-table">
-                <thead>
-                  <tr>
-                    <th>{text.date}</th>
-                    <th>{text.kind}</th>
-                    <th>{text.category}</th>
-                    <th>{text.detail}</th>
-                    <th>{text.amount}</th>
-                    <th>{text.action}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.length ? (
-                    items.map((tx) => {
-                      const isIncome = tx.type === "income";
-                      return (
-                        <tr key={tx.id}>
-                          <td>{formatDate(tx.transaction_date, lang)}</td>
-                          <td>
-                            <span className={`activity-kind ${isIncome ? "in" : "out"}`}>
-                              {isIncome ? text.income : text.expense}
-                            </span>
-                          </td>
-                          <td>{tx.category}</td>
-                          <td>{tx.description || "—"}</td>
-                          <td className={isIncome ? "money-in" : "money-out"}>
-                            {isIncome ? "+" : "-"}
-                            {formatMoney(Math.abs(Number(tx.amount || 0)), lang, currency)}
-                          </td>
-                          <td>
-                            <ActivityDeleteButton id={tx.id} label={text.cancel} confirmText={text.cancelConfirm} />
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={6} className="activity-empty">
-                        {text.noItems}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          <RecurringRulesManager lang={lang} currency={currency} selectedMonth={selectedMonth} initialRules={rules} />
         </main>
       </div>
     </div>

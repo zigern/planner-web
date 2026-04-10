@@ -651,6 +651,90 @@
   border-bottom: 1px solid var(--line);
 }
 
+.recurring-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(0, 1.4fr);
+  gap: 12px;
+}
+
+.recurring-form {
+  display: grid;
+  gap: 8px;
+}
+
+.recurring-actions {
+  margin-top: 4px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.recurring-actions button {
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.recurring-actions button[type="submit"] {
+  background: #1f1f21;
+  border-color: #1f1f21;
+  color: #fff;
+}
+
+.btn-recurring-apply {
+  background: #fff;
+  color: #1f1f21;
+}
+
+.recurring-list-panel {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  padding: 0;
+  overflow: hidden;
+}
+
+.recurring-list {
+  list-style: none;
+  margin: 0;
+  padding: 10px 12px 12px 12px;
+  display: grid;
+  gap: 10px;
+  max-height: 540px;
+  overflow: auto;
+}
+
+.recurring-list li {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.recurring-list b {
+  font-size: 14px;
+}
+
+.recurring-list p {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.recurring-empty {
+  color: var(--muted);
+  font-size: 13px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  padding: 14px;
+}
+
 .activity-table-wrap {
   width: 100%;
   overflow: auto;
@@ -771,6 +855,10 @@
   }
 
   .movement-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .recurring-grid {
     grid-template-columns: 1fr;
   }
 }
