@@ -1194,6 +1194,210 @@
   padding: 20px !important;
 }
 
+.spreadsheet-mode {
+  display: grid;
+  gap: 14px;
+}
+
+.top-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.1fr) auto auto auto auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.title-block .kicker {
+  margin: 0;
+  font-size: 14px;
+  color: #55555f;
+}
+
+.title-block h1 {
+  margin: 2px 0 0 0;
+  font-size: 36px;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+.title-block .balance {
+  margin: 2px 0 0 0;
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.center-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 48px;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.tab {
+  height: 40px;
+  border-radius: 10px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  color: #55555f;
+}
+
+.tab svg {
+  width: 16px;
+  height: 16px;
+}
+
+.tab.active {
+  background: #fff;
+  border: 1px solid var(--line);
+  color: #17171c;
+}
+
+.date-card {
+  height: 48px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #45454f;
+  white-space: nowrap;
+}
+
+.date-small {
+  font-size: 13px;
+}
+
+.profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: end;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  background: linear-gradient(135deg, #5a89ff, #26c4d3);
+}
+
+.logout-mini {
+  height: 40px !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--line) !important;
+  background: #fff !important;
+  color: #27272e !important;
+  font-size: 13px !important;
+}
+
+.sheet-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+  gap: 12px;
+  align-items: start;
+}
+
+.sheet-main,
+.sheet-box {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.sheet-main {
+  padding: 12px;
+  overflow: hidden;
+}
+
+.sheet-side {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.sheet-box {
+  padding: 10px;
+}
+
+.sheet-box.update {
+  text-align: center;
+}
+
+.sheet-box .u-title {
+  margin: 0;
+  font-size: 12px;
+  color: #666670;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sheet-box .u-date {
+  margin: 6px 0 0 0;
+  font-size: 14px;
+  color: #1d1d23;
+  font-weight: 700;
+}
+
+.sheet-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 860px;
+}
+
+.sheet-table th,
+.sheet-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-size: 13px;
+}
+
+.sheet-table th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #777781;
+  background: var(--surface-2);
+}
+
+.mini-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.mini-table th,
+.mini-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-size: 13px;
+}
+
+.mini-table th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #777781;
+}
+
 .sheet-filters {
   margin-bottom: 10px;
   display: grid;
@@ -1348,6 +1552,19 @@
   .sheet-filters {
     grid-template-columns: repeat(3, minmax(120px, 1fr));
   }
+
+  .top-row {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+
+  .top-row .title-block {
+    grid-column: 1 / -1;
+  }
+
+  .sheet-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1400,5 +1617,23 @@
   .sheet-pagination {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .top-row {
+    grid-template-columns: 1fr;
+  }
+
+  .center-tabs,
+  .date-card,
+  .profile {
+    justify-self: start;
+  }
+
+  .title-block h1 {
+    font-size: 30px;
+  }
+
+  .title-block .balance {
+    font-size: 32px;
   }
 }
