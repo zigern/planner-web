@@ -1110,6 +1110,22 @@
   cursor: pointer;
 }
 
+.bills-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bills-actions select {
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: #2e2e36;
+  font-size: 12px;
+  padding: 0 8px;
+}
+
 .goals-top-row {
   display: flex;
   justify-content: space-between;

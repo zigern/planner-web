@@ -44,10 +44,22 @@ type Dict = {
   save: string;
   saving: string;
   remove: string;
+  update: string;
+  updating: string;
+  status: string;
+  pending: string;
+  paid: string;
+  active: string;
+  paused: string;
+  cancelled: string;
   totalMonthlyBills: string;
   totalMonthlySubs: string;
   noBills: string;
   noSubs: string;
+  billSaved: string;
+  subSaved: string;
+  billSaveFail: string;
+  subSaveFail: string;
 };
 
 const textByLang: Record<string, Dict> = {
@@ -73,10 +85,22 @@ const textByLang: Record<string, Dict> = {
     save: "Guardar",
     saving: "A guardar...",
     remove: "Remover",
+    update: "Atualizar",
+    updating: "A atualizar...",
+    status: "Estado",
+    pending: "Pendente",
+    paid: "Pago",
+    active: "Ativa",
+    paused: "Pausada",
+    cancelled: "Cancelada",
     totalMonthlyBills: "Total mensal contas",
     totalMonthlySubs: "Total mensal subscrições",
     noBills: "Sem contas fixas registadas.",
-    noSubs: "Sem subscrições registadas."
+    noSubs: "Sem subscrições registadas.",
+    billSaved: "Conta guardada.",
+    subSaved: "Subscrição guardada.",
+    billSaveFail: "Não foi possível guardar a conta.",
+    subSaveFail: "Não foi possível guardar a subscrição."
   },
   "en-US": {
     billsTitle: "Bills",
@@ -100,10 +124,22 @@ const textByLang: Record<string, Dict> = {
     save: "Save",
     saving: "Saving...",
     remove: "Remove",
+    update: "Update",
+    updating: "Updating...",
+    status: "Status",
+    pending: "Pending",
+    paid: "Paid",
+    active: "Active",
+    paused: "Paused",
+    cancelled: "Cancelled",
     totalMonthlyBills: "Monthly bills total",
     totalMonthlySubs: "Monthly subscriptions total",
     noBills: "No fixed bills yet.",
-    noSubs: "No subscriptions yet."
+    noSubs: "No subscriptions yet.",
+    billSaved: "Bill saved.",
+    subSaved: "Subscription saved.",
+    billSaveFail: "Could not save bill.",
+    subSaveFail: "Could not save subscription."
   }
 };
 
@@ -144,6 +180,8 @@ export function BillsSubscriptionsManager({
   const [subLoading, setSubLoading] = useState(false);
 
   const [message, setMessage] = useState<string | null>(null);
+  const [updatingBillId, setUpdatingBillId] = useState<number | null>(null);
+  const [updatingSubId, setUpdatingSubId] = useState<number | null>(null);
 
   const monthlyBillsTotal = useMemo(
     () =>
@@ -185,7 +223,7 @@ export function BillsSubscriptionsManager({
       });
 
       if (!response.ok) {
-        setMessage("Could not save bill.");
+        setMessage(t.billSaveFail);
         return;
       }
 
@@ -194,7 +232,7 @@ export function BillsSubscriptionsManager({
       setBillDueDay("1");
       setBillFrequency("monthly");
       setBillAutoPay(false);
-      setMessage("Bill saved.");
+      setMessage(t.billSaved);
       router.refresh();
     } finally {
       setBillLoading(false);
@@ -219,7 +257,7 @@ export function BillsSubscriptionsManager({
       });
 
       if (!response.ok) {
-        setMessage("Could not save subscription.");
+        setMessage(t.subSaveFail);
         return;
       }
 
@@ -227,7 +265,7 @@ export function BillsSubscriptionsManager({
       setSubCost("");
       setSubCycle("monthly");
       setSubCategory("Software");
-      setMessage("Subscription saved.");
+      setMessage(t.subSaved);
       router.refresh();
     } finally {
       setSubLoading(false);
@@ -244,6 +282,36 @@ export function BillsSubscriptionsManager({
     const response = await fetch(`/api/subscriptions/${id}`, { method: "DELETE" });
     if (!response.ok) return;
     router.refresh();
+  }
+
+  async function updateBillStatus(id: number, status: "pending" | "paid") {
+    setUpdatingBillId(id);
+    try {
+      const response = await fetch(`/api/bills/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status })
+      });
+      if (!response.ok) return;
+      router.refresh();
+    } finally {
+      setUpdatingBillId(null);
+    }
+  }
+
+  async function updateSubscriptionStatus(id: number, status: "active" | "paused" | "cancelled") {
+    setUpdatingSubId(id);
+    try {
+      const response = await fetch(`/api/subscriptions/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status })
+      });
+      if (!response.ok) return;
+      router.refresh();
+    } finally {
+      setUpdatingSubId(null);
+    }
   }
 
   return (
@@ -297,7 +365,18 @@ export function BillsSubscriptionsManager({
                   <p>{t.dueDay} {bill.dueDay} • {bill.frequency}</p>
                 </div>
                 <strong>{formatMoney(bill.amount, lang, currency)}</strong>
-                <button type="button" onClick={() => removeBill(bill.id)}>{t.remove}</button>
+                <div className="bills-actions">
+                  <select
+                    aria-label={t.status}
+                    value={bill.status}
+                    disabled={updatingBillId === bill.id}
+                    onChange={(e) => updateBillStatus(bill.id, e.target.value as "pending" | "paid")}
+                  >
+                    <option value="pending">{t.pending}</option>
+                    <option value="paid">{t.paid}</option>
+                  </select>
+                  <button type="button" onClick={() => removeBill(bill.id)}>{t.remove}</button>
+                </div>
               </li>
             ))
           ) : (
@@ -351,7 +430,21 @@ export function BillsSubscriptionsManager({
                   <p>{sub.category} • {sub.billingCycle}</p>
                 </div>
                 <strong>{formatMoney(sub.cost, lang, currency)}</strong>
-                <button type="button" onClick={() => removeSubscription(sub.id)}>{t.remove}</button>
+                <div className="bills-actions">
+                  <select
+                    aria-label={t.status}
+                    value={sub.status}
+                    disabled={updatingSubId === sub.id}
+                    onChange={(e) =>
+                      updateSubscriptionStatus(sub.id, e.target.value as "active" | "paused" | "cancelled")
+                    }
+                  >
+                    <option value="active">{t.active}</option>
+                    <option value="paused">{t.paused}</option>
+                    <option value="cancelled">{t.cancelled}</option>
+                  </select>
+                  <button type="button" onClick={() => removeSubscription(sub.id)}>{t.remove}</button>
+                </div>
               </li>
             ))
           ) : (
