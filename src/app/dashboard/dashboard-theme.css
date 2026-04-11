@@ -1052,6 +1052,64 @@
   gap: 8px;
 }
 
+.bills-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.bills-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.bills-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  max-height: 340px;
+  overflow: auto;
+}
+
+.bills-list li {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.bills-list b {
+  font-size: 14px;
+}
+
+.bills-list p {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.bills-list strong {
+  font-size: 14px;
+}
+
+.bills-list button {
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #f1b7af;
+  background: #fff4f2;
+  color: #b23d2f;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
 .goals-top-row {
   display: flex;
   justify-content: space-between;
@@ -1579,6 +1637,10 @@
   }
 
   .goals-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bills-grid {
     grid-template-columns: 1fr;
   }
 

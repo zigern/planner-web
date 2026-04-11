@@ -1,6 +1,16 @@
 import Link from "next/link";
 
-type NavKey = "dashboard" | "annual" | "movements" | "recurring" | "budgets" | "goals" | "networth" | "activity" | "spreadsheet";
+type NavKey =
+  | "dashboard"
+  | "annual"
+  | "movements"
+  | "bills"
+  | "recurring"
+  | "budgets"
+  | "goals"
+  | "networth"
+  | "activity"
+  | "spreadsheet";
 
 function Icon({ kind }: { kind: NavKey }) {
   if (kind === "dashboard") {
@@ -18,6 +28,14 @@ function Icon({ kind }: { kind: NavKey }) {
       <svg viewBox="0 0 20 20" aria-hidden="true">
         <path d="M4 6h12v2H4zm0 6h12v2H4z" fill="currentColor" />
         <path d="M12 3l4 4-4 4V8H4V6h8zM8 17l-4-4 4-4v3h8v2H8z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (kind === "bills") {
+    return (
+      <svg viewBox="0 0 20 20" aria-hidden="true">
+        <rect x="3" y="4" width="14" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M6 8h8M6 11h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
       </svg>
     );
   }
@@ -94,6 +112,7 @@ export function DashboardSidebar({
     { key: "dashboard", label: "Dashboard", href: `/dashboard?${q}` },
     { key: "annual", label: "Annual Overview", href: `/dashboard/anual?${q}` },
     { key: "movements", label: "Movements", href: `/dashboard/movimentos?${q}` },
+    { key: "bills", label: "Bills", href: `/dashboard/bills?${q}` },
     { key: "recurring", label: "Recurring", href: `/dashboard/recorrentes?${q}` },
     { key: "budgets", label: "Budgets", href: `/dashboard/orcamentos?${q}` },
     { key: "goals", label: "Goals", href: `/dashboard/objetivos?${q}` },
