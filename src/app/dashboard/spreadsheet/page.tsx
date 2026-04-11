@@ -28,16 +28,16 @@ function parseMonthParam(value: string | string[] | undefined) {
 
 function parseLangParam(value: string | string[] | undefined) {
   const raw = Array.isArray(value) ? value[0] : value;
-  if (!raw) return "pt-PT";
+  if (!raw) return "en-US";
   const allowed = new Set(["pt-PT", "en-US", "es-ES", "fr-FR"]);
-  return allowed.has(raw) ? raw : "pt-PT";
+  return allowed.has(raw) ? raw : "en-US";
 }
 
 function parseCurrencyParam(value: string | string[] | undefined) {
   const raw = Array.isArray(value) ? value[0] : value;
-  if (!raw) return "EUR";
+  if (!raw) return "USD";
   const allowed = new Set(["EUR", "USD", "GBP", "BRL"]);
-  return allowed.has(raw) ? raw : "EUR";
+  return allowed.has(raw) ? raw : "USD";
 }
 
 function parseTypeParam(value: string | string[] | undefined) {
@@ -71,9 +71,9 @@ function parsePageParam(value: string | string[] | undefined) {
   return Math.floor(parsed);
 }
 
-function monthName(monthIso: string) {
+function monthName(monthIso: string, lang: string) {
   const [year, month] = monthIso.split("-").map(Number);
-  return new Date(year, month - 1, 1).toLocaleDateString("pt-PT", { month: "short" });
+  return new Date(year, month - 1, 1).toLocaleDateString(lang, { month: "short" });
 }
 
 function monthLabel(monthIso: string) {
@@ -91,10 +91,10 @@ function fmt(v: number, lang: string, currency: string) {
   }).format(v);
 }
 
-function dayMonthYear(v: string | Date) {
+function dayMonthYear(v: string | Date, lang: string) {
   const d = v instanceof Date ? v : new Date(v);
   if (Number.isNaN(d.getTime())) return String(v);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString(lang, { month: "short", day: "numeric", year: "numeric" });
 }
 
 async function safeQueryRows<T>(db: ReturnType<typeof getDb>, sql: string, params: unknown[]): Promise<T[]> {
@@ -230,8 +230,7 @@ export default async function SpreadsheetPage({
     [user.userId]
   );
 
-  const initials = user.email.slice(0, 2).toUpperCase();
-  const monthShort = monthName(selectedMonth);
+  const monthShort = monthName(selectedMonth, lang);
   const lateBillSet = new Set(
     bills
       .filter((b) => b.status === "pending" && b.due_day < new Date().getDate())
@@ -278,7 +277,7 @@ export default async function SpreadsheetPage({
         tx.category,
         tx.description || "-",
         Math.abs(Number(tx.amount || 0)).toFixed(2),
-        dayMonthYear(tx.transaction_date),
+        dayMonthYear(tx.transaction_date, lang),
         tx.uiStatus === "late" ? "Late" : "Paid"
       ]
         .map((v) => csvEscape(String(v)))
@@ -286,220 +285,258 @@ export default async function SpreadsheetPage({
     )
   ];
   const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(csvLines.join("\n"))}`;
+  const text = lang === "pt-PT"
+    ? {
+        title: "Spreadsheet",
+        subtitle: "Visão tabular com filtros, exportação e paginação",
+        apply: "Aplicar",
+        clear: "Limpar",
+        export: "Exportar CSV",
+        allTypes: "Todos os tipos",
+        allCategories: "Todas as categorias",
+        allStatus: "Todos os estados",
+        income: "Receita",
+        expense: "Despesa",
+        paid: "Pago",
+        late: "Atrasado",
+        month: "Mês",
+        mainType: "Tipo",
+        category: "Categoria",
+        subCategory: "Subcategoria",
+        amount: "Valor",
+        dueDate: "Data",
+        status: "Estado",
+        noRows: "Sem movimentos para este filtro.",
+        previous: "Anterior",
+        next: "Seguinte",
+        page: "Página",
+        showing: "A mostrar",
+        of: "de",
+        assets: "Ativos",
+        lastUpdate: "Última atualização",
+        incomeGoal: "Meta receita"
+      }
+    : {
+        title: "Spreadsheet",
+        subtitle: "Tabular view with filters, export, and pagination",
+        apply: "Apply",
+        clear: "Clear",
+        export: "Export CSV",
+        allTypes: "All Types",
+        allCategories: "All Categories",
+        allStatus: "All Status",
+        income: "Income",
+        expense: "Expense",
+        paid: "Paid",
+        late: "Late",
+        month: "Month",
+        mainType: "Main Type",
+        category: "Category",
+        subCategory: "Sub-category",
+        amount: "Amount",
+        dueDate: "Bill Due Date",
+        status: "Status",
+        noRows: "No rows for this filter.",
+        previous: "Previous",
+        next: "Next",
+        page: "Page",
+        showing: "Showing",
+        of: "of",
+        assets: "Assets",
+        lastUpdate: "Last update",
+        incomeGoal: "Income Goal"
+      };
+  const name = user.email.split("@")[0];
 
   return (
     <div className="casha-wrap">
       <div className="casha-shell">
+        <div className="app-top">
+          <div className="app-brand">
+            <div className="logo-box">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 6h14v2H5zm0 5h10v2H5zm0 5h14v2H5z" fill="currentColor" />
+              </svg>
+            </div>
+            <span>Casha</span>
+          </div>
+          <div className="top-actions">
+            <div className="search-box">{selectedMonth}</div>
+            <ViewControls lang={lang} currency={currency} />
+            <div className="avatar-mini">{name.slice(0, 2).toUpperCase()}</div>
+            <LogoutButton className="logout-light" label={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
+          </div>
+        </div>
         <div className="workspace-shell">
           <DashboardSidebar current="spreadsheet" selectedMonth={selectedMonth} lang={lang} currency={currency} />
           <main className="dash-main spreadsheet-mode">
-          <header className="top-row">
-            <div className="title-block">
-              <p className="kicker">Personal Finance Tracker</p>
-              <h1>Available Balance</h1>
-              <p className="balance income-number">
-                {fmt(
-                  summary.reduce((acc, s) => acc + Number(s.income || 0) - Number(s.expense || 0), 0),
-                  lang,
-                  currency
-                )}
-              </p>
+            <div className="greeting-row">
+              <div>
+                <h1>{text.title}</h1>
+                <p>{text.subtitle}</p>
+              </div>
+              <div className="cta-row">
+                <Link className="btn" href={csvHref} download={`spreadsheet-${selectedMonth}.csv`}>
+                  {text.export}
+                </Link>
+              </div>
             </div>
 
-            <div className="center-tabs">
-              <Link className="tab" href={`/dashboard?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-                <svg viewBox="0 0 20 20" aria-hidden="true">
-                  <rect x="2" y="2" width="7" height="7" rx="1.2" fill="currentColor" />
-                  <rect x="11" y="2" width="7" height="4" rx="1.2" fill="currentColor" />
-                  <rect x="11" y="8" width="7" height="10" rx="1.2" fill="currentColor" />
-                  <rect x="2" y="11" width="7" height="7" rx="1.2" fill="currentColor" />
-                </svg>
-                Dashboard
-              </Link>
-              <Link
-                className="tab active"
-                href={`/dashboard/spreadsheet?month=${selectedMonth}&lang=${lang}&currency=${currency}`}
-              >
-                <svg viewBox="0 0 20 20" aria-hidden="true">
-                  <rect x="2" y="3" width="16" height="14" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-                  <line x1="2" y1="8" x2="18" y2="8" stroke="currentColor" strokeWidth="1.6" />
-                  <line x1="7" y1="8" x2="7" y2="17" stroke="currentColor" strokeWidth="1.6" />
-                  <line x1="12" y1="8" x2="12" y2="17" stroke="currentColor" strokeWidth="1.6" />
-                </svg>
-                Spreadsheet
-              </Link>
-            </div>
+            <section className="sheet-grid">
+              <article className="sheet-main">
+                <form className="sheet-filters" method="get">
+                  <input type="hidden" name="month" value={selectedMonth} />
+                  <input type="hidden" name="lang" value={lang} />
+                  <input type="hidden" name="currency" value={currency} />
 
-            <div className="date-card date-small">
-              {new Date().toLocaleDateString(lang, {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric"
-              })}
-            </div>
+                  <select name="type" defaultValue={typeFilter}>
+                    <option value="all">{text.allTypes}</option>
+                    <option value="income">{text.income}</option>
+                    <option value="expense">{text.expense}</option>
+                  </select>
 
-            <ViewControls lang={lang} currency={currency} />
+                  <select name="category" defaultValue={categoryFilter}>
+                    <option value="all">{text.allCategories}</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
 
-            <div className="profile">
-              <div className="avatar">{initials}</div>
-              <LogoutButton className="logout-mini" label="Sair" />
-            </div>
-          </header>
+                  <select name="status" defaultValue={statusFilter}>
+                    <option value="all">{text.allStatus}</option>
+                    <option value="paid">{text.paid}</option>
+                    <option value="late">{text.late}</option>
+                  </select>
 
-          <section className="sheet-grid">
-            <article className="sheet-main">
-              <form className="sheet-filters" method="get">
-                <input type="hidden" name="month" value={selectedMonth} />
-                <input type="hidden" name="lang" value={lang} />
-                <input type="hidden" name="currency" value={currency} />
+                  <input type="date" name="from" defaultValue={fromFilter} />
+                  <input type="date" name="to" defaultValue={toFilter} />
+                  <input type="text" name="q" defaultValue={queryFilter} placeholder="Search category/detail" />
 
-                <select name="type" defaultValue={typeFilter}>
-                  <option value="all">All Types</option>
-                  <option value="income">Income</option>
-                  <option value="expense">Expense</option>
-                </select>
+                  <button type="submit">{text.apply}</button>
+                  <Link href={`?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>{text.clear}</Link>
+                  <a href={csvHref} download={`spreadsheet-${selectedMonth}.csv`}>
+                    {text.export}
+                  </a>
+                </form>
 
-                <select name="category" defaultValue={categoryFilter}>
-                  <option value="all">All Categories</option>
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-
-                <select name="status" defaultValue={statusFilter}>
-                  <option value="all">All Status</option>
-                  <option value="paid">Paid</option>
-                  <option value="late">Late</option>
-                </select>
-
-                <input type="date" name="from" defaultValue={fromFilter} />
-                <input type="date" name="to" defaultValue={toFilter} />
-                <input type="text" name="q" defaultValue={queryFilter} placeholder="Search category/detail" />
-
-                <button type="submit">Apply</button>
-                <Link href={`?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>Clear</Link>
-                <a href={csvHref} download={`spreadsheet-${selectedMonth}.csv`}>
-                  Export CSV
-                </a>
-              </form>
-
-              <table className="sheet-table">
-                <thead>
-                  <tr>
-                    <th>Month</th>
-                    <th>Main Type</th>
-                    <th>Category</th>
-                    <th>Sub-category</th>
-                    <th>Amount</th>
-                    <th>Bill Due Date</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pagedItems.length ? (
-                    pagedItems.map((tx) => {
-                      return (
-                        <tr key={tx.id}>
-                          <td>{monthShort}</td>
-                          <td>{tx.type === "income" ? "Income" : "Expenses"}</td>
-                          <td>{tx.category}</td>
-                          <td>{tx.description || "-"}</td>
-                          <td>{fmt(Math.abs(Number(tx.amount || 0)), lang, currency)}</td>
-                          <td>{dayMonthYear(tx.transaction_date)}</td>
-                          <td className={tx.uiStatus === "late" ? "late" : "paid"}>
-                            {tx.uiStatus === "late" ? "Late" : "Paid"}
-                          </td>
+                <div className="activity-table-wrap">
+                  <table className="sheet-table">
+                    <thead>
+                      <tr>
+                        <th>{text.month}</th>
+                        <th>{text.mainType}</th>
+                        <th>{text.category}</th>
+                        <th>{text.subCategory}</th>
+                        <th>{text.amount}</th>
+                        <th>{text.dueDate}</th>
+                        <th>{text.status}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pagedItems.length ? (
+                        pagedItems.map((tx) => {
+                          return (
+                            <tr key={tx.id}>
+                              <td>{monthShort}</td>
+                              <td>{tx.type === "income" ? text.income : text.expense}</td>
+                              <td>{tx.category}</td>
+                              <td>{tx.description || "-"}</td>
+                              <td>{fmt(Math.abs(Number(tx.amount || 0)), lang, currency)}</td>
+                              <td>{dayMonthYear(tx.transaction_date, lang)}</td>
+                              <td className={tx.uiStatus === "late" ? "late" : "paid"}>
+                                {tx.uiStatus === "late" ? text.late : text.paid}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={7}>{text.noRows}</td>
                         </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={7}>No rows for this filter.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-              <div className="sheet-pagination">
-                <span>
-                  Showing {totalItems ? start + 1 : 0}-{Math.min(start + pageSize, totalItems)} of {totalItems}
-                </span>
-                <div className="sheet-pagination-actions">
-                  {safePage > 1 ? (
-                    <Link href={`?${new URLSearchParams({ ...Object.fromEntries(queryBase.entries()), page: String(safePage - 1) }).toString()}`}>
-                      Previous
-                    </Link>
-                  ) : (
-                    <span className="disabled">Previous</span>
-                  )}
-                  <span>
-                    Page {safePage}/{totalPages}
-                  </span>
-                  {safePage < totalPages ? (
-                    <Link href={`?${new URLSearchParams({ ...Object.fromEntries(queryBase.entries()), page: String(safePage + 1) }).toString()}`}>
-                      Next
-                    </Link>
-                  ) : (
-                    <span className="disabled">Next</span>
-                  )}
+                      )}
+                    </tbody>
+                  </table>
                 </div>
-              </div>
-            </article>
+                <div className="sheet-pagination">
+                  <span>
+                    {text.showing} {totalItems ? start + 1 : 0}-{Math.min(start + pageSize, totalItems)} {text.of} {totalItems}
+                  </span>
+                  <div className="sheet-pagination-actions">
+                    {safePage > 1 ? (
+                      <Link href={`?${new URLSearchParams({ ...Object.fromEntries(queryBase.entries()), page: String(safePage - 1) }).toString()}`}>
+                        {text.previous}
+                      </Link>
+                    ) : (
+                      <span className="disabled">{text.previous}</span>
+                    )}
+                    <span>
+                      {text.page} {safePage}/{totalPages}
+                    </span>
+                    {safePage < totalPages ? (
+                      <Link href={`?${new URLSearchParams({ ...Object.fromEntries(queryBase.entries()), page: String(safePage + 1) }).toString()}`}>
+                        {text.next}
+                      </Link>
+                    ) : (
+                      <span className="disabled">{text.next}</span>
+                    )}
+                  </div>
+                </div>
+              </article>
 
-            <aside className="sheet-side">
-              <div className="sheet-box">
-                <table className="mini-table">
-                  <thead>
-                    <tr>
-                      <th>Amount</th>
-                      <th>Assets</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {assets.map((a, i) => (
-                      <tr key={`${a.asset_type}-${i}`}>
-                        <td>{fmt(Number(a.value || 0), lang, currency)}</td>
-                        <td>{a.asset_type}</td>
+              <aside className="sheet-side">
+                <div className="sheet-box">
+                  <table className="mini-table">
+                    <thead>
+                      <tr>
+                        <th>{text.amount}</th>
+                        <th>{text.assets}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {assets.map((a, i) => (
+                        <tr key={`${a.asset_type}-${i}`}>
+                          <td>{fmt(Number(a.value || 0), lang, currency)}</td>
+                          <td>{a.asset_type}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-              <div className="sheet-box update">
-                <p className="u-title">Last update</p>
-                <p className="u-date">
-                  {new Date().toLocaleDateString("en-US", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric"
-                  })}
-                </p>
-              </div>
+                <div className="sheet-box update">
+                  <p className="u-title">{text.lastUpdate}</p>
+                  <p className="u-date">
+                    {new Date().toLocaleDateString(lang, {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric"
+                    })}
+                  </p>
+                </div>
 
-              <div className="sheet-box">
-                <table className="mini-table goal">
-                  <thead>
-                    <tr>
-                      <th>Month</th>
-                      <th>Income Goal</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary.map((s) => (
-                      <tr key={s.month}>
-                        <td>{monthLabel(s.month)}</td>
-                        <td>{fmt(Math.round(Number(s.income || 0) * 1.2), lang, currency)}</td>
+                <div className="sheet-box">
+                  <table className="mini-table goal">
+                    <thead>
+                      <tr>
+                        <th>{text.month}</th>
+                        <th>{text.incomeGoal}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </aside>
-          </section>
+                    </thead>
+                    <tbody>
+                      {summary.map((s) => (
+                        <tr key={s.month}>
+                          <td>{monthLabel(s.month)}</td>
+                          <td>{fmt(Math.round(Number(s.income || 0) * 1.2), lang, currency)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </aside>
+            </section>
           </main>
         </div>
       </div>
