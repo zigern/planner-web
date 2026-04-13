@@ -127,6 +127,12 @@ function monthName(isoMonth: string, lang: string) {
   return new Date(year, month - 1, 1).toLocaleDateString(lang, { month: "short" });
 }
 
+function compactNumber(value: number, lang: string) {
+  if (value >= 1_000_000) return `${new Intl.NumberFormat(lang, { maximumFractionDigits: 1 }).format(value / 1_000_000)}M`;
+  if (value >= 1000) return `${new Intl.NumberFormat(lang, { maximumFractionDigits: 1 }).format(value / 1000)}k`;
+  return new Intl.NumberFormat(lang, { maximumFractionDigits: 0 }).format(value);
+}
+
 async function safeQueryRows<T>(db: ReturnType<typeof getDb>, sql: string, params: unknown[]): Promise<T[]> {
   try {
     const [rows] = await db.query(sql, params);
@@ -338,6 +344,14 @@ export default async function AnnualOverviewPage({
                   <div className="annual-bars">
                     {months.map((month) => (
                       <div key={month.iso} className="annual-bar-col">
+                        <div className="annual-bar-values">
+                          <span className="income-v" title={`${text.income}: ${fmt(month.income, lang, currency)}`}>
+                            I {compactNumber(month.income, lang)}
+                          </span>
+                          <span className="expense-v" title={`${text.expense}: ${fmt(month.expense, lang, currency)}`}>
+                            E {compactNumber(month.expense, lang)}
+                          </span>
+                        </div>
                         <div className="annual-bar-stack">
                           <div className="annual-bar income" style={{ height: `${Math.max((month.income / maxValue) * 150, month.income > 0 ? 6 : 0)}px` }} title={`${text.income}: ${fmt(month.income, lang, currency)}`} />
                           <div className="annual-bar expense" style={{ height: `${Math.max((month.expense / maxValue) * 150, month.expense > 0 ? 6 : 0)}px` }} title={`${text.expense}: ${fmt(month.expense, lang, currency)}`} />

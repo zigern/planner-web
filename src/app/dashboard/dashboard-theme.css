@@ -1964,6 +1964,11 @@
   height: 100%;
 }
 
+.annual-chart {
+  display: flex;
+  flex-direction: column;
+}
+
 .annual-breakdown .breakdown-list {
   max-height: 340px;
   overflow: auto;
@@ -1971,7 +1976,9 @@
 }
 
 .annual-bars {
-  height: 180px;
+  height: auto;
+  min-height: 300px;
+  flex: 1;
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 8px;
@@ -1981,8 +1988,30 @@
 
 .annual-bar-col {
   display: grid;
-  gap: 6px;
+  grid-template-rows: auto 1fr auto;
+  gap: 4px;
   justify-items: center;
+  height: 100%;
+}
+
+.annual-bar-values {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+}
+
+.annual-bar-values span {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.annual-bar-values .income-v {
+  color: #1fa95f;
+}
+
+.annual-bar-values .expense-v {
+  color: #d15a4e;
 }
 
 .annual-bar-col small {
@@ -1992,7 +2021,7 @@
 }
 
 .annual-bar-stack {
-  height: 130px;
+  height: 100%;
   width: 100%;
   display: flex;
   align-items: end;
