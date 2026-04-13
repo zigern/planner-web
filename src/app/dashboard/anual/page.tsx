@@ -82,7 +82,8 @@ function getText(lang: string) {
       chart: "Receita vs Despesa (ano)",
       breakdown: "Categorias com mais despesa",
       none: "Sem dados para este ano",
-      export: "Ir para Spreadsheet"
+      export: "Ir para Spreadsheet",
+      period: "Período"
     };
   }
 
@@ -100,7 +101,8 @@ function getText(lang: string) {
     chart: "Income vs Expense (year)",
     breakdown: "Top spending categories",
     none: "No data for this year",
-    export: "Open Spreadsheet"
+    export: "Open Spreadsheet",
+    period: "Period"
   };
 }
 
@@ -126,6 +128,7 @@ export default async function AnnualOverviewPage({
   const params = await searchParams;
   const selectedMonth = parseMonthParam(params?.month);
   const [selectedYear] = selectedMonth.split("-");
+  const selectedMonthPart = selectedMonth.split("-")[1] || "01";
   const lang = parseLangParam(params?.lang);
   const currency = parseCurrencyParam(params?.currency);
   const text = getText(lang);
@@ -178,6 +181,9 @@ export default async function AnnualOverviewPage({
   const burnRatio = annualIncome > 0 ? (annualExpense / annualIncome) * 100 : 0;
   const maxValue = Math.max(1, ...months.flatMap((m) => [m.income, m.expense]));
   const initials = user.email.slice(0, 2).toUpperCase();
+  const selectedYearNum = Number(selectedYear);
+  const yearChoices = Array.from({ length: 4 }).map((_, index) => selectedYearNum - index);
+  const periodLabel = `${selectedYear}-01-01 → ${selectedYear}-12-31`;
 
   return (
     <div className="casha-wrap">
@@ -207,8 +213,20 @@ export default async function AnnualOverviewPage({
               <div>
                 <h1>{text.title}</h1>
                 <p>{text.subtitle}</p>
+                <p className="budgets-period-label">{text.period}: {periodLabel}</p>
               </div>
               <div className="cta-row">
+                <div className="activity-preset-group" aria-label="Year quick selector">
+                  {yearChoices.map((year) => {
+                    const href = `/dashboard/anual?month=${year}-${selectedMonthPart}&lang=${lang}&currency=${currency}`;
+                    const isActive = String(year) === selectedYear;
+                    return (
+                      <Link key={year} className={`activity-preset ${isActive ? "active" : ""}`} href={href}>
+                        {year}
+                      </Link>
+                    );
+                  })}
+                </div>
                 <Link className="btn" href={`/dashboard/spreadsheet?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
                   {text.export}
                 </Link>
