@@ -3,8 +3,6 @@ import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { convertFromBaseEur, formatMoneyConverted } from "@/lib/currency-conversion";
-import { LogoutButton } from "./components/logout-button";
-import { ViewControls } from "./components/view-controls";
 import { DashboardSidebar } from "./components/sidebar-nav";
 import { translateExpenseCategory } from "./utils/category-translation";
 import "./dashboard-theme.css";
@@ -663,9 +661,6 @@ export default async function DashboardPage({
                 </Link>
               ))}
             </div>
-            <ViewControls lang={lang} currency={currency} />
-            <div className="avatar-mini">{initials}</div>
-            <LogoutButton className="logout-light" label={text.logout} />
           </div>
         </div>
         <div className="workspace-shell">
@@ -674,6 +669,9 @@ export default async function DashboardPage({
             selectedMonth={selectedMonth}
             lang={lang}
             currency={currency}
+            showBottomControls
+            userInitials={initials}
+            logoutLabel={text.logout}
           />
           <main className="dash-main">
           <section className="greeting-row">
