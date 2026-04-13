@@ -31,12 +31,14 @@ export function WealthManager({
   lang,
   currency,
   assets,
-  debts
+  debts,
+  periodLabel
 }: {
   lang: string;
   currency: string;
   assets: AssetItem[];
   debts: DebtItem[];
+  periodLabel?: string;
 }) {
   const router = useRouter();
   const [assetName, setAssetName] = useState("");
@@ -167,6 +169,7 @@ export function WealthManager({
         <div className="panel-head">
           <h3>Ativos</h3>
         </div>
+        {periodLabel ? <p className="budgets-period-label">{periodLabel}</p> : null}
         <form className="recurring-form" onSubmit={createAsset}>
           <div className="q-grid">
             <label className="q-field">
@@ -227,6 +230,7 @@ export function WealthManager({
         <div className="panel-head">
           <h3>Dívidas</h3>
         </div>
+        {periodLabel ? <p className="budgets-period-label">{periodLabel}</p> : null}
         <form className="recurring-form" onSubmit={createDebt}>
           <label className="q-field">
             <span>Nome</span>
