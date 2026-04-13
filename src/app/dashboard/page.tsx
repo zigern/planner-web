@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
-import { formatMoneyConverted } from "@/lib/currency-conversion";
+import { convertFromBaseEur, formatMoneyConverted } from "@/lib/currency-conversion";
 import { LogoutButton } from "./components/logout-button";
 import { ViewControls } from "./components/view-controls";
 import { DashboardSidebar } from "./components/sidebar-nav";
@@ -68,39 +68,6 @@ function percentChange(current: number, previous: number) {
   return ((current - previous) / Math.abs(previous)) * 100;
 }
 
-function smoothLinePath(data: number[], w: number, h: number) {
-  if (data.length === 0) return "";
-  const max = Math.max(...data, 1);
-  const min = Math.min(...data, 0);
-  const range = Math.max(1, max - min);
-  const step = data.length > 1 ? w / (data.length - 1) : w;
-
-  const points = data.map((value, index) => {
-    const x = data.length === 1 ? w / 2 : index * step;
-    const y = h - ((value - min) / range) * (h - 14) - 8;
-    return { x, y };
-  });
-
-  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
-
-  let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
-  for (let i = 0; i < points.length - 1; i += 1) {
-    const p0 = points[i - 1] || points[i];
-    const p1 = points[i];
-    const p2 = points[i + 1];
-    const p3 = points[i + 2] || p2;
-
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
-
-    d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
-  }
-
-  return d;
-}
-
 function buildYearSeries(rows: YearMonthSummaryRow[], key: "income" | "expense") {
   const map = new Map(rows.map((r) => [Number(r.month_num), Number(r[key] || 0)]));
   return Array.from({ length: 12 }, (_, i) => map.get(i + 1) ?? 0);
@@ -110,10 +77,11 @@ function buildYearLabels(year: number, lang: string) {
   return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1).toLocaleDateString(lang, { month: "short" }));
 }
 
-function compactValueLabel(value: number) {
-  if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-  if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
-  return `${Math.round(value)}`;
+function compactAxisNumber(value: number, lang: string, currency: string) {
+  const converted = convertFromBaseEur(value, currency);
+  if (converted >= 1000000) return `${new Intl.NumberFormat(lang, { maximumFractionDigits: 1 }).format(converted / 1000000)}M`;
+  if (converted >= 1000) return `${new Intl.NumberFormat(lang, { maximumFractionDigits: 1 }).format(converted / 1000)}k`;
+  return new Intl.NumberFormat(lang, { maximumFractionDigits: 0 }).format(converted);
 }
 
 function dayText(v: string | Date | null, lang: string) {
@@ -583,30 +551,8 @@ export default async function DashboardPage({
   const expenseSeries = buildYearSeries(yearSummaryRows, "expense");
   const labels = buildYearLabels(selectedYear, lang);
   const maxY = Math.max(1, ...incomeSeries, ...expenseSeries);
-  const chartWidth = 760;
-  const chartHeight = 240;
-  const chartBottom = 228;
-  const chartTop = 10;
-  const chartUsableHeight = chartBottom - chartTop;
-  const groupWidth = chartWidth / 12;
-  const barWidth = Math.max(8, Math.min(16, groupWidth * 0.26));
-
-  const pathIncome = smoothLinePath(incomeSeries, chartWidth, chartHeight);
-  const pathExpense = smoothLinePath(expenseSeries, chartWidth, chartHeight);
-  const areaIncome = `${pathIncome} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`;
-  const areaExpense = `${pathExpense} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`;
-  const incomeBars = incomeSeries.map((value, index) => {
-    const h = (value / maxY) * chartUsableHeight;
-    const x = groupWidth * index + groupWidth * 0.5 - barWidth - 2;
-    const y = chartBottom - h;
-    return { x, y, h, value };
-  });
-  const expenseBars = expenseSeries.map((value, index) => {
-    const h = (value / maxY) * chartUsableHeight;
-    const x = groupWidth * index + groupWidth * 0.5 + 2;
-    const y = chartBottom - h;
-    return { x, y, h, value };
-  });
+  const barHeightPx = 220;
+  const yTicks = [1, 0.75, 0.5, 0.25, 0];
 
   const totalSpent = Math.max(1, expenseCategories.reduce((sum, row) => sum + Number(row.total || 0), 0));
   const rangeDays = Math.max(
@@ -984,76 +930,38 @@ export default async function DashboardPage({
                   <span>{text.last6Months}</span>
                 </div>
               </div>
-              <svg viewBox="0 0 760 240" preserveAspectRatio="none" className="wave-chart">
-                <defs>
-                  <linearGradient id="incomeFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#22c55e" stopOpacity="0.35" />
-                    <stop offset="100%" stopColor="#22c55e" stopOpacity="0.03" />
-                  </linearGradient>
-                  <linearGradient id="expenseFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#e35b4d" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="#e35b4d" stopOpacity="0.03" />
-                  </linearGradient>
-                </defs>
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <line key={`h-${i}`} x1="0" x2="760" y1={i * 48} y2={i * 48} className="grid" />
-                ))}
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <line key={`v-${i}`} y1="0" y2="240" x1={i * (760 / 11)} x2={i * (760 / 11)} className="grid" />
-                ))}
-                {incomeBars.map((bar, i) => (
-                  <rect
-                    key={`income-bar-${i}`}
-                    className="bar-income"
-                    x={bar.x}
-                    y={bar.y}
-                    width={barWidth}
-                    height={Math.max(0, bar.h)}
-                    rx={3}
-                  />
-                ))}
-                {expenseBars.map((bar, i) => (
-                  <rect
-                    key={`expense-bar-${i}`}
-                    className="bar-expense"
-                    x={bar.x}
-                    y={bar.y}
-                    width={barWidth}
-                    height={Math.max(0, bar.h)}
-                    rx={3}
-                  />
-                ))}
-                <path d={areaExpense} className="area-expense" />
-                <path d={pathExpense} className="line-expense" />
-                <path d={areaIncome} className="area-income" />
-                <path d={pathIncome} className="line-income" />
-                {incomeBars.map((bar, i) =>
-                  bar.value > 0 ? (
-                    <text key={`income-label-${i}`} x={bar.x + barWidth / 2} y={Math.max(12, bar.y - 5)} className="bar-label income">
-                      {compactValueLabel(bar.value)}
-                    </text>
-                  ) : null
-                )}
-                {expenseBars.map((bar, i) =>
-                  bar.value > 0 ? (
-                    <text
-                      key={`expense-label-${i}`}
-                      x={bar.x + barWidth / 2}
-                      y={Math.max(24, bar.y - 5)}
-                      className="bar-label expense"
-                    >
-                      {compactValueLabel(bar.value)}
-                    </text>
-                  ) : null
-                )}
-              </svg>
-              <div className="months-row">
-                {labels.map((label, i) => (
-                  <span key={`${label}-${i}`}>{label}</span>
-                ))}
-              </div>
-              <div className="y-max">
-                {text.max} {formatMoney(maxY, lang, currency)}
+              <div className="annual-chart-wrap">
+                <div className="annual-y-axis">
+                  {yTicks.map((ratio) => (
+                    <span key={ratio}>{compactAxisNumber(maxY * ratio, lang, currency)}</span>
+                  ))}
+                </div>
+                <div className="annual-plot-area">
+                  <div className="annual-grid-lines" aria-hidden="true">
+                    {yTicks.map((ratio) => (
+                      <span key={ratio} />
+                    ))}
+                  </div>
+                  <div className="annual-bars">
+                    {labels.map((label, index) => (
+                      <div key={`${label}-${index}`} className="annual-bar-col">
+                        <div className="annual-bar-stack">
+                          <div
+                            className="annual-bar income"
+                            style={{ height: `${Math.max((incomeSeries[index] / maxY) * barHeightPx, incomeSeries[index] > 0 ? 6 : 0)}px` }}
+                            title={`${text.income}: ${formatMoneySmall(incomeSeries[index], lang, currency)}`}
+                          />
+                          <div
+                            className="annual-bar expense"
+                            style={{ height: `${Math.max((expenseSeries[index] / maxY) * barHeightPx, expenseSeries[index] > 0 ? 6 : 0)}px` }}
+                            title={`${text.expense}: ${formatMoneySmall(expenseSeries[index], lang, currency)}`}
+                          />
+                        </div>
+                        <small>{label}</small>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
               <div className="panel-actions-row">
                 <Link
