@@ -142,6 +142,7 @@ export default async function SpreadsheetPage({
     month?: string | string[];
     lang?: string | string[];
     currency?: string | string[];
+    preset?: string | string[];
     type?: string | string[];
     category?: string | string[];
     status?: string | string[];
