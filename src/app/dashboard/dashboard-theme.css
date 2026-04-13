@@ -1064,6 +1064,39 @@
   gap: 10px;
 }
 
+.bill-alerts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bill-alert-card {
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  padding: 8px;
+  display: grid;
+  gap: 4px;
+}
+
+.bill-alert-card span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.bill-alert-card strong {
+  font-size: 15px;
+}
+
+.bill-alert-card.overdue strong,
+.bill-alert-card.danger strong {
+  color: #b23d2f;
+}
+
+.bill-alert-card.upcoming strong {
+  color: #1b8f56;
+}
+
 .bills-list {
   list-style: none;
   margin: 0;
@@ -1110,10 +1143,17 @@
   cursor: pointer;
 }
 
+.bills-list li.bill-overdue {
+  border-color: #f1b7af;
+  background: #fff8f7;
+}
+
 .bills-actions {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .bills-actions select {
@@ -1657,6 +1697,10 @@
   }
 
   .bills-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bill-alerts {
     grid-template-columns: 1fr;
   }
 

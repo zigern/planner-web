@@ -60,6 +60,11 @@ type Dict = {
   subSaved: string;
   billSaveFail: string;
   subSaveFail: string;
+  overdueCount: string;
+  overdueAmount: string;
+  upcoming7d: string;
+  quickPay: string;
+  noAlerts: string;
 };
 
 const textByLang: Record<string, Dict> = {
@@ -100,7 +105,12 @@ const textByLang: Record<string, Dict> = {
     billSaved: "Conta guardada.",
     subSaved: "Subscrição guardada.",
     billSaveFail: "Não foi possível guardar a conta.",
-    subSaveFail: "Não foi possível guardar a subscrição."
+    subSaveFail: "Não foi possível guardar a subscrição.",
+    overdueCount: "Contas vencidas",
+    overdueAmount: "Valor em atraso",
+    upcoming7d: "Vencem nos próximos 7 dias",
+    quickPay: "Marcar pago",
+    noAlerts: "Sem alertas de vencimento neste momento."
   },
   "en-US": {
     billsTitle: "Bills",
@@ -139,7 +149,12 @@ const textByLang: Record<string, Dict> = {
     billSaved: "Bill saved.",
     subSaved: "Subscription saved.",
     billSaveFail: "Could not save bill.",
-    subSaveFail: "Could not save subscription."
+    subSaveFail: "Could not save subscription.",
+    overdueCount: "Overdue bills",
+    overdueAmount: "Overdue amount",
+    upcoming7d: "Due in next 7 days",
+    quickPay: "Mark paid",
+    noAlerts: "No due-date alerts right now."
   }
 };
 
@@ -202,6 +217,18 @@ export function BillsSubscriptionsManager({
         return sum + base / 12;
       }, 0),
     [initialSubscriptions]
+  );
+
+  const today = new Date().getDate();
+  const pendingBills = useMemo(() => initialBills.filter((bill) => bill.status === "pending"), [initialBills]);
+  const overdueBills = useMemo(() => pendingBills.filter((bill) => bill.dueDay < today), [pendingBills, today]);
+  const upcomingBills = useMemo(
+    () => pendingBills.filter((bill) => bill.dueDay >= today && bill.dueDay <= Math.min(today + 7, 31)),
+    [pendingBills, today]
+  );
+  const overdueTotal = useMemo(
+    () => overdueBills.reduce((sum, bill) => sum + Number(bill.amount || 0), 0),
+    [overdueBills]
   );
 
   async function createBill(e: React.FormEvent) {
@@ -325,6 +352,21 @@ export function BillsSubscriptionsManager({
           {t.totalMonthlyBills}: {formatMoney(monthlyBillsTotal, lang, currency)}
         </p>
 
+        <div className="bill-alerts">
+          <div className="bill-alert-card overdue">
+            <span>{t.overdueCount}</span>
+            <strong>{overdueBills.length}</strong>
+          </div>
+          <div className="bill-alert-card danger">
+            <span>{t.overdueAmount}</span>
+            <strong>{formatMoney(overdueTotal, lang, currency)}</strong>
+          </div>
+          <div className="bill-alert-card upcoming">
+            <span>{t.upcoming7d}</span>
+            <strong>{upcomingBills.length}</strong>
+          </div>
+        </div>
+
         <form className="quick-form" onSubmit={createBill}>
           <div className="q-grid">
             <label className="q-field">
@@ -359,7 +401,7 @@ export function BillsSubscriptionsManager({
         <ul className="bills-list">
           {initialBills.length ? (
             initialBills.map((bill) => (
-              <li key={bill.id}>
+              <li key={bill.id} className={bill.status === "pending" && bill.dueDay < today ? "bill-overdue" : ""}>
                 <div>
                   <b>{bill.name}</b>
                   <p>{t.dueDay} {bill.dueDay} • {bill.frequency}</p>
@@ -375,6 +417,11 @@ export function BillsSubscriptionsManager({
                     <option value="pending">{t.pending}</option>
                     <option value="paid">{t.paid}</option>
                   </select>
+                  {bill.status === "pending" ? (
+                    <button type="button" onClick={() => updateBillStatus(bill.id, "paid")}>
+                      {t.quickPay}
+                    </button>
+                  ) : null}
                   <button type="button" onClick={() => removeBill(bill.id)}>{t.remove}</button>
                 </div>
               </li>
@@ -383,6 +430,7 @@ export function BillsSubscriptionsManager({
             <li className="recurring-empty">{t.noBills}</li>
           )}
         </ul>
+        {!overdueBills.length && !upcomingBills.length ? <p className="sub-copy">{t.noAlerts}</p> : null}
       </article>
 
       <article className="panel bills-panel">
