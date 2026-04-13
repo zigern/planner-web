@@ -24,6 +24,22 @@ function parseMonthParam(value: string | string[] | undefined) {
   return /^\d{4}-\d{2}$/.test(raw) ? raw : new Date().toISOString().slice(0, 7);
 }
 
+function parseDateParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "";
+  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : "";
+}
+
+function parsePresetParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "month";
+  return raw === "month" || raw === "30d" || raw === "90d" ? raw : "month";
+}
+
+function isoDate(value: Date) {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+}
+
 function parseLangParam(value: string | string[] | undefined) {
   const raw = Array.isArray(value) ? value[0] : value;
   if (!raw) return "en-US";
@@ -63,7 +79,11 @@ function getText(lang: string) {
       title: "Movimentos",
       subtitle: "Adicionar entradas e saídas",
       formTitle: "Novo movimento",
-      listTitle: "Registos do mês",
+      listTitle: "Registos do período",
+      quickRanges: "Atalhos",
+      thisMonth: "Este mês",
+      last30Days: "Últimos 30 dias",
+      last90Days: "Últimos 90 dias",
       noItems: "Sem movimentos para este mês.",
       date: "Data",
       kind: "Tipo",
@@ -82,7 +102,11 @@ function getText(lang: string) {
     title: "Movements",
     subtitle: "Add money in and out records",
     formTitle: "New movement",
-    listTitle: "Month records",
+    listTitle: "Period records",
+    quickRanges: "Quick ranges",
+    thisMonth: "This month",
+    last30Days: "Last 30 days",
+    last90Days: "Last 90 days",
     noItems: "No transactions found for this month.",
     date: "Date",
     kind: "Type",
@@ -104,6 +128,9 @@ export default async function MovimentosPage({
     month?: string | string[];
     lang?: string | string[];
     currency?: string | string[];
+    from?: string | string[];
+    to?: string | string[];
+    preset?: string | string[];
   }>;
 }) {
   if (!hasDatabaseConfig() || !process.env.AUTH_SECRET) {
@@ -124,22 +151,63 @@ export default async function MovimentosPage({
   const selectedMonth = parseMonthParam(params?.month);
   const lang = parseLangParam(params?.lang);
   const currency = parseCurrencyParam(params?.currency);
+  const presetFilter = parsePresetParam(params?.preset);
+  const fromParam = parseDateParam(params?.from);
+  const toParam = parseDateParam(params?.to);
   const text = getText(lang);
+
+  const [year, month] = selectedMonth.split("-").map(Number);
+  const monthStart = isoDate(new Date(year, month - 1, 1));
+  const monthEnd = isoDate(new Date(year, month, 0));
+  const todayIso = isoDate(new Date());
+  const last30Iso = isoDate(new Date(Date.now() - 29 * 24 * 60 * 60 * 1000));
+  const last90Iso = isoDate(new Date(Date.now() - 89 * 24 * 60 * 60 * 1000));
+
+  const effectiveFrom =
+    fromParam || (presetFilter === "30d" ? last30Iso : presetFilter === "90d" ? last90Iso : monthStart);
+  const effectiveTo = toParam || (presetFilter === "month" ? monthEnd : todayIso);
 
   const db = getDb();
   const [rows] = await db.query(
     `SELECT id, type, amount, category, description, transaction_date
      FROM transactions
      WHERE user_id = ?
-       AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
+       AND DATE(transaction_date) >= ?
+       AND DATE(transaction_date) <= ?
      ORDER BY transaction_date DESC, id DESC
      LIMIT 300`,
-    [user.userId, selectedMonth]
+    [user.userId, effectiveFrom, effectiveTo]
   );
 
   const items = rows as TxRow[];
   const name = user.email.split("@")[0];
   const initials = name.slice(0, 2).toUpperCase();
+  const presetBase = new URLSearchParams({
+    month: selectedMonth,
+    lang,
+    currency
+  });
+  const monthPresetHref = `/dashboard/movimentos?${(() => {
+    const p = new URLSearchParams(presetBase);
+    p.set("preset", "month");
+    p.set("from", monthStart);
+    p.set("to", monthEnd);
+    return p.toString();
+  })()}`;
+  const last30PresetHref = `/dashboard/movimentos?${(() => {
+    const p = new URLSearchParams(presetBase);
+    p.set("preset", "30d");
+    p.set("from", last30Iso);
+    p.set("to", todayIso);
+    return p.toString();
+  })()}`;
+  const last90PresetHref = `/dashboard/movimentos?${(() => {
+    const p = new URLSearchParams(presetBase);
+    p.set("preset", "90d");
+    p.set("from", last90Iso);
+    p.set("to", todayIso);
+    return p.toString();
+  })()}`;
 
   return (
     <div className="casha-wrap">
@@ -180,8 +248,21 @@ export default async function MovimentosPage({
             </article>
 
             <article className="panel activity-panel">
-              <div className="panel-head movement-list-head">
-                <h3>{text.listTitle}</h3>
+              <div className="movement-toolbar">
+                <div className="panel-head movement-list-head">
+                  <h3>{text.listTitle}</h3>
+                </div>
+                <div className="activity-preset-group" aria-label={text.quickRanges}>
+                  <Link className={`activity-preset ${presetFilter === "month" ? "active" : ""}`} href={monthPresetHref}>
+                    {text.thisMonth}
+                  </Link>
+                  <Link className={`activity-preset ${presetFilter === "30d" ? "active" : ""}`} href={last30PresetHref}>
+                    {text.last30Days}
+                  </Link>
+                  <Link className={`activity-preset ${presetFilter === "90d" ? "active" : ""}`} href={last90PresetHref}>
+                    {text.last90Days}
+                  </Link>
+                </div>
               </div>
               <div className="activity-table-wrap">
                 <table className="activity-table">

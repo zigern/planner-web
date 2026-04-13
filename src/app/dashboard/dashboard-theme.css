@@ -816,7 +816,17 @@
 .movement-list-head {
   padding: 10px 12px;
   margin: 0;
+  border-bottom: 0;
+}
+
+.movement-toolbar {
+  padding: 10px 12px;
   border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .recurring-grid {
