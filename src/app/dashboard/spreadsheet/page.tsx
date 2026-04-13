@@ -64,6 +64,12 @@ function parseTextParam(value: string | string[] | undefined) {
   return raw.trim().slice(0, 80);
 }
 
+function parsePresetParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "month";
+  return raw === "month" || raw === "30d" || raw === "90d" ? raw : "month";
+}
+
 function parsePageParam(value: string | string[] | undefined) {
   const raw = Array.isArray(value) ? value[0] : value;
   const parsed = Number(raw);
@@ -71,9 +77,23 @@ function parsePageParam(value: string | string[] | undefined) {
   return Math.floor(parsed);
 }
 
-function monthName(monthIso: string, lang: string) {
-  const [year, month] = monthIso.split("-").map(Number);
-  return new Date(year, month - 1, 1).toLocaleDateString(lang, { month: "short" });
+function isoDate(value: Date) {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+}
+
+function getMonthBounds(isoMonth: string) {
+  const [year, month] = isoMonth.split("-").map(Number);
+  const end = new Date(year, month, 0);
+  return {
+    from: `${year}-${String(month).padStart(2, "0")}-01`,
+    to: `${year}-${String(month).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`
+  };
+}
+
+function monthFromDate(v: string | Date, lang: string) {
+  const d = v instanceof Date ? v : new Date(v);
+  if (Number.isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString(lang, { month: "short" });
 }
 
 function monthLabel(monthIso: string) {
@@ -152,15 +172,27 @@ export default async function SpreadsheetPage({
   const typeFilter = parseTypeParam(params?.type);
   const categoryFilter = parseTextParam(params?.category) || "all";
   const statusFilter = parseStatusParam(params?.status);
+  const preset = parsePresetParam(params?.preset);
   const fromFilter = parseDateParam(params?.from);
   const toFilter = parseDateParam(params?.to);
   const queryFilter = parseTextParam(params?.q);
   const currentPage = parsePageParam(params?.page);
   const pageSize = 25;
+  const monthBounds = getMonthBounds(selectedMonth);
+  const todayIso = isoDate(new Date());
+  const last30Iso = isoDate(new Date(Date.now() - 29 * 24 * 60 * 60 * 1000));
+  const last90Iso = isoDate(new Date(Date.now() - 89 * 24 * 60 * 60 * 1000));
+  const effectiveFrom = fromFilter || (preset === "30d" ? last30Iso : preset === "90d" ? last90Iso : monthBounds.from);
+  const effectiveTo = toFilter || (preset === "month" ? monthBounds.to : todayIso);
+  const periodLabel = `${effectiveFrom} → ${effectiveTo}`;
 
   const db = getDb();
-  const where: string[] = ["user_id = ?", "DATE_FORMAT(transaction_date, '%Y-%m') = ?"];
-  const values: unknown[] = [user.userId, selectedMonth];
+  const where: string[] = ["user_id = ?"];
+  const values: unknown[] = [user.userId];
+  where.push("DATE(transaction_date) >= ?");
+  values.push(effectiveFrom);
+  where.push("DATE(transaction_date) <= ?");
+  values.push(effectiveTo);
   if (typeFilter !== "all") {
     where.push("type = ?");
     values.push(typeFilter);
@@ -197,9 +229,10 @@ export default async function SpreadsheetPage({
     `SELECT DISTINCT category
      FROM transactions
      WHERE user_id = ?
-       AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
+       AND DATE(transaction_date) >= ?
+       AND DATE(transaction_date) <= ?
      ORDER BY category ASC`,
-    [user.userId, selectedMonth]
+    [user.userId, effectiveFrom, effectiveTo]
   );
   const assets = await safeQueryRows<AssetRow>(
     db,
@@ -230,7 +263,39 @@ export default async function SpreadsheetPage({
     [user.userId]
   );
 
-  const monthShort = monthName(selectedMonth, lang);
+  const presetBase = new URLSearchParams({
+    month: selectedMonth,
+    lang,
+    currency,
+    type: typeFilter,
+    category: categoryFilter,
+    status: statusFilter,
+    q: queryFilter
+  });
+  const monthPresetHref = `/dashboard/spreadsheet?${(() => {
+    const p = new URLSearchParams(presetBase);
+    p.set("preset", "month");
+    p.set("from", monthBounds.from);
+    p.set("to", monthBounds.to);
+    p.set("page", "1");
+    return p.toString();
+  })()}`;
+  const last30PresetHref = `/dashboard/spreadsheet?${(() => {
+    const p = new URLSearchParams(presetBase);
+    p.set("preset", "30d");
+    p.set("from", last30Iso);
+    p.set("to", todayIso);
+    p.set("page", "1");
+    return p.toString();
+  })()}`;
+  const last90PresetHref = `/dashboard/spreadsheet?${(() => {
+    const p = new URLSearchParams(presetBase);
+    p.set("preset", "90d");
+    p.set("from", last90Iso);
+    p.set("to", todayIso);
+    p.set("page", "1");
+    return p.toString();
+  })()}`;
   const lateBillSet = new Set(
     bills
       .filter((b) => b.status === "pending" && b.due_day < new Date().getDate())
@@ -258,11 +323,12 @@ export default async function SpreadsheetPage({
     month: selectedMonth,
     lang,
     currency,
+    preset,
     type: typeFilter,
     category: categoryFilter,
     status: statusFilter,
-    from: fromFilter,
-    to: toFilter,
+    from: effectiveFrom,
+    to: effectiveTo,
     q: queryFilter
   });
 
@@ -272,7 +338,7 @@ export default async function SpreadsheetPage({
     csvHeader.map(csvEscape).join(","),
     ...filteredByStatus.map((tx) =>
       [
-        monthShort,
+        monthFromDate(tx.transaction_date, lang),
         tx.type === "income" ? "Income" : "Expenses",
         tx.category,
         tx.description || "-",
@@ -289,6 +355,10 @@ export default async function SpreadsheetPage({
     ? {
         title: "Spreadsheet",
         subtitle: "Visão tabular com filtros, exportação e paginação",
+        period: "Período",
+        thisMonth: "Este mês",
+        last30d: "Últimos 30 dias",
+        last90d: "Últimos 90 dias",
         apply: "Aplicar",
         clear: "Limpar",
         export: "Exportar CSV",
@@ -319,6 +389,10 @@ export default async function SpreadsheetPage({
     : {
         title: "Spreadsheet",
         subtitle: "Tabular view with filters, export, and pagination",
+        period: "Period",
+        thisMonth: "This month",
+        last30d: "Last 30 days",
+        last90d: "Last 90 days",
         apply: "Apply",
         clear: "Clear",
         export: "Export CSV",
@@ -374,8 +448,20 @@ export default async function SpreadsheetPage({
               <div>
                 <h1>{text.title}</h1>
                 <p>{text.subtitle}</p>
+                <p className="budgets-period-label">{text.period}: {periodLabel}</p>
               </div>
               <div className="cta-row">
+                <div className="activity-preset-group">
+                  <Link className={`activity-preset ${preset === "month" ? "active" : ""}`} href={monthPresetHref}>
+                    {text.thisMonth}
+                  </Link>
+                  <Link className={`activity-preset ${preset === "30d" ? "active" : ""}`} href={last30PresetHref}>
+                    {text.last30d}
+                  </Link>
+                  <Link className={`activity-preset ${preset === "90d" ? "active" : ""}`} href={last90PresetHref}>
+                    {text.last90d}
+                  </Link>
+                </div>
                 <Link className="btn" href={csvHref} download={`spreadsheet-${selectedMonth}.csv`}>
                   {text.export}
                 </Link>
@@ -388,6 +474,7 @@ export default async function SpreadsheetPage({
                   <input type="hidden" name="month" value={selectedMonth} />
                   <input type="hidden" name="lang" value={lang} />
                   <input type="hidden" name="currency" value={currency} />
+                  <input type="hidden" name="preset" value={preset} />
 
                   <select name="type" defaultValue={typeFilter}>
                     <option value="all">{text.allTypes}</option>
@@ -410,12 +497,12 @@ export default async function SpreadsheetPage({
                     <option value="late">{text.late}</option>
                   </select>
 
-                  <input type="date" name="from" defaultValue={fromFilter} />
-                  <input type="date" name="to" defaultValue={toFilter} />
+                  <input type="date" name="from" defaultValue={effectiveFrom} />
+                  <input type="date" name="to" defaultValue={effectiveTo} />
                   <input type="text" name="q" defaultValue={queryFilter} placeholder="Search category/detail" />
 
                   <button type="submit">{text.apply}</button>
-                  <Link href={`?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>{text.clear}</Link>
+                  <Link href={`?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=month&from=${monthBounds.from}&to=${monthBounds.to}`}>{text.clear}</Link>
                   <a href={csvHref} download={`spreadsheet-${selectedMonth}.csv`}>
                     {text.export}
                   </a>
@@ -439,7 +526,7 @@ export default async function SpreadsheetPage({
                         pagedItems.map((tx) => {
                           return (
                             <tr key={tx.id}>
-                              <td>{monthShort}</td>
+                              <td>{monthFromDate(tx.transaction_date, lang)}</td>
                               <td>{tx.type === "income" ? text.income : text.expense}</td>
                               <td>{tx.category}</td>
                               <td>{tx.description || "-"}</td>
