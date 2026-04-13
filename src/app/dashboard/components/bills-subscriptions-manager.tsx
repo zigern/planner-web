@@ -20,6 +20,7 @@ type SubscriptionItem = {
   billingCycle: "monthly" | "yearly";
   category: string;
   status: "active" | "paused" | "cancelled";
+  renewalDate: string | null;
 };
 
 type Dict = {
@@ -56,6 +57,8 @@ type Dict = {
   totalMonthlySubs: string;
   noBills: string;
   noSubs: string;
+  renewalDate: string;
+  renewalsNext7d: string;
   billSaved: string;
   subSaved: string;
   billSaveFail: string;
@@ -102,6 +105,8 @@ const textByLang: Record<string, Dict> = {
     totalMonthlySubs: "Total mensal subscrições",
     noBills: "Sem contas fixas registadas.",
     noSubs: "Sem subscrições registadas.",
+    renewalDate: "Renovação",
+    renewalsNext7d: "Renovações próximos 7 dias",
     billSaved: "Conta guardada.",
     subSaved: "Subscrição guardada.",
     billSaveFail: "Não foi possível guardar a conta.",
@@ -146,6 +151,8 @@ const textByLang: Record<string, Dict> = {
     totalMonthlySubs: "Monthly subscriptions total",
     noBills: "No fixed bills yet.",
     noSubs: "No subscriptions yet.",
+    renewalDate: "Renewal date",
+    renewalsNext7d: "Renewals in next 7 days",
     billSaved: "Bill saved.",
     subSaved: "Subscription saved.",
     billSaveFail: "Could not save bill.",
@@ -165,6 +172,13 @@ function formatMoney(value: number, lang: string, currency: string) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(value);
+}
+
+function formatOptionalDate(value: string | null, lang: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString(lang);
 }
 
 export function BillsSubscriptionsManager({
@@ -192,6 +206,7 @@ export function BillsSubscriptionsManager({
   const [subCost, setSubCost] = useState("");
   const [subCycle, setSubCycle] = useState<"monthly" | "yearly">("monthly");
   const [subCategory, setSubCategory] = useState("Software");
+  const [subRenewalDate, setSubRenewalDate] = useState("");
   const [subLoading, setSubLoading] = useState(false);
 
   const [message, setMessage] = useState<string | null>(null);
@@ -218,6 +233,16 @@ export function BillsSubscriptionsManager({
       }, 0),
     [initialSubscriptions]
   );
+  const renewalsNext7d = useMemo(() => {
+    const now = new Date();
+    const end = new Date(now);
+    end.setDate(now.getDate() + 7);
+    return initialSubscriptions.filter((sub) => {
+      if (!sub.renewalDate) return false;
+      const renewal = new Date(sub.renewalDate);
+      return !Number.isNaN(renewal.getTime()) && renewal >= now && renewal <= end;
+    });
+  }, [initialSubscriptions]);
 
   const today = new Date().getDate();
   const pendingBills = useMemo(() => initialBills.filter((bill) => bill.status === "pending"), [initialBills]);
@@ -279,7 +304,8 @@ export function BillsSubscriptionsManager({
           service: subService,
           cost: Number(subCost),
           billingCycle: subCycle,
-          category: subCategory
+          category: subCategory,
+          renewalDate: subRenewalDate || undefined
         })
       });
 
@@ -292,6 +318,7 @@ export function BillsSubscriptionsManager({
       setSubCost("");
       setSubCycle("monthly");
       setSubCategory("Software");
+      setSubRenewalDate("");
       setMessage(t.subSaved);
       router.refresh();
     } finally {
@@ -441,6 +468,7 @@ export function BillsSubscriptionsManager({
         <p className="delta up">
           {t.totalMonthlySubs}: {formatMoney(monthlySubsTotal, lang, currency)}
         </p>
+        <p className="delta">{t.renewalsNext7d}: {renewalsNext7d.length}</p>
 
         <form className="quick-form" onSubmit={createSubscription}>
           <div className="q-grid">
@@ -466,6 +494,10 @@ export function BillsSubscriptionsManager({
               <input value={subCategory} onChange={(e) => setSubCategory(e.target.value)} required />
             </label>
           </div>
+          <label className="q-field">
+            <span>{t.renewalDate}</span>
+            <input type="date" value={subRenewalDate} onChange={(e) => setSubRenewalDate(e.target.value)} />
+          </label>
           <button type="submit" disabled={subLoading}>{subLoading ? t.saving : t.addSub}</button>
         </form>
 
@@ -475,7 +507,10 @@ export function BillsSubscriptionsManager({
               <li key={sub.id}>
                 <div>
                   <b>{sub.service}</b>
-                  <p>{sub.category} • {sub.billingCycle}</p>
+                  <p>
+                    {sub.category} • {sub.billingCycle}
+                    {sub.renewalDate ? ` • ${t.renewalDate}: ${formatOptionalDate(sub.renewalDate, lang)}` : ""}
+                  </p>
                 </div>
                 <strong>{formatMoney(sub.cost, lang, currency)}</strong>
                 <div className="bills-actions">

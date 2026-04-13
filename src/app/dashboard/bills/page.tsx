@@ -24,6 +24,7 @@ type SubRow = {
   billing_cycle: "monthly" | "yearly";
   category: string;
   status: "active" | "paused" | "cancelled";
+  renewal_date: string | Date | null;
 };
 
 function parseMonthParam(value: string | string[] | undefined) {
@@ -115,7 +116,7 @@ export default async function BillsPage({
 
   const subscriptions = await safeQueryRows<SubRow>(
     db,
-    `SELECT id, service, cost, billing_cycle, category, status
+    `SELECT id, service, cost, billing_cycle, category, status, renewal_date
      FROM subscriptions
      WHERE user_id = ?
      ORDER BY id DESC`,
@@ -138,7 +139,8 @@ export default async function BillsPage({
     cost: Number(row.cost || 0),
     billingCycle: row.billing_cycle,
     category: row.category,
-    status: row.status
+    status: row.status,
+    renewalDate: row.renewal_date ? String(row.renewal_date) : null
   }));
 
   const name = user.email.split("@")[0];
