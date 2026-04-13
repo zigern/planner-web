@@ -5,6 +5,7 @@ import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "./components/logout-button";
 import { ViewControls } from "./components/view-controls";
 import { DashboardSidebar } from "./components/sidebar-nav";
+import { translateExpenseCategory } from "./utils/category-translation";
 import "./dashboard-theme.css";
 
 type TotalsRow = { income: string | null; expense: string | null };
@@ -847,7 +848,7 @@ export default async function DashboardPage({
                         <Icon kind={iconByCategory(item.category)} />
                       </span>
                       <div>
-                        <b>{item.category}</b>
+                        <b>{translateExpenseCategory(item.category, lang)}</b>
                         <p>
                           {text.increased} <strong>{item.pct}%</strong> {text.thisWeek} {text.youSpent}{" "}
                           <strong>{formatMoneySmall(item.amount, lang, currency)}</strong> {text.moreSuffix}
@@ -927,7 +928,7 @@ export default async function DashboardPage({
                       </span>
                       <div>
                         <b>
-                          {alert.category}{" "}
+                          {translateExpenseCategory(alert.category, lang)}{" "}
                           <strong>
                             {alert.isUnplanned ? text.unplanned : `${formatMoneySmall(alert.left, lang, currency)} ${text.left}`}
                           </strong>
@@ -1039,7 +1040,7 @@ export default async function DashboardPage({
                             >
                               <Icon kind={iconByCategory(row.category)} />
                             </span>
-                            <span>{row.category}</span>
+                            <span>{translateExpenseCategory(row.category, lang)}</span>
                           </span>
                           <b>{formatMoneySmall(value, lang, currency)}</b>
                         </div>

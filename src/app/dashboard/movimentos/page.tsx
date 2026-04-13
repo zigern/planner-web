@@ -7,6 +7,7 @@ import { QuickAddForm } from "../components/quick-add-form";
 import { ViewControls } from "../components/view-controls";
 import { ActivityDeleteButton } from "../components/activity-delete-button";
 import { DashboardSidebar } from "../components/sidebar-nav";
+import { translateExpenseCategory } from "../utils/category-translation";
 import "../dashboard-theme.css";
 
 type TxRow = {
@@ -288,7 +289,7 @@ export default async function MovimentosPage({
                                 {isIncome ? text.income : text.expense}
                               </span>
                             </td>
-                            <td>{tx.category}</td>
+                            <td>{translateExpenseCategory(tx.category, lang)}</td>
                             <td>{tx.description || "—"}</td>
                             <td className={isIncome ? "money-in" : "money-out"}>
                               {isIncome ? "+" : "-"}

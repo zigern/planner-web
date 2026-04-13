@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { translateExpenseCategory } from "../utils/category-translation";
 
 type RecurringRule = {
   id: number;
@@ -365,7 +366,7 @@ export function RecurringRulesManager({
               <select value={category} onChange={(e) => setCategory(e.target.value)}>
                 {categories.map((item) => (
                   <option key={item} value={item}>
-                    {item}
+                    {type === "expense" ? translateExpenseCategory(item, lang) : item}
                   </option>
                 ))}
               </select>
@@ -411,7 +412,8 @@ export function RecurringRulesManager({
               <li key={rule.id}>
                 <div>
                   <b>
-                    {rule.type === "income" ? t.income : t.expense} · {rule.category}
+                    {rule.type === "income" ? t.income : t.expense} ·{" "}
+                    {rule.type === "expense" ? translateExpenseCategory(rule.category, lang) : rule.category}
                   </b>
                   <p>
                     {rule.description || "—"} · {t.day.toLowerCase()} {rule.dayOfMonth} · {t.applied}:{" "}

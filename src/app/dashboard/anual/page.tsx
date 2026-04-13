@@ -5,6 +5,7 @@ import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "../components/logout-button";
 import { ViewControls } from "../components/view-controls";
 import { DashboardSidebar } from "../components/sidebar-nav";
+import { translateExpenseCategory } from "../utils/category-translation";
 import "../dashboard-theme.css";
 
 type YearSummaryRow = { month: string; income: string; expense: string };
@@ -395,7 +396,7 @@ export default async function AnnualOverviewPage({
                               >
                                 <Icon kind={iconByCategory(row.category)} />
                               </span>
-                              <span>{row.category}</span>
+                              <span>{translateExpenseCategory(row.category, lang)}</span>
                             </span>
                             <b>{fmt(total, lang, currency)}</b>
                           </div>

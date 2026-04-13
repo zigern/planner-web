@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { translateExpenseCategory } from "../utils/category-translation";
 
 type BudgetRow = {
   id: number;
@@ -286,7 +287,7 @@ export function BudgetsManager({
               <select value={category} onChange={(e) => setCategory(e.target.value)}>
                 {categories.map((item) => (
                   <option key={item} value={item}>
-                    {item}
+                    {translateExpenseCategory(item, lang)}
                   </option>
                 ))}
               </select>
@@ -340,7 +341,7 @@ export function BudgetsManager({
 
                   return (
                     <tr key={row.id}>
-                      <td>{row.category}</td>
+                      <td>{translateExpenseCategory(row.category, lang)}</td>
                       <td>{formatMoney(row.budgetAmount, lang, currency)}</td>
                       <td className="money-out">{formatMoney(row.spent, lang, currency)}</td>
                       <td className={left >= 0 ? "money-in" : "money-out"}>
@@ -416,7 +417,7 @@ export function BudgetsManager({
 
           <div className="budget-insight-card">
             <p>{t.topRisk}</p>
-            <strong>{topRisk ? topRisk.category : t.noRisk}</strong>
+            <strong>{topRisk ? translateExpenseCategory(topRisk.category, lang) : t.noRisk}</strong>
             <small>{topRisk ? `${Math.round(topRisk.usage)}%` : "0%"}</small>
             <p className="budget-reco">
               {budgetMetrics.riskRows.length >= 3

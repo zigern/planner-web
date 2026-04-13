@@ -5,6 +5,7 @@ import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "../components/logout-button";
 import { ViewControls } from "../components/view-controls";
 import { DashboardSidebar } from "../components/sidebar-nav";
+import { translateExpenseCategory } from "../utils/category-translation";
 import "../dashboard-theme.css";
 
 type TxRow = {
@@ -499,7 +500,7 @@ export default async function SpreadsheetPage({
                         <option value="all">{text.allCategories}</option>
                         {categories.map((cat) => (
                           <option key={cat} value={cat}>
-                            {cat}
+                            {translateExpenseCategory(cat, lang)}
                           </option>
                         ))}
                       </select>
@@ -559,7 +560,7 @@ export default async function SpreadsheetPage({
                             <tr key={tx.id}>
                               <td>{monthFromDate(tx.transaction_date, lang)}</td>
                               <td>{tx.type === "income" ? text.income : text.expense}</td>
-                              <td>{tx.category}</td>
+                              <td>{translateExpenseCategory(tx.category, lang)}</td>
                               <td>{tx.description || "-"}</td>
                               <td>{fmt(Math.abs(Number(tx.amount || 0)), lang, currency)}</td>
                               <td>{dayMonthYear(tx.transaction_date, lang)}</td>

@@ -6,6 +6,7 @@ import { LogoutButton } from "../components/logout-button";
 import { ViewControls } from "../components/view-controls";
 import { ActivityDeleteButton } from "../components/activity-delete-button";
 import { DashboardSidebar } from "../components/sidebar-nav";
+import { translateExpenseCategory } from "../utils/category-translation";
 import "../dashboard-theme.css";
 
 type TxRow = {
@@ -354,7 +355,7 @@ export default async function ActivityPage({
                     <option value="all">{text.all}</option>
                     {categories.map((cat) => (
                       <option key={cat} value={cat}>
-                        {cat}
+                        {translateExpenseCategory(cat, lang)}
                       </option>
                     ))}
                   </select>
@@ -417,7 +418,7 @@ export default async function ActivityPage({
                               {isIncome ? text.income : text.expense}
                             </span>
                           </td>
-                          <td>{tx.category}</td>
+                          <td>{translateExpenseCategory(tx.category, lang)}</td>
                           <td>{tx.description || "—"}</td>
                           <td className={isIncome ? "money-in" : "money-out"}>
                             {isIncome ? "+" : "-"}
