@@ -57,6 +57,16 @@ function parseTextParam(value: string | string[] | undefined) {
   return raw.trim().slice(0, 80);
 }
 
+function isoDate(value: Date) {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+}
+
+function parsePresetParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "custom";
+  return raw === "month" || raw === "30d" || raw === "90d" ? raw : "custom";
+}
+
 function formatMoney(value: number, lang: string, currency: string) {
   return new Intl.NumberFormat(lang, {
     style: "currency",
@@ -84,6 +94,10 @@ function getText(lang: string) {
       filters: "Filtros",
       search: "Pesquisar",
       searchPlaceholder: "Categoria ou detalhe",
+      quickRanges: "Atalhos",
+      thisMonth: "Este mês",
+      last30Days: "Últimos 30 dias",
+      last90Days: "Últimos 90 dias",
       from: "De",
       to: "Até",
       all: "Todos",
@@ -110,6 +124,10 @@ function getText(lang: string) {
     filters: "Filters",
     search: "Search",
     searchPlaceholder: "Category or detail",
+    quickRanges: "Quick ranges",
+    thisMonth: "This month",
+    last30Days: "Last 30 days",
+    last90Days: "Last 90 days",
     from: "From",
     to: "To",
     all: "All",
@@ -142,6 +160,7 @@ export default async function ActivityPage({
     from?: string | string[];
     to?: string | string[];
     q?: string | string[];
+    preset?: string | string[];
   }>;
 }) {
   if (!hasDatabaseConfig() || !process.env.AUTH_SECRET) {
@@ -168,6 +187,7 @@ export default async function ActivityPage({
   const fromFilter = parseDateParam(params?.from);
   const toFilter = parseDateParam(params?.to);
   const queryFilter = parseTextParam(params?.q);
+  const presetFilter = parsePresetParam(params?.preset);
   const text = getText(lang);
 
   const db = getDb();
@@ -215,6 +235,41 @@ export default async function ActivityPage({
 
   const items = rows as TxRow[];
   const categories = (categoryRows as CategoryRow[]).map((r) => r.category).filter(Boolean);
+  const [y, m] = selectedMonth.split("-").map(Number);
+  const monthStart = isoDate(new Date(y, m - 1, 1));
+  const monthEnd = isoDate(new Date(y, m, 0));
+  const todayIso = isoDate(new Date());
+  const last30Iso = isoDate(new Date(Date.now() - 29 * 24 * 60 * 60 * 1000));
+  const last90Iso = isoDate(new Date(Date.now() - 89 * 24 * 60 * 60 * 1000));
+  const presetBase = new URLSearchParams({
+    month: selectedMonth,
+    lang,
+    currency
+  });
+  if (typeFilter !== "all") presetBase.set("type", typeFilter);
+  if (categoryFilter !== "all") presetBase.set("category", categoryFilter);
+  if (queryFilter) presetBase.set("q", queryFilter);
+  const monthPresetHref = `/dashboard/activity?${(() => {
+    const p = new URLSearchParams(presetBase);
+    p.set("preset", "month");
+    p.set("from", monthStart);
+    p.set("to", monthEnd);
+    return p.toString();
+  })()}`;
+  const last30PresetHref = `/dashboard/activity?${(() => {
+    const p = new URLSearchParams(presetBase);
+    p.set("preset", "30d");
+    p.set("from", last30Iso);
+    p.set("to", todayIso);
+    return p.toString();
+  })()}`;
+  const last90PresetHref = `/dashboard/activity?${(() => {
+    const p = new URLSearchParams(presetBase);
+    p.set("preset", "90d");
+    p.set("from", last90Iso);
+    p.set("to", todayIso);
+    return p.toString();
+  })()}`;
   const csvHeader = [text.date, text.kind, text.category, text.detail, text.amount];
   const csvEscape = (value: string) => `"${value.replace(/"/g, '""')}"`;
   const csvLines = [
@@ -267,10 +322,22 @@ export default async function ActivityPage({
 
           <section className="panel activity-panel">
             <div className="activity-toolbar">
+              <div className="activity-preset-group" aria-label={text.quickRanges}>
+                <Link className={`activity-preset ${presetFilter === "month" ? "active" : ""}`} href={monthPresetHref}>
+                  {text.thisMonth}
+                </Link>
+                <Link className={`activity-preset ${presetFilter === "30d" ? "active" : ""}`} href={last30PresetHref}>
+                  {text.last30Days}
+                </Link>
+                <Link className={`activity-preset ${presetFilter === "90d" ? "active" : ""}`} href={last90PresetHref}>
+                  {text.last90Days}
+                </Link>
+              </div>
               <form method="get" className="activity-filters">
                 <input type="hidden" name="month" value={selectedMonth} />
                 <input type="hidden" name="lang" value={lang} />
                 <input type="hidden" name="currency" value={currency} />
+                <input type="hidden" name="preset" value={presetFilter} />
 
                 <label className="q-field">
                   <span>{text.kind}</span>

@@ -759,6 +759,36 @@
   flex-wrap: wrap;
 }
 
+.activity-preset-group {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.activity-preset {
+  text-decoration: none;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: #4b4b56;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.activity-preset:hover {
+  background: #f6f6f8;
+}
+
+.activity-preset.active {
+  background: #1f1f21;
+  border-color: #1f1f21;
+  color: #fff;
+}
+
 .activity-filters {
   display: grid;
   grid-template-columns: repeat(5, minmax(120px, 1fr)) auto;
