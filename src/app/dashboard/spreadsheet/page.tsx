@@ -374,6 +374,9 @@ export default async function SpreadsheetPage({
         category: "Categoria",
         subCategory: "Subcategoria",
         amount: "Valor",
+        from: "De",
+        to: "Até",
+        search: "Pesquisar",
         dueDate: "Data",
         status: "Estado",
         noRows: "Sem movimentos para este filtro.",
@@ -408,6 +411,9 @@ export default async function SpreadsheetPage({
         category: "Category",
         subCategory: "Sub-category",
         amount: "Amount",
+        from: "From",
+        to: "To",
+        search: "Search",
         dueDate: "Bill Due Date",
         status: "Status",
         noRows: "No rows for this filter.",
@@ -476,36 +482,60 @@ export default async function SpreadsheetPage({
                   <input type="hidden" name="currency" value={currency} />
                   <input type="hidden" name="preset" value={preset} />
 
-                  <select name="type" defaultValue={typeFilter}>
-                    <option value="all">{text.allTypes}</option>
-                    <option value="income">{text.income}</option>
-                    <option value="expense">{text.expense}</option>
-                  </select>
+                  <div className="sheet-filter-line sheet-filter-line-main">
+                    <label className="sheet-filter-field">
+                      <span>{text.mainType}</span>
+                      <select name="type" defaultValue={typeFilter}>
+                        <option value="all">{text.allTypes}</option>
+                        <option value="income">{text.income}</option>
+                        <option value="expense">{text.expense}</option>
+                      </select>
+                    </label>
 
-                  <select name="category" defaultValue={categoryFilter}>
-                    <option value="all">{text.allCategories}</option>
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
+                    <label className="sheet-filter-field">
+                      <span>{text.category}</span>
+                      <select name="category" defaultValue={categoryFilter}>
+                        <option value="all">{text.allCategories}</option>
+                        {categories.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
 
-                  <select name="status" defaultValue={statusFilter}>
-                    <option value="all">{text.allStatus}</option>
-                    <option value="paid">{text.paid}</option>
-                    <option value="late">{text.late}</option>
-                  </select>
+                    <label className="sheet-filter-field">
+                      <span>{text.status}</span>
+                      <select name="status" defaultValue={statusFilter}>
+                        <option value="all">{text.allStatus}</option>
+                        <option value="paid">{text.paid}</option>
+                        <option value="late">{text.late}</option>
+                      </select>
+                    </label>
+                  </div>
 
-                  <input type="date" name="from" defaultValue={effectiveFrom} />
-                  <input type="date" name="to" defaultValue={effectiveTo} />
-                  <input type="text" name="q" defaultValue={queryFilter} placeholder="Search category/detail" />
+                  <div className="sheet-filter-line sheet-filter-line-dates">
+                    <label className="sheet-filter-field">
+                      <span>{text.from}</span>
+                      <input type="date" name="from" defaultValue={effectiveFrom} />
+                    </label>
+                    <label className="sheet-filter-field">
+                      <span>{text.to}</span>
+                      <input type="date" name="to" defaultValue={effectiveTo} />
+                    </label>
+                    <label className="sheet-filter-field sheet-filter-field-search">
+                      <span>{text.search}</span>
+                      <input type="text" name="q" defaultValue={queryFilter} placeholder={`${text.search} ${text.category.toLowerCase()}/${text.subCategory.toLowerCase()}`} />
+                    </label>
+                  </div>
 
-                  <button type="submit">{text.apply}</button>
-                  <Link href={`?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=month&from=${monthBounds.from}&to=${monthBounds.to}`}>{text.clear}</Link>
-                  <a href={csvHref} download={`spreadsheet-${selectedMonth}.csv`}>
-                    {text.export}
-                  </a>
+                  <div className="sheet-filter-actions">
+                    <button type="submit">{text.apply}</button>
+                    <Link href={`?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=month&from=${monthBounds.from}&to=${monthBounds.to}`}>{text.clear}</Link>
+                    <a href={csvHref} download={`spreadsheet-${selectedMonth}.csv`}>
+                      {text.export}
+                    </a>
+                  </div>
                 </form>
 
                 <div className="activity-table-wrap">

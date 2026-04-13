@@ -1668,9 +1668,47 @@
 .sheet-filters {
   margin-bottom: 10px;
   display: grid;
-  grid-template-columns: repeat(6, minmax(110px, 1fr)) auto auto auto;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+  padding: 10px;
+}
+
+.sheet-filter-line {
+  display: grid;
   gap: 8px;
-  align-items: center;
+}
+
+.sheet-filter-line-main {
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+}
+
+.sheet-filter-line-dates {
+  grid-template-columns: repeat(2, minmax(140px, 1fr)) minmax(220px, 1.2fr);
+}
+
+.sheet-filter-field {
+  display: grid;
+  gap: 4px;
+}
+
+.sheet-filter-field span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #666670;
+  text-transform: uppercase;
+}
+
+.sheet-filter-field-search {
+  min-width: 0;
+}
+
+.sheet-filter-actions {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .sheet-filters input,
@@ -1688,6 +1726,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.sheet-filters input::placeholder {
+  color: #909099;
 }
 
 .sheet-filters button {
@@ -1885,6 +1927,14 @@
   }
 
   .sheet-filters {
+    gap: 8px;
+  }
+
+  .sheet-filter-line-main {
+    grid-template-columns: repeat(3, minmax(120px, 1fr));
+  }
+
+  .sheet-filter-line-dates {
     grid-template-columns: repeat(3, minmax(120px, 1fr));
   }
 
@@ -1954,7 +2004,22 @@
   }
 
   .sheet-filters {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .sheet-filter-line-main,
+  .sheet-filter-line-dates {
     grid-template-columns: 1fr;
+  }
+
+  .sheet-filter-actions {
+    width: 100%;
+  }
+
+  .sheet-filter-actions button,
+  .sheet-filter-actions a {
+    flex: 1 1 auto;
   }
 
   .sheet-pagination {
