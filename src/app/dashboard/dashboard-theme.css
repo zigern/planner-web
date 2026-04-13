@@ -1881,7 +1881,7 @@
 
 .annual-title {
   margin: 0;
-  font-size: 54px;
+  font-size: 42px;
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.02;
@@ -1890,7 +1890,7 @@
 .annual-subtitle {
   margin: 8px 0 0 0;
   color: var(--muted);
-  font-size: 21px;
+  font-size: 16px;
 }
 
 .annual-period-label {
@@ -1929,35 +1929,37 @@
 
 .annual-kpi-value {
   margin: 8px 0 0 0;
-  font-size: 40px;
+  font-size: 32px;
   line-height: 1.04;
   font-weight: 700;
+  color: #23232a;
 }
 
 .annual-kpi-income .annual-kpi-value {
-  color: #18a456;
+  color: #23232a;
 }
 
 .annual-kpi-expense .annual-kpi-value {
-  color: #cf4a3a;
+  color: #23232a;
 }
 
 .annual-kpi-savings .annual-kpi-value {
-  color: #2f6be8;
+  color: #23232a;
 }
 
 .annual-kpi-burn .annual-kpi-value {
-  color: #3e3e46;
+  color: #23232a;
 }
 
 .annual-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   gap: 12px;
+  align-items: start;
 }
 
 .annual-bars {
-  height: 210px;
+  height: 180px;
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 8px;
@@ -1978,7 +1980,7 @@
 }
 
 .annual-bar-stack {
-  height: 160px;
+  height: 130px;
   width: 100%;
   display: flex;
   align-items: end;
@@ -1993,11 +1995,11 @@
 }
 
 .annual-bar.income {
-  background: #19a95e;
+  background: #3868c8;
 }
 
 .annual-bar.expense {
-  background: #e05b4b;
+  background: #8f97a6;
 }
 
 @media (max-width: 1180px) {
@@ -2131,15 +2133,15 @@
   }
 
   .annual-title {
-    font-size: 42px;
+    font-size: 34px;
   }
 
   .annual-subtitle {
-    font-size: 18px;
+    font-size: 15px;
   }
 
   .annual-kpi-value {
-    font-size: 34px;
+    font-size: 28px;
   }
 
   .annual-grid {
@@ -2232,15 +2234,15 @@
   }
 
   .annual-title {
-    font-size: 34px;
+    font-size: 28px;
   }
 
   .annual-subtitle {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .annual-kpi-value {
-    font-size: 30px;
+    font-size: 24px;
   }
 
   .top-row {
