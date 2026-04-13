@@ -853,6 +853,17 @@
   margin-left: auto;
 }
 
+.demo-seed-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.demo-seed-wrap .q-msg {
+  margin: 0;
+  font-size: 11px;
+}
+
 .dashboard-title {
   font-size: 30px !important;
   line-height: 1.15;

@@ -5,6 +5,7 @@ import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { LogoutButton } from "./components/logout-button";
 import { ViewControls } from "./components/view-controls";
 import { DashboardSidebar } from "./components/sidebar-nav";
+import { SeedDemoButton } from "./components/seed-demo-button";
 import { translateExpenseCategory } from "./utils/category-translation";
 import "./dashboard-theme.css";
 
@@ -761,6 +762,7 @@ export default async function DashboardPage({
               <Link href={`/dashboard/spreadsheet?month=${selectedMonth}&lang=${lang}&currency=${currency}`} className="btn">
                 {text.more}
               </Link>
+              <SeedDemoButton lang={lang} selectedMonth={selectedMonth} />
             </div>
           </section>
 
