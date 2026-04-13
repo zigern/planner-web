@@ -36,6 +36,20 @@ type Dict = {
   saveFail: string;
   removeFail: string;
   confirmRemove: string;
+  insightsTitle: string;
+  monthOverview: string;
+  riskItems: string;
+  healthyItems: string;
+  totalBudgeted: string;
+  totalSpent: string;
+  totalLeft: string;
+  projectedOverrun: string;
+  topRisk: string;
+  noRisk: string;
+  recommendation: string;
+  recommendTighten: string;
+  recommendRebalance: string;
+  recommendHealthy: string;
 };
 
 const textByLang: Record<string, Dict> = {
@@ -62,7 +76,21 @@ const textByLang: Record<string, Dict> = {
     saved: "Orçamento guardado.",
     saveFail: "Falha ao guardar orçamento.",
     removeFail: "Falha ao anular orçamento.",
-    confirmRemove: "Queres anular este orçamento?"
+    confirmRemove: "Queres anular este orçamento?",
+    insightsTitle: "Insights automáticos",
+    monthOverview: "Resumo do mês",
+    riskItems: "Categorias em risco",
+    healthyItems: "Categorias saudáveis",
+    totalBudgeted: "Total orçado",
+    totalSpent: "Total gasto",
+    totalLeft: "Total disponível",
+    projectedOverrun: "Risco de derrapagem",
+    topRisk: "Maior risco",
+    noRisk: "Sem risco crítico",
+    recommendation: "Recomendação",
+    recommendTighten: "Ajusta os limites das categorias acima de 90% para evitar ultrapassar o orçamento.",
+    recommendRebalance: "Considera transferir parte do orçamento das categorias com baixa utilização para as categorias em risco.",
+    recommendHealthy: "O mês está equilibrado. Mantém o ritmo e revê apenas categorias com baixa execução."
   },
   "en-US": {
     addTitle: "Set budget",
@@ -87,7 +115,21 @@ const textByLang: Record<string, Dict> = {
     saved: "Budget saved.",
     saveFail: "Failed to save budget.",
     removeFail: "Failed to remove budget.",
-    confirmRemove: "Do you want to remove this budget?"
+    confirmRemove: "Do you want to remove this budget?",
+    insightsTitle: "Automatic insights",
+    monthOverview: "Month overview",
+    riskItems: "Risk categories",
+    healthyItems: "Healthy categories",
+    totalBudgeted: "Total budgeted",
+    totalSpent: "Total spent",
+    totalLeft: "Total left",
+    projectedOverrun: "Overrun risk",
+    topRisk: "Top risk",
+    noRisk: "No critical risk",
+    recommendation: "Recommendation",
+    recommendTighten: "Adjust categories above 90% usage to avoid going over budget.",
+    recommendRebalance: "Consider moving part of the budget from low-usage categories to risk categories.",
+    recommendHealthy: "Month is balanced. Keep current pace and review only low-execution categories."
   }
 };
 
@@ -134,6 +176,32 @@ export function BudgetsManager({
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const budgetMetrics = initialRows.reduce(
+    (acc, row) => {
+      const budgetAmount = Math.max(0, row.budgetAmount);
+      const spentAmount = Math.max(0, row.spent);
+      const usage = budgetAmount > 0 ? (spentAmount / budgetAmount) * 100 : 0;
+      acc.totalBudgeted += budgetAmount;
+      acc.totalSpent += spentAmount;
+      if (usage >= 90) {
+        acc.riskRows.push({ ...row, usage });
+      } else {
+        acc.healthyCount += 1;
+      }
+      return acc;
+    },
+    {
+      totalBudgeted: 0,
+      totalSpent: 0,
+      healthyCount: 0,
+      riskRows: [] as Array<BudgetRow & { usage: number }>
+    }
+  );
+  budgetMetrics.riskRows.sort((a, b) => b.usage - a.usage);
+  const projectedOverrun =
+    budgetMetrics.totalBudgeted > 0 ? (budgetMetrics.totalSpent / budgetMetrics.totalBudgeted) * 100 : 0;
+  const topRisk = budgetMetrics.riskRows[0];
+  const totalLeft = Math.max(0, budgetMetrics.totalBudgeted - budgetMetrics.totalSpent);
 
   function applyTemplate(template: BudgetTemplate) {
     setCategory(template.category);
@@ -298,6 +366,57 @@ export function BudgetsManager({
         ) : (
           <p className="activity-empty">{t.noItems}</p>
         )}
+      </article>
+
+      <article className="panel budgets-insights-panel">
+        <div className="panel-head">
+          <h3>{t.insightsTitle}</h3>
+        </div>
+        <div className="budget-insight-grid">
+          <div className="budget-insight-card">
+            <p>{t.monthOverview}</p>
+            <dl>
+              <div>
+                <dt>{t.totalBudgeted}</dt>
+                <dd>{formatMoney(budgetMetrics.totalBudgeted, lang, currency)}</dd>
+              </div>
+              <div>
+                <dt>{t.totalSpent}</dt>
+                <dd className="money-out">{formatMoney(budgetMetrics.totalSpent, lang, currency)}</dd>
+              </div>
+              <div>
+                <dt>{t.totalLeft}</dt>
+                <dd className={totalLeft > 0 ? "money-in" : "money-out"}>{formatMoney(totalLeft, lang, currency)}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="budget-insight-card">
+            <p>{t.projectedOverrun}</p>
+            <div className="budget-insight-track">
+              <div style={{ width: `${Math.min(100, Math.max(0, projectedOverrun))}%` }} />
+            </div>
+            <strong>{Math.round(projectedOverrun)}%</strong>
+            <small>
+              {budgetMetrics.riskRows.length > 0
+                ? `${t.riskItems}: ${budgetMetrics.riskRows.length}`
+                : `${t.healthyItems}: ${budgetMetrics.healthyCount}`}
+            </small>
+          </div>
+
+          <div className="budget-insight-card">
+            <p>{t.topRisk}</p>
+            <strong>{topRisk ? topRisk.category : t.noRisk}</strong>
+            <small>{topRisk ? `${Math.round(topRisk.usage)}%` : "0%"}</small>
+            <p className="budget-reco">
+              {budgetMetrics.riskRows.length >= 3
+                ? t.recommendTighten
+                : budgetMetrics.riskRows.length > 0
+                  ? t.recommendRebalance
+                  : t.recommendHealthy}
+            </p>
+          </div>
+        </div>
       </article>
     </div>
   );
