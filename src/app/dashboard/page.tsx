@@ -987,8 +987,8 @@ export default async function DashboardPage({
               <svg viewBox="0 0 760 240" preserveAspectRatio="none" className="wave-chart">
                 <defs>
                   <linearGradient id="incomeFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#2f6be8" stopOpacity="0.35" />
-                    <stop offset="100%" stopColor="#2f6be8" stopOpacity="0.03" />
+                    <stop offset="0%" stopColor="#22c55e" stopOpacity="0.35" />
+                    <stop offset="100%" stopColor="#22c55e" stopOpacity="0.03" />
                   </linearGradient>
                   <linearGradient id="expenseFill" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#e35b4d" stopOpacity="0.3" />
