@@ -700,6 +700,18 @@ export default async function DashboardPage({
                           </strong>
                         </b>
                         <p>{alert.message}</p>
+                        <div className="alert-actions">
+                          <Link
+                            href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}&type=expense&category=${encodeURIComponent(alert.category)}`}
+                          >
+                            View activity
+                          </Link>
+                          <Link
+                            href={`/dashboard/orcamentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}
+                          >
+                            Set budget
+                          </Link>
+                        </div>
                       </div>
                       <span className={`activity-kind ${alert.severity}`}>{alert.severityText}</span>
                     </li>

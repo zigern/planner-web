@@ -450,6 +450,31 @@
   line-height: 1.35;
 }
 
+.alert-actions {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.alert-actions a {
+  text-decoration: none;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  color: #3b3b44;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.alert-actions a:hover {
+  background: #f6f6f8;
+}
+
 .icon-badge {
   width: 28px;
   height: 28px;
