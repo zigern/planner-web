@@ -336,10 +336,13 @@ export default async function DashboardPage({
 
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  const name = user.email.split("@")[0];
+  const initials = name.slice(0, 2).toUpperCase();
 
   const params = await searchParams;
   const selectedMonth = parseMonthParam(params?.month);
   const lang = parseLangParam(params?.lang);
+  const isPt = lang === "pt-PT";
   const currency = parseCurrencyParam(params?.currency);
   const presetFilter = parsePresetParam(params?.preset);
   const fromParam = parseDateParam(params?.from);
@@ -351,6 +354,115 @@ export default async function DashboardPage({
   const effectiveFrom =
     fromParam || (presetFilter === "30d" ? last30Iso : presetFilter === "90d" ? last90Iso : monthBounds.from);
   const effectiveTo = toParam || (presetFilter === "month" ? monthBounds.to : todayIso);
+  const text = isPt
+    ? {
+        search: "Pesquisar",
+        logout: "Terminar sessão",
+        greeting: `Boa tarde, ${name}👋`,
+        subtitle: "As tuas finanças estão saudáveis neste período.",
+        month: "Mês",
+        apply: "Aplicar",
+        thisMonth: "Este mês",
+        last30Days: "Últimos 30 dias",
+        last90Days: "Últimos 90 dias",
+        addExpense: "Adicionar despesa",
+        addIncome: "Adicionar receita",
+        more: "Mais",
+        netBalance: "Saldo líquido",
+        safe: "SEGURO",
+        vsLastMonth: "vs mês anterior",
+        burnRate: "Taxa de gasto",
+        savingsTrack: "Estás no caminho certo para aumentar as tuas poupanças este mês.",
+        income: "Receita",
+        expense: "Despesa",
+        savingsRatio: "Rácio de poupança",
+        remainingBalance: "Saldo restante",
+        netWorth: "Património",
+        overspending: "Excesso de gastos",
+        increased: "aumentou",
+        thisWeek: "esta semana.",
+        youSpent: "Gastaste",
+        moreSuffix: "a mais.",
+        noOverspending: "Sem excesso de gastos.",
+        subscription: "Subscrições",
+        manage: "Gerir",
+        renewsOn: "Renova em",
+        noActiveSubscriptions: "Sem subscrições ativas.",
+        budgetAlmostExceeded: "Orçamento quase excedido",
+        unplanned: "Sem orçamento",
+        left: "restante",
+        viewActivity: "Ver atividade",
+        setBudget: "Definir orçamento",
+        noBudgetAlerts: "Sem alertas de orçamento este mês.",
+        incomeVsExpenseChart: "Gráfico receita vs despesa",
+        all: "Todos",
+        last6Months: "Últimos 6 meses",
+        max: "máx",
+        addMovements: "Adicionar movimentos",
+        spendingBreakdown: "Despesas por categoria",
+        noExpenseData: "Sem dados de despesa neste mês.",
+        critical: "Crítico",
+        warning: "Aviso",
+        watch: "Atenção",
+        budgetReached: "Orçamento atingiu",
+        usage: "de uso.",
+        noBudgetSetPrefix: "Sem orçamento definido. Já gastaste",
+        noBudgetSetSuffix: "neste mês."
+      }
+    : {
+        search: "Search",
+        logout: "Logout",
+        greeting: `Good evening, ${name}👋`,
+        subtitle: "Your finances are looking healthy in this period.",
+        month: "Month",
+        apply: "Apply",
+        thisMonth: "This month",
+        last30Days: "Last 30 days",
+        last90Days: "Last 90 days",
+        addExpense: "Add Expense",
+        addIncome: "Add Income",
+        more: "More",
+        netBalance: "Net Balance",
+        safe: "SAFE",
+        vsLastMonth: "vs last month",
+        burnRate: "Burn Rate",
+        savingsTrack: "You are on track to grow your savings this month.",
+        income: "Income",
+        expense: "Expense",
+        savingsRatio: "Savings Ratio",
+        remainingBalance: "Remaining Balance",
+        netWorth: "Net Worth",
+        overspending: "Overspending",
+        increased: "increased",
+        thisWeek: "this week.",
+        youSpent: "You spent",
+        moreSuffix: "more.",
+        noOverspending: "No overspending detected",
+        subscription: "Subscription",
+        manage: "Manage",
+        renewsOn: "Renews on",
+        noActiveSubscriptions: "No active subscriptions",
+        budgetAlmostExceeded: "Budget Almost Exceeded",
+        unplanned: "Unplanned",
+        left: "left",
+        viewActivity: "View activity",
+        setBudget: "Set budget",
+        noBudgetAlerts: "No budget alerts this month",
+        incomeVsExpenseChart: "Income vs Expense Chart",
+        all: "All",
+        last6Months: "Last 6 months",
+        max: "max",
+        addMovements: "Add movements",
+        spendingBreakdown: "Spending Breakdown",
+        noExpenseData: "No expense data for this month.",
+        critical: "Critical",
+        warning: "Warning",
+        watch: "Watch",
+        budgetReached: "Budget reached",
+        usage: "usage.",
+        noBudgetSetPrefix: "No budget set. Already spent",
+        noBudgetSetSuffix: "this month."
+      };
 
   const db = getDb();
 
@@ -510,15 +622,16 @@ export default async function DashboardPage({
     .filter((row) => row.pct >= 70)
     .map((row) => {
       const severity = row.pct >= 100 ? "out" : row.pct >= 90 ? "warn" : "in";
-      const severityText = row.pct >= 100 ? "Critical" : row.pct >= 90 ? "Warning" : "Watch";
+      const severityLabel =
+        row.pct >= 100 ? text.critical : row.pct >= 90 ? text.warning : text.watch;
       return {
         category: row.category,
         left: row.left,
         pct: row.pct,
         isUnplanned: false,
         severity,
-        severityText,
-        message: `Budget reached ${row.pct}% usage.`
+        severityText: severityLabel,
+        message: `${text.budgetReached} ${row.pct}% ${text.usage}`
       };
     });
 
@@ -528,7 +641,7 @@ export default async function DashboardPage({
       const spent = Number(row.spent || 0);
       const threshold = Math.max(75, expense * 0.06);
       const severity = spent >= threshold ? "warn" : "in";
-      const severityText = spent >= threshold ? "Warning" : "Watch";
+      const severityText = spent >= threshold ? text.warning : text.watch;
       return {
         category: row.category,
         left: 0,
@@ -536,7 +649,7 @@ export default async function DashboardPage({
         isUnplanned: true,
         severity,
         severityText,
-        message: `No budget set. Already spent ${formatMoneySmall(spent, lang, currency)} this month.`
+        message: `${text.noBudgetSetPrefix} ${formatMoneySmall(spent, lang, currency)} ${text.noBudgetSetSuffix}`
       };
     })
     .slice(0, 2);
@@ -548,8 +661,6 @@ export default async function DashboardPage({
     })
     .slice(0, 4);
 
-  const name = user.email.split("@")[0];
-  const initials = name.slice(0, 2).toUpperCase();
   const presetBase = new URLSearchParams({
     month: selectedMonth,
     lang,
@@ -591,10 +702,10 @@ export default async function DashboardPage({
           </div>
 
           <div className="top-actions">
-            <div className="search-box">Search</div>
+            <div className="search-box">{text.search}</div>
             <ViewControls lang={lang} currency={currency} />
             <div className="avatar-mini">{initials}</div>
-            <LogoutButton className="logout-light" label="Logout" />
+            <LogoutButton className="logout-light" label={text.logout} />
           </div>
         </div>
         <div className="workspace-shell">
@@ -602,8 +713,8 @@ export default async function DashboardPage({
           <main className="dash-main">
           <section className="greeting-row">
             <div>
-              <h1 className="dashboard-title">Good evening, {name}👋</h1>
-              <p className="dashboard-subtitle">Your finances are looking healthy in this period.</p>
+              <h1 className="dashboard-title">{text.greeting}</h1>
+              <p className="dashboard-subtitle">{text.subtitle}</p>
             </div>
           </section>
 
@@ -614,22 +725,22 @@ export default async function DashboardPage({
                 <input type="hidden" name="currency" value={currency} />
                 <input type="hidden" name="preset" value="month" />
                 <label className="month-switch-label" htmlFor="dashboard-month">
-                  Month
+                  {text.month}
                 </label>
                 <input id="dashboard-month" name="month" type="month" defaultValue={selectedMonth} />
                 <button type="submit" className="month-switch-btn">
-                  Apply
+                  {text.apply}
                 </button>
               </form>
               <div className="activity-preset-group">
                 <Link className={`activity-preset ${presetFilter === "month" ? "active" : ""}`} href={monthPresetHref}>
-                  This month
+                  {text.thisMonth}
                 </Link>
                 <Link className={`activity-preset ${presetFilter === "30d" ? "active" : ""}`} href={last30PresetHref}>
-                  Last 30 days
+                  {text.last30Days}
                 </Link>
                 <Link className={`activity-preset ${presetFilter === "90d" ? "active" : ""}`} href={last90PresetHref}>
-                  Last 90 days
+                  {text.last90Days}
                 </Link>
               </div>
             </div>
@@ -638,16 +749,16 @@ export default async function DashboardPage({
                 href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=${presetFilter}&from=${effectiveFrom}&to=${effectiveTo}`}
                 className="btn btn-dark"
               >
-                Add Expense
+                {text.addExpense}
               </Link>
               <Link
                 href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=${presetFilter}&from=${effectiveFrom}&to=${effectiveTo}`}
                 className="btn"
               >
-                Add Income
+                {text.addIncome}
               </Link>
               <Link href={`/dashboard/spreadsheet?month=${selectedMonth}&lang=${lang}&currency=${currency}`} className="btn">
-                More
+                {text.more}
               </Link>
             </div>
           </section>
@@ -655,8 +766,8 @@ export default async function DashboardPage({
           <section className="metrics-grid">
             <article className="panel panel-net-balance">
               <div className="panel-head">
-                <h3>Net Balance</h3>
-                <span className="safe-pill">SAFE</span>
+                <h3>{text.netBalance}</h3>
+                <span className="safe-pill">{text.safe}</span>
               </div>
               <p className="big-number">
                 {netBalance >= 0 ? "+" : "-"}
@@ -664,62 +775,66 @@ export default async function DashboardPage({
               </p>
               <p className={`delta ${netDelta >= 0 ? "up" : "down"}`}>
                 {netDelta >= 0 ? "↑" : "↓"}
-                {Math.abs(netDelta).toFixed(1)}% vs last month
+                {Math.abs(netDelta).toFixed(1)}% {text.vsLastMonth}
               </p>
               <div className="hr" />
               <div className="burn-row">
-                <span>Burn Rate</span>
+                <span>{text.burnRate}</span>
                 <span>{Math.round(burnRate)}%</span>
               </div>
               <div className="burn-track">
                 <div style={{ width: `${Math.min(100, burnRate)}%` }} />
               </div>
-              <p className="sub-copy">You are on track to grow your savings this month.</p>
+              <p className="sub-copy">{text.savingsTrack}</p>
             </article>
 
             <article className="panel">
               <div className="panel-head">
-                <h3>Income</h3>
+                <h3>{text.income}</h3>
               </div>
               <p className="mid-number">{formatMoney(income, lang, currency)}</p>
               <p className={`delta ${incomeDelta >= 0 ? "up" : "down"}`}>
                 {incomeDelta >= 0 ? "↑" : "↓"}
-                {Math.abs(incomeDelta).toFixed(1)}% vs last month
+                {Math.abs(incomeDelta).toFixed(1)}% {text.vsLastMonth}
               </p>
             </article>
 
             <article className="panel">
               <div className="panel-head">
-                <h3>Expense</h3>
+                <h3>{text.expense}</h3>
               </div>
               <p className="mid-number">{formatMoney(expense, lang, currency)}</p>
               <p className={`delta ${expenseDelta <= 0 ? "up" : "down"}`}>
                 {expenseDelta <= 0 ? "↑" : "↓"}
-                {Math.abs(expenseDelta).toFixed(1)}% vs last month
+                {Math.abs(expenseDelta).toFixed(1)}% {text.vsLastMonth}
               </p>
             </article>
 
             <article className="panel">
               <div className="panel-head">
-                <h3>Savings Ratio</h3>
+                <h3>{text.savingsRatio}</h3>
               </div>
               <p className="mid-number">{Math.max(0, savingsRatio).toFixed(0)}%</p>
-              <p className="delta up">↑{Math.max(0, netDelta).toFixed(1)}% vs last month</p>
+              <p className="delta up">
+                ↑{Math.max(0, netDelta).toFixed(1)}% {text.vsLastMonth}
+              </p>
             </article>
 
             <article className="panel">
               <div className="panel-head">
-                <h3>Remaining Balance</h3>
+                <h3>{text.remainingBalance}</h3>
               </div>
               <p className="mid-number">{formatMoney(remainingBalance, lang, currency)}</p>
-              <p className="sub-copy">Net Worth: {formatMoney(netWorth, lang, currency)}</p>
+              <p className="sub-copy">
+                {text.netWorth}: {formatMoney(netWorth, lang, currency)}
+              </p>
             </article>
           </section>
 
           <section className="insight-grid">
             <article className="panel">
               <div className="panel-head">
-                <h3>Overspending</h3>
+                <h3>{text.overspending}</h3>
               </div>
               <ul className="list-simple">
                 {overSpending.length ? (
@@ -734,8 +849,8 @@ export default async function DashboardPage({
                       <div>
                         <b>{item.category}</b>
                         <p>
-                          increased <strong>{item.pct}%</strong> this week. You spent{" "}
-                          <strong>{formatMoneySmall(item.amount, lang, currency)}</strong> more.
+                          {text.increased} <strong>{item.pct}%</strong> {text.thisWeek} {text.youSpent}{" "}
+                          <strong>{formatMoneySmall(item.amount, lang, currency)}</strong> {text.moreSuffix}
                         </p>
                       </div>
                     </li>
@@ -743,7 +858,7 @@ export default async function DashboardPage({
                 ) : (
                   <li>
                     <div>
-                      <b>No overspending detected</b>
+                      <b>{text.noOverspending}</b>
                     </div>
                   </li>
                 )}
@@ -752,9 +867,9 @@ export default async function DashboardPage({
 
             <article className="panel">
               <div className="panel-head">
-                <h3>Subscription</h3>
+                <h3>{text.subscription}</h3>
                 <Link className="panel-manage-link" href={`/dashboard/recorrentes?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-                  Manage
+                  {text.manage}
                 </Link>
               </div>
               <ul className="list-money">
@@ -772,7 +887,9 @@ export default async function DashboardPage({
                         </span>
                         <div>
                           <b>{sub.service}</b>
-                          <p>Renews on {dayText(sub.renewal_date, lang)}</p>
+                          <p>
+                            {text.renewsOn} {dayText(sub.renewal_date, lang)}
+                          </p>
                         </div>
                         <strong>{formatMoneySmall(Number(sub.cost || 0), lang, currency)}</strong>
                       </li>
@@ -781,7 +898,7 @@ export default async function DashboardPage({
                 ) : (
                   <li>
                     <div>
-                      <b>No active subscriptions</b>
+                      <b>{text.noActiveSubscriptions}</b>
                     </div>
                   </li>
                 )}
@@ -790,9 +907,9 @@ export default async function DashboardPage({
 
             <article className="panel">
               <div className="panel-head">
-                <h3>Budget Almost Exceeded</h3>
+                <h3>{text.budgetAlmostExceeded}</h3>
                 <Link className="panel-manage-link" href={`/dashboard/orcamentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
-                  Manage
+                  {text.manage}
                 </Link>
               </div>
               <ul className="list-simple">
@@ -812,7 +929,7 @@ export default async function DashboardPage({
                         <b>
                           {alert.category}{" "}
                           <strong>
-                            {alert.isUnplanned ? "Unplanned" : `${formatMoneySmall(alert.left, lang, currency)} left`}
+                            {alert.isUnplanned ? text.unplanned : `${formatMoneySmall(alert.left, lang, currency)} ${text.left}`}
                           </strong>
                         </b>
                         <p>{alert.message}</p>
@@ -820,12 +937,12 @@ export default async function DashboardPage({
                           <Link
                             href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=${presetFilter}&type=expense&category=${encodeURIComponent(alert.category)}&from=${effectiveFrom}&to=${effectiveTo}`}
                           >
-                            View activity
+                            {text.viewActivity}
                           </Link>
                           <Link
                             href={`/dashboard/orcamentos?month=${selectedMonth}&lang=${lang}&currency=${currency}&category=${encodeURIComponent(alert.category)}`}
                           >
-                            Set budget
+                            {text.setBudget}
                           </Link>
                         </div>
                       </div>
@@ -835,7 +952,7 @@ export default async function DashboardPage({
                 ) : (
                   <li>
                     <div>
-                      <b>No budget alerts this month</b>
+                      <b>{text.noBudgetAlerts}</b>
                     </div>
                   </li>
                 )}
@@ -846,10 +963,10 @@ export default async function DashboardPage({
           <section className="bottom-grid">
             <article className="panel panel-chart">
               <div className="panel-head">
-                <h3>Income vs Expense Chart</h3>
+                <h3>{text.incomeVsExpenseChart}</h3>
                 <div className="filters">
-                  <span>All</span>
-                  <span>Last 6 months</span>
+                  <span>{text.all}</span>
+                  <span>{text.last6Months}</span>
                 </div>
               </div>
               <svg viewBox="0 0 760 240" preserveAspectRatio="none" className="wave-chart">
@@ -879,26 +996,28 @@ export default async function DashboardPage({
                   <span key={`${label}-${i}`}>{label}</span>
                 ))}
               </div>
-              <div className="y-max">max {formatMoney(maxY, lang, currency)}</div>
+              <div className="y-max">
+                {text.max} {formatMoney(maxY, lang, currency)}
+              </div>
               <div className="panel-actions-row">
                 <Link
                   className="panel-manage-link"
                   href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=${presetFilter}&from=${effectiveFrom}&to=${effectiveTo}`}
                 >
-                  Add movements
+                  {text.addMovements}
                 </Link>
                 <Link
                   className="panel-manage-link"
                   href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=${presetFilter}&from=${effectiveFrom}&to=${effectiveTo}`}
                 >
-                  View activity
+                  {text.viewActivity}
                 </Link>
               </div>
             </article>
 
             <article className="panel">
               <div className="panel-head">
-                <h3>Spending Breakdown</h3>
+                <h3>{text.spendingBreakdown}</h3>
               </div>
               <ul className="breakdown-list">
                 {expenseCategories.length ? (
@@ -932,7 +1051,7 @@ export default async function DashboardPage({
                     );
                   })
                 ) : (
-                  <li>No expense data for this month.</li>
+                  <li>{text.noExpenseData}</li>
                 )}
               </ul>
             </article>

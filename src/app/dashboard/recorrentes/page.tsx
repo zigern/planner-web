@@ -161,7 +161,7 @@ export default async function RecorrentesPage({
           </div>
 
           <div className="top-actions">
-            <div className="search-box">Search</div>
+            <div className="search-box">{lang === "pt-PT" ? "Pesquisar" : "Search"}</div>
             <ViewControls lang={lang} currency={currency} />
             <div className="avatar-mini">{initials}</div>
             <LogoutButton className="logout-light" label={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />

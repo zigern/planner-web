@@ -106,6 +106,7 @@ export default async function PatrimonioPage({
   const params = await searchParams;
   const selectedMonth = parseMonthParam(params?.month);
   const lang = parseLangParam(params?.lang);
+  const isPt = lang === "pt-PT";
   const currency = parseCurrencyParam(params?.currency);
   const preset = parsePresetParam(params?.preset);
   const fromParam = parseDateParam(params?.from);
@@ -151,6 +152,31 @@ export default async function PatrimonioPage({
   const liabilitiesTotal = debts.reduce((acc, row) => acc + Math.max(0, row.totalOwed - row.amountPaid), 0);
   const netWorth = assetsTotal - liabilitiesTotal;
   const initials = user.email.slice(0, 2).toUpperCase();
+  const t = isPt
+    ? {
+        search: "Pesquisar",
+        logout: "Terminar sessão",
+        title: "Património",
+        subtitle: "Resumo de ativos e passivos",
+        thisMonth: "Este mês",
+        last30Days: "Últimos 30 dias",
+        last90Days: "Últimos 90 dias",
+        totalAssets: "Ativos totais",
+        totalLiabilities: "Passivos totais",
+        netWorth: "Património"
+      }
+    : {
+        search: "Search",
+        logout: "Logout",
+        title: "Net Worth",
+        subtitle: "Assets and liabilities snapshot",
+        thisMonth: "This month",
+        last30Days: "Last 30 days",
+        last90Days: "Last 90 days",
+        totalAssets: "Total Assets",
+        totalLiabilities: "Total Liabilities",
+        netWorth: "Net Worth"
+      };
   const presetBase = new URLSearchParams({
     month: selectedMonth,
     lang,
@@ -193,10 +219,10 @@ export default async function PatrimonioPage({
           </div>
 
           <div className="top-actions">
-            <div className="search-box">Search</div>
+            <div className="search-box">{t.search}</div>
             <ViewControls lang={lang} currency={currency} />
             <div className="avatar-mini">{initials}</div>
-            <LogoutButton className="logout-light" label={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
+            <LogoutButton className="logout-light" label={t.logout} />
           </div>
         </div>
         <div className="workspace-shell">
@@ -204,19 +230,19 @@ export default async function PatrimonioPage({
           <main className="dash-main">
             <section className="greeting-row">
               <div>
-                <h1>Net Worth</h1>
-                <p>Assets and liabilities snapshot</p>
+                <h1>{t.title}</h1>
+                <p>{t.subtitle}</p>
               </div>
               <div className="cta-row">
                 <div className="activity-preset-group">
                   <Link className={`activity-preset ${preset === "month" ? "active" : ""}`} href={monthPresetHref}>
-                    This month
+                    {t.thisMonth}
                   </Link>
                   <Link className={`activity-preset ${preset === "30d" ? "active" : ""}`} href={last30PresetHref}>
-                    Last 30 days
+                    {t.last30Days}
                   </Link>
                   <Link className={`activity-preset ${preset === "90d" ? "active" : ""}`} href={last90PresetHref}>
-                    Last 90 days
+                    {t.last90Days}
                   </Link>
                 </div>
               </div>
@@ -224,19 +250,19 @@ export default async function PatrimonioPage({
             <section className="metrics-grid wealth-metrics">
               <article className="panel">
                 <div className="panel-head">
-                  <h3>Total Assets</h3>
+                  <h3>{t.totalAssets}</h3>
                 </div>
                 <p className="mid-number money-in">{formatMoney(assetsTotal, lang, currency)}</p>
               </article>
               <article className="panel">
                 <div className="panel-head">
-                  <h3>Total Liabilities</h3>
+                  <h3>{t.totalLiabilities}</h3>
                 </div>
                 <p className="mid-number money-out">{formatMoney(liabilitiesTotal, lang, currency)}</p>
               </article>
               <article className="panel">
                 <div className="panel-head">
-                  <h3>Net Worth</h3>
+                  <h3>{t.netWorth}</h3>
                 </div>
                 <p className={`mid-number ${netWorth >= 0 ? "money-in" : "money-out"}`}>
                   {formatMoney(netWorth, lang, currency)}

@@ -107,23 +107,24 @@ export function DashboardSidebar({
   lang: string;
   currency: string;
 }) {
+  const isPt = lang === "pt-PT";
   const q = `month=${selectedMonth}&lang=${lang}&currency=${currency}`;
   const items: Array<{ key: NavKey; label: string; href: string }> = [
-    { key: "dashboard", label: "Dashboard", href: `/dashboard?${q}` },
-    { key: "annual", label: "Annual Overview", href: `/dashboard/anual?${q}` },
-    { key: "movements", label: "Movements", href: `/dashboard/movimentos?${q}` },
-    { key: "bills", label: "Bills", href: `/dashboard/bills?${q}` },
-    { key: "recurring", label: "Recurring", href: `/dashboard/recorrentes?${q}` },
-    { key: "budgets", label: "Budgets", href: `/dashboard/orcamentos?${q}` },
-    { key: "goals", label: "Goals", href: `/dashboard/objetivos?${q}` },
-    { key: "networth", label: "Net Worth", href: `/dashboard/patrimonio?${q}` },
-    { key: "activity", label: "Activity", href: `/dashboard/activity?${q}` },
+    { key: "dashboard", label: isPt ? "Dashboard" : "Dashboard", href: `/dashboard?${q}` },
+    { key: "annual", label: isPt ? "Resumo anual" : "Annual Overview", href: `/dashboard/anual?${q}` },
+    { key: "movements", label: isPt ? "Movimentos" : "Movements", href: `/dashboard/movimentos?${q}` },
+    { key: "bills", label: isPt ? "Contas" : "Bills", href: `/dashboard/bills?${q}` },
+    { key: "recurring", label: isPt ? "Recorrentes" : "Recurring", href: `/dashboard/recorrentes?${q}` },
+    { key: "budgets", label: isPt ? "Orçamentos" : "Budgets", href: `/dashboard/orcamentos?${q}` },
+    { key: "goals", label: isPt ? "Objetivos" : "Goals", href: `/dashboard/objetivos?${q}` },
+    { key: "networth", label: isPt ? "Património" : "Net Worth", href: `/dashboard/patrimonio?${q}` },
+    { key: "activity", label: isPt ? "Atividade" : "Activity", href: `/dashboard/activity?${q}` },
     { key: "spreadsheet", label: "Spreadsheet", href: `/dashboard/spreadsheet?${q}` }
   ];
 
   return (
     <aside className="side-nav">
-      <div className="side-nav-label">MENU</div>
+      <div className="side-nav-label">{isPt ? "MENU" : "MENU"}</div>
       <nav className="side-nav-items">
         {items.map((item) => (
           <Link key={item.key} className={`side-nav-item ${item.key === current ? "active" : ""}`} href={item.href}>
