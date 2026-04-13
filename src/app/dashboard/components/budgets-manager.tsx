@@ -164,13 +164,15 @@ export function BudgetsManager({
   currency,
   month,
   initialRows,
-  prefillCategory = ""
+  prefillCategory = "",
+  periodLabel = ""
 }: {
   lang: string;
   currency: string;
   month: string;
   initialRows: BudgetRow[];
   prefillCategory?: string;
+  periodLabel?: string;
 }) {
   const router = useRouter();
   const t = textByLang[lang] || textByLang["en-US"];
@@ -314,6 +316,7 @@ export function BudgetsManager({
         <div className="panel-head">
           <h3>{t.listTitle}</h3>
         </div>
+        {periodLabel ? <p className="budgets-period-label">{periodLabel}</p> : null}
         {initialRows.length ? (
           <div className="activity-table-wrap">
             <table className="activity-table budgets-table">

@@ -1091,6 +1091,13 @@
   grid-template-rows: auto 1fr;
 }
 
+.budgets-period-label {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #6c6c76;
+  font-weight: 600;
+}
+
 .budgets-table td {
   vertical-align: middle;
 }
