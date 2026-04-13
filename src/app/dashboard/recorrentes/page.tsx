@@ -42,12 +42,35 @@ function getText(lang: string) {
   if (lang === "pt-PT") {
     return {
       title: "Recorrentes",
-      subtitle: "Salário, rendas e contas fixas mensais"
+      subtitle: "Salário, rendas e contas fixas mensais",
+      period: "Período",
+      prevMonth: "Mês anterior",
+      thisMonth: "Mês atual",
+      nextMonth: "Mês seguinte"
     };
   }
   return {
     title: "Recurring",
-    subtitle: "Salary, rent and fixed monthly costs"
+    subtitle: "Salary, rent and fixed monthly costs",
+    period: "Period",
+    prevMonth: "Previous month",
+    thisMonth: "Current month",
+    nextMonth: "Next month"
+  };
+}
+
+function shiftMonth(isoMonth: string, delta: number) {
+  const [year, month] = isoMonth.split("-").map(Number);
+  const date = new Date(year, month - 1 + delta, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function getMonthBounds(isoMonth: string) {
+  const [year, month] = isoMonth.split("-").map(Number);
+  const end = new Date(year, month, 0);
+  return {
+    from: `${year}-${String(month).padStart(2, "0")}-01`,
+    to: `${year}-${String(month).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`
   };
 }
 
@@ -79,6 +102,10 @@ export default async function RecorrentesPage({
   const lang = parseLangParam(params?.lang);
   const currency = parseCurrencyParam(params?.currency);
   const text = getText(lang);
+  const prevMonth = shiftMonth(selectedMonth, -1);
+  const nextMonth = shiftMonth(selectedMonth, 1);
+  const monthBounds = getMonthBounds(selectedMonth);
+  const monthPeriodLabel = `${monthBounds.from} → ${monthBounds.to}`;
 
   const db = getDb();
   await db.query(`
@@ -147,6 +174,20 @@ export default async function RecorrentesPage({
             <div>
               <h1>{text.title}</h1>
               <p>{text.subtitle}</p>
+              <p className="budgets-period-label">{text.period}: {monthPeriodLabel}</p>
+            </div>
+            <div className="cta-row">
+              <div className="activity-preset-group" aria-label="Recurring month shortcuts">
+                <Link className="activity-preset" href={`/dashboard/recorrentes?month=${prevMonth}&lang=${lang}&currency=${currency}`}>
+                  {text.prevMonth}
+                </Link>
+                <Link className="activity-preset active" href={`/dashboard/recorrentes?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+                  {text.thisMonth}
+                </Link>
+                <Link className="activity-preset" href={`/dashboard/recorrentes?month=${nextMonth}&lang=${lang}&currency=${currency}`}>
+                  {text.nextMonth}
+                </Link>
+              </div>
             </div>
           </section>
 
