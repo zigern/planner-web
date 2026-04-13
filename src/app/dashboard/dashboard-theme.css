@@ -582,12 +582,12 @@
 
 .bar-income {
   fill: #2f6be8;
-  opacity: 0.22;
+  opacity: 0.68;
 }
 
 .bar-expense {
   fill: #e35b4d;
-  opacity: 0.24;
+  opacity: 0.72;
 }
 
 .area-income {
@@ -601,13 +601,17 @@
 .line-income {
   fill: none;
   stroke: #2f6be8;
-  stroke-width: 3;
+  stroke-width: 2;
+  stroke-dasharray: 7 5;
+  opacity: 0.85;
 }
 
 .line-expense {
   fill: none;
   stroke: #e35b4d;
-  stroke-width: 3;
+  stroke-width: 2;
+  stroke-dasharray: 7 5;
+  opacity: 0.85;
 }
 
 .bar-label {
