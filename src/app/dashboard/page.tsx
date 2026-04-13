@@ -125,6 +125,26 @@ function dayText(v: string | Date | null, lang: string) {
   return d.toLocaleDateString(lang, { day: "numeric", month: "short", year: "numeric" });
 }
 
+function getMonthBounds(isoMonth: string) {
+  const [year, month] = isoMonth.split("-").map(Number);
+  if (!year || !month) {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const start = new Date(y, m, 1);
+    const end = new Date(y, m + 1, 0);
+    return {
+      from: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`,
+      to: `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`
+    };
+  }
+  const end = new Date(year, month, 0);
+  return {
+    from: `${year}-${String(month).padStart(2, "0")}-01`,
+    to: `${year}-${String(month).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`
+  };
+}
+
 function categoryKey(name: string) {
   return name.trim().toLowerCase();
 }
@@ -491,6 +511,7 @@ export default async function DashboardPage({
 
   const name = user.email.split("@")[0];
   const initials = name.slice(0, 2).toUpperCase();
+  const monthBounds = getMonthBounds(selectedMonth);
 
   return (
     <div className="casha-wrap">
@@ -702,7 +723,7 @@ export default async function DashboardPage({
                         <p>{alert.message}</p>
                         <div className="alert-actions">
                           <Link
-                            href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}&type=expense&category=${encodeURIComponent(alert.category)}`}
+                            href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}&type=expense&category=${encodeURIComponent(alert.category)}&from=${monthBounds.from}&to=${monthBounds.to}`}
                           >
                             View activity
                           </Link>
