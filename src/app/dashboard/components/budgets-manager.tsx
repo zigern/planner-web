@@ -163,16 +163,23 @@ export function BudgetsManager({
   lang,
   currency,
   month,
-  initialRows
+  initialRows,
+  prefillCategory = ""
 }: {
   lang: string;
   currency: string;
   month: string;
   initialRows: BudgetRow[];
+  prefillCategory?: string;
 }) {
   const router = useRouter();
   const t = textByLang[lang] || textByLang["en-US"];
-  const [category, setCategory] = useState(expenseCategories[0]);
+  const categories = expenseCategories.includes(prefillCategory)
+    ? expenseCategories
+    : prefillCategory
+      ? [prefillCategory, ...expenseCategories]
+      : expenseCategories;
+  const [category, setCategory] = useState(categories[0]);
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -275,7 +282,7 @@ export function BudgetsManager({
             <label className="q-field">
               <span>{t.category}</span>
               <select value={category} onChange={(e) => setCategory(e.target.value)}>
-                {expenseCategories.map((item) => (
+                {categories.map((item) => (
                   <option key={item} value={item}>
                     {item}
                   </option>

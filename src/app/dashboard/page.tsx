@@ -707,7 +707,7 @@ export default async function DashboardPage({
                             View activity
                           </Link>
                           <Link
-                            href={`/dashboard/orcamentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}
+                            href={`/dashboard/orcamentos?month=${selectedMonth}&lang=${lang}&currency=${currency}&category=${encodeURIComponent(alert.category)}`}
                           >
                             Set budget
                           </Link>

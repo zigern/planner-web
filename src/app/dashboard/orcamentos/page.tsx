@@ -35,6 +35,12 @@ function parseCurrencyParam(value: string | string[] | undefined) {
   return allowed.has(raw) ? raw : "USD";
 }
 
+function parseCategoryParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "";
+  return raw.trim().slice(0, 60);
+}
+
 function getText(lang: string) {
   if (lang === "pt-PT") {
     return {
@@ -55,6 +61,7 @@ export default async function OrcamentosPage({
     month?: string | string[];
     lang?: string | string[];
     currency?: string | string[];
+    category?: string | string[];
   }>;
 }) {
   if (!hasDatabaseConfig() || !process.env.AUTH_SECRET) {
@@ -75,6 +82,7 @@ export default async function OrcamentosPage({
   const selectedMonth = parseMonthParam(params?.month);
   const lang = parseLangParam(params?.lang);
   const currency = parseCurrencyParam(params?.currency);
+  const prefillCategory = parseCategoryParam(params?.category);
   const text = getText(lang);
 
   const db = getDb();
@@ -133,7 +141,13 @@ export default async function OrcamentosPage({
             </div>
           </section>
 
-          <BudgetsManager lang={lang} currency={currency} month={selectedMonth} initialRows={budgetRows} />
+          <BudgetsManager
+            lang={lang}
+            currency={currency}
+            month={selectedMonth}
+            initialRows={budgetRows}
+            prefillCategory={prefillCategory}
+          />
           </main>
         </div>
       </div>
