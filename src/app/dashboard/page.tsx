@@ -11,6 +11,7 @@ import "./dashboard-theme.css";
 
 type TotalsRow = { income: string | null; expense: string | null };
 type MonthSummaryRow = { month: string; income: string; expense: string };
+type YearMonthSummaryRow = { month_num: string; income: string; expense: string };
 type CategoryRow = { category: string; total: string };
 type BudgetAlertRow = { category: string; budget_amount: string; spent: string };
 type SpendByCategoryRow = { category: string; spent: string };
@@ -100,30 +101,13 @@ function smoothLinePath(data: number[], w: number, h: number) {
   return d;
 }
 
-function buildMonthlySeries(rows: MonthSummaryRow[], selectedMonth: string, length: number, key: "income" | "expense") {
-  const [year, month] = selectedMonth.split("-").map(Number);
-  const map = new Map(rows.map((r) => [r.month, Number(r[key] || 0)]));
-  const out: number[] = [];
-
-  for (let i = length - 1; i >= 0; i -= 1) {
-    const d = new Date(year, month - 1 - i, 1);
-    const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    out.push(map.get(m) ?? 0);
-  }
-
-  return out;
+function buildYearSeries(rows: YearMonthSummaryRow[], key: "income" | "expense") {
+  const map = new Map(rows.map((r) => [Number(r.month_num), Number(r[key] || 0)]));
+  return Array.from({ length: 12 }, (_, i) => map.get(i + 1) ?? 0);
 }
 
-function buildMonthLabels(selectedMonth: string, length: number, lang: string) {
-  const [year, month] = selectedMonth.split("-").map(Number);
-  const out: string[] = [];
-
-  for (let i = length - 1; i >= 0; i -= 1) {
-    const d = new Date(year, month - 1 - i, 1);
-    out.push(d.toLocaleDateString(lang, { month: "short" }));
-  }
-
-  return out;
+function buildYearLabels(year: number, lang: string) {
+  return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1).toLocaleDateString(lang, { month: "short" }));
 }
 
 function dayText(v: string | Date | null, lang: string) {
@@ -546,6 +530,20 @@ export default async function DashboardPage({
     [user.userId, effectiveFrom, effectiveTo]
   );
 
+  const selectedYear = Number(selectedMonth.slice(0, 4));
+  const yearSummaryRows = await safeQueryRows<YearMonthSummaryRow>(
+    db,
+    `SELECT DATE_FORMAT(transaction_date, '%m') AS month_num,
+            SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) AS income,
+            SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) AS expense
+     FROM transactions
+     WHERE user_id = ?
+       AND YEAR(transaction_date) = ?
+     GROUP BY DATE_FORMAT(transaction_date, '%m')
+     ORDER BY month_num ASC`,
+    [user.userId, selectedYear]
+  );
+
   const totals = totalsRows[0] ?? { income: "0", expense: "0" };
   const income = Number(totals.income || 0);
   const expense = Number(totals.expense || 0);
@@ -575,15 +573,34 @@ export default async function DashboardPage({
   const netWorth = assetsTotal - liabilitiesTotal + netBalance;
   const remainingBalance = Math.max(netBalance, 0);
 
-  const incomeSeries = buildMonthlySeries(summaryRows, selectedMonth, 12, "income");
-  const expenseSeries = buildMonthlySeries(summaryRows, selectedMonth, 12, "expense");
-  const labels = buildMonthLabels(selectedMonth, 12, lang);
+  const incomeSeries = buildYearSeries(yearSummaryRows, "income");
+  const expenseSeries = buildYearSeries(yearSummaryRows, "expense");
+  const labels = buildYearLabels(selectedYear, lang);
   const maxY = Math.max(1, ...incomeSeries, ...expenseSeries);
+  const chartWidth = 760;
+  const chartHeight = 240;
+  const chartBottom = 228;
+  const chartTop = 10;
+  const chartUsableHeight = chartBottom - chartTop;
+  const groupWidth = chartWidth / 12;
+  const barWidth = Math.max(8, Math.min(16, groupWidth * 0.26));
 
-  const pathIncome = smoothLinePath(incomeSeries, 760, 240);
-  const pathExpense = smoothLinePath(expenseSeries, 760, 240);
-  const areaIncome = `${pathIncome} L 760 240 L 0 240 Z`;
-  const areaExpense = `${pathExpense} L 760 240 L 0 240 Z`;
+  const pathIncome = smoothLinePath(incomeSeries, chartWidth, chartHeight);
+  const pathExpense = smoothLinePath(expenseSeries, chartWidth, chartHeight);
+  const areaIncome = `${pathIncome} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`;
+  const areaExpense = `${pathExpense} L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`;
+  const incomeBars = incomeSeries.map((value, index) => {
+    const h = (value / maxY) * chartUsableHeight;
+    const x = groupWidth * index + groupWidth * 0.5 - barWidth - 2;
+    const y = chartBottom - h;
+    return { x, y, h, value };
+  });
+  const expenseBars = expenseSeries.map((value, index) => {
+    const h = (value / maxY) * chartUsableHeight;
+    const x = groupWidth * index + groupWidth * 0.5 + 2;
+    const y = chartBottom - h;
+    return { x, y, h, value };
+  });
 
   const totalSpent = Math.max(1, expenseCategories.reduce((sum, row) => sum + Number(row.total || 0), 0));
   const rangeDays = Math.max(
@@ -977,6 +994,28 @@ export default async function DashboardPage({
                 ))}
                 {Array.from({ length: 12 }).map((_, i) => (
                   <line key={`v-${i}`} y1="0" y2="240" x1={i * (760 / 11)} x2={i * (760 / 11)} className="grid" />
+                ))}
+                {incomeBars.map((bar, i) => (
+                  <rect
+                    key={`income-bar-${i}`}
+                    className="bar-income"
+                    x={bar.x}
+                    y={bar.y}
+                    width={barWidth}
+                    height={Math.max(0, bar.h)}
+                    rx={3}
+                  />
+                ))}
+                {expenseBars.map((bar, i) => (
+                  <rect
+                    key={`expense-bar-${i}`}
+                    className="bar-expense"
+                    x={bar.x}
+                    y={bar.y}
+                    width={barWidth}
+                    height={Math.max(0, bar.h)}
+                    rx={3}
+                  />
                 ))}
                 <path d={areaIncome} className="area-income" />
                 <path d={areaExpense} className="area-expense" />

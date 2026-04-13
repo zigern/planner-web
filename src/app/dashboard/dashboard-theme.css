@@ -580,6 +580,16 @@
   stroke-width: 1;
 }
 
+.bar-income {
+  fill: #2f6be8;
+  opacity: 0.22;
+}
+
+.bar-expense {
+  fill: #e35b4d;
+  opacity: 0.24;
+}
+
 .area-income {
   fill: url(#incomeFill);
 }
