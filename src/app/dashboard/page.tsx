@@ -3,6 +3,8 @@ import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { convertFromBaseEur, formatMoneyConverted } from "@/lib/currency-conversion";
+import { LogoutButton } from "./components/logout-button";
+import { ViewControls } from "./components/view-controls";
 import { DashboardSidebar } from "./components/sidebar-nav";
 import { translateExpenseCategory } from "./utils/category-translation";
 import "./dashboard-theme.css";
@@ -653,6 +655,18 @@ export default async function DashboardPage({
             </div>
             <span>Casha</span>
           </div>
+          <div className="top-actions">
+            <div className="top-months" aria-label={lang === "pt-PT" ? "Selecionar mês" : "Select month"}>
+              {monthTabs.map((m) => (
+                <Link key={m.iso} className={`month-chip ${m.active ? "active" : ""}`} href={m.href}>
+                  {m.label}
+                </Link>
+              ))}
+            </div>
+            <ViewControls lang={lang} currency={currency} />
+            <div className="avatar-mini">{initials}</div>
+            <LogoutButton className="logout-light" label={text.logout} />
+          </div>
         </div>
         <div className="workspace-shell">
           <DashboardSidebar
@@ -660,9 +674,6 @@ export default async function DashboardPage({
             selectedMonth={selectedMonth}
             lang={lang}
             currency={currency}
-            showBottomControls
-            userInitials={initials}
-            logoutLabel={text.logout}
           />
           <main className="dash-main">
           <section className="greeting-row">
@@ -686,13 +697,6 @@ export default async function DashboardPage({
                   {text.apply}
                 </button>
               </form>
-              <div className="month-banner" aria-label={lang === "pt-PT" ? "Selecionar mês" : "Select month"}>
-                {monthTabs.map((m) => (
-                  <Link key={m.iso} className={`month-chip ${m.active ? "active" : ""}`} href={m.href}>
-                    {m.label}
-                  </Link>
-                ))}
-              </div>
             </div>
             <div className="dashboard-controls-right">
               <Link
