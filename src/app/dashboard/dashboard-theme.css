@@ -610,6 +610,22 @@
   stroke-width: 3;
 }
 
+.bar-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: ideographic;
+  pointer-events: none;
+}
+
+.bar-label.income {
+  fill: #2f6be8;
+}
+
+.bar-label.expense {
+  fill: #e35b4d;
+}
+
 .months-row {
   margin-top: 6px;
   display: flex;

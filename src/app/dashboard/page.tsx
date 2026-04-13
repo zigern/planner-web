@@ -110,6 +110,12 @@ function buildYearLabels(year: number, lang: string) {
   return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1).toLocaleDateString(lang, { month: "short" }));
 }
 
+function compactValueLabel(value: number) {
+  if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+  if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
+  return `${Math.round(value)}`;
+}
+
 function dayText(v: string | Date | null, lang: string) {
   if (!v) return "—";
   const d = v instanceof Date ? v : new Date(v);
@@ -1017,10 +1023,29 @@ export default async function DashboardPage({
                     rx={3}
                   />
                 ))}
-                <path d={areaIncome} className="area-income" />
                 <path d={areaExpense} className="area-expense" />
-                <path d={pathIncome} className="line-income" />
                 <path d={pathExpense} className="line-expense" />
+                <path d={areaIncome} className="area-income" />
+                <path d={pathIncome} className="line-income" />
+                {incomeBars.map((bar, i) =>
+                  bar.value > 0 ? (
+                    <text key={`income-label-${i}`} x={bar.x + barWidth / 2} y={Math.max(12, bar.y - 5)} className="bar-label income">
+                      {compactValueLabel(bar.value)}
+                    </text>
+                  ) : null
+                )}
+                {expenseBars.map((bar, i) =>
+                  bar.value > 0 ? (
+                    <text
+                      key={`expense-label-${i}`}
+                      x={bar.x + barWidth / 2}
+                      y={Math.max(24, bar.y - 5)}
+                      className="bar-label expense"
+                    >
+                      {compactValueLabel(bar.value)}
+                    </text>
+                  ) : null
+                )}
               </svg>
               <div className="months-row">
                 {labels.map((label, i) => (
