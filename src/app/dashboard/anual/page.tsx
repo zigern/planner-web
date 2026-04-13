@@ -265,6 +265,8 @@ export default async function AnnualOverviewPage({
   const annualSavings = annualIncome - annualExpense;
   const burnRatio = annualIncome > 0 ? (annualExpense / annualIncome) * 100 : 0;
   const maxValue = Math.max(1, ...months.flatMap((m) => [m.income, m.expense]));
+  const barHeightPx = 220;
+  const yTicks = [1, 0.75, 0.5, 0.25, 0];
   const initials = user.email.slice(0, 2).toUpperCase();
   const selectedYearNum = Number(selectedYear);
   const yearChoices = Array.from({ length: 4 }).map((_, index) => selectedYearNum - index);
@@ -341,24 +343,30 @@ export default async function AnnualOverviewPage({
               <article className="panel annual-chart">
                 <div className="panel-head"><h3>{text.chart}</h3></div>
                 {months.some((m) => m.income > 0 || m.expense > 0) ? (
-                  <div className="annual-bars">
-                    {months.map((month) => (
-                      <div key={month.iso} className="annual-bar-col">
-                        <div className="annual-bar-values">
-                          <span className="income-v" title={`${text.income}: ${fmt(month.income, lang, currency)}`}>
-                            I {compactNumber(month.income, lang)}
-                          </span>
-                          <span className="expense-v" title={`${text.expense}: ${fmt(month.expense, lang, currency)}`}>
-                            E {compactNumber(month.expense, lang)}
-                          </span>
-                        </div>
-                        <div className="annual-bar-stack">
-                          <div className="annual-bar income" style={{ height: `${Math.max((month.income / maxValue) * 150, month.income > 0 ? 6 : 0)}px` }} title={`${text.income}: ${fmt(month.income, lang, currency)}`} />
-                          <div className="annual-bar expense" style={{ height: `${Math.max((month.expense / maxValue) * 150, month.expense > 0 ? 6 : 0)}px` }} title={`${text.expense}: ${fmt(month.expense, lang, currency)}`} />
-                        </div>
-                        <small>{month.label}</small>
+                  <div className="annual-chart-wrap">
+                    <div className="annual-y-axis">
+                      {yTicks.map((ratio) => (
+                        <span key={ratio}>{compactNumber(maxValue * ratio, lang)}</span>
+                      ))}
+                    </div>
+                    <div className="annual-plot-area">
+                      <div className="annual-grid-lines" aria-hidden="true">
+                        {yTicks.map((ratio) => (
+                          <span key={ratio} />
+                        ))}
                       </div>
-                    ))}
+                      <div className="annual-bars">
+                        {months.map((month) => (
+                          <div key={month.iso} className="annual-bar-col">
+                            <div className="annual-bar-stack">
+                              <div className="annual-bar income" style={{ height: `${Math.max((month.income / maxValue) * barHeightPx, month.income > 0 ? 6 : 0)}px` }} title={`${text.income}: ${fmt(month.income, lang, currency)}`} />
+                              <div className="annual-bar expense" style={{ height: `${Math.max((month.expense / maxValue) * barHeightPx, month.expense > 0 ? 6 : 0)}px` }} title={`${text.expense}: ${fmt(month.expense, lang, currency)}`} />
+                            </div>
+                            <small>{month.label}</small>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <p className="activity-empty">{text.none}</p>
