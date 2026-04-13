@@ -1955,7 +1955,19 @@
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   gap: 12px;
-  align-items: start;
+  align-items: stretch;
+}
+
+.annual-chart,
+.annual-breakdown {
+  min-height: 420px;
+  height: 100%;
+}
+
+.annual-breakdown .breakdown-list {
+  max-height: 340px;
+  overflow: auto;
+  padding-right: 4px;
 }
 
 .annual-bars {
@@ -1995,11 +2007,11 @@
 }
 
 .annual-bar.income {
-  background: #3868c8;
+  background: linear-gradient(180deg, #2fd179 0%, #1fa95f 100%);
 }
 
 .annual-bar.expense {
-  background: #8f97a6;
+  background: linear-gradient(180deg, #ff866e 0%, #e45b4f 100%);
 }
 
 @media (max-width: 1180px) {
