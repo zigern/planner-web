@@ -185,12 +185,18 @@ export function BillsSubscriptionsManager({
   lang,
   currency,
   initialBills,
-  initialSubscriptions
+  initialSubscriptions,
+  periodFrom,
+  periodTo,
+  periodLabel
 }: {
   lang: string;
   currency: string;
   initialBills: BillItem[];
   initialSubscriptions: SubscriptionItem[];
+  periodFrom: string;
+  periodTo: string;
+  periodLabel?: string;
 }) {
   const router = useRouter();
   const t = textByLang[lang] || textByLang["en-US"];
@@ -233,23 +239,22 @@ export function BillsSubscriptionsManager({
       }, 0),
     [initialSubscriptions]
   );
-  const renewalsNext7d = useMemo(() => {
-    const now = new Date();
-    const end = new Date(now);
-    end.setDate(now.getDate() + 7);
+  const renewalsInPeriod = useMemo(() => {
+    const start = new Date(`${periodFrom}T00:00:00`);
+    const end = new Date(`${periodTo}T23:59:59`);
     return initialSubscriptions.filter((sub) => {
       if (!sub.renewalDate) return false;
       const renewal = new Date(sub.renewalDate);
-      return !Number.isNaN(renewal.getTime()) && renewal >= now && renewal <= end;
+      return !Number.isNaN(renewal.getTime()) && renewal >= start && renewal <= end;
     });
-  }, [initialSubscriptions]);
+  }, [initialSubscriptions, periodFrom, periodTo]);
 
-  const today = new Date().getDate();
+  const anchorDay = Number(periodTo.slice(-2)) || new Date().getDate();
   const pendingBills = useMemo(() => initialBills.filter((bill) => bill.status === "pending"), [initialBills]);
-  const overdueBills = useMemo(() => pendingBills.filter((bill) => bill.dueDay < today), [pendingBills, today]);
+  const overdueBills = useMemo(() => pendingBills.filter((bill) => bill.dueDay < anchorDay), [pendingBills, anchorDay]);
   const upcomingBills = useMemo(
-    () => pendingBills.filter((bill) => bill.dueDay >= today && bill.dueDay <= Math.min(today + 7, 31)),
-    [pendingBills, today]
+    () => pendingBills.filter((bill) => bill.dueDay >= anchorDay && bill.dueDay <= Math.min(anchorDay + 7, 31)),
+    [pendingBills, anchorDay]
   );
   const overdueTotal = useMemo(
     () => overdueBills.reduce((sum, bill) => sum + Number(bill.amount || 0), 0),
@@ -375,6 +380,7 @@ export function BillsSubscriptionsManager({
           <h3>{t.billsTitle}</h3>
         </div>
         <p className="sub-copy">{t.billsSubtitle}</p>
+        {periodLabel ? <p className="budgets-period-label">{periodLabel}</p> : null}
         <p className="delta up">
           {t.totalMonthlyBills}: {formatMoney(monthlyBillsTotal, lang, currency)}
         </p>
@@ -428,7 +434,7 @@ export function BillsSubscriptionsManager({
         <ul className="bills-list">
           {initialBills.length ? (
             initialBills.map((bill) => (
-              <li key={bill.id} className={bill.status === "pending" && bill.dueDay < today ? "bill-overdue" : ""}>
+              <li key={bill.id} className={bill.status === "pending" && bill.dueDay < anchorDay ? "bill-overdue" : ""}>
                 <div>
                   <b>{bill.name}</b>
                   <p>{t.dueDay} {bill.dueDay} • {bill.frequency}</p>
@@ -465,10 +471,11 @@ export function BillsSubscriptionsManager({
           <h3>{t.subTitle}</h3>
         </div>
         <p className="sub-copy">{t.subSubtitle}</p>
+        {periodLabel ? <p className="budgets-period-label">{periodLabel}</p> : null}
         <p className="delta up">
           {t.totalMonthlySubs}: {formatMoney(monthlySubsTotal, lang, currency)}
         </p>
-        <p className="delta">{t.renewalsNext7d}: {renewalsNext7d.length}</p>
+        <p className="delta">{t.renewalsNext7d}: {renewalsInPeriod.length}</p>
 
         <form className="quick-form" onSubmit={createSubscription}>
           <div className="q-grid">
