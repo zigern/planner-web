@@ -546,6 +546,7 @@
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 12px;
+  align-items: start;
 }
 
 .panel-chart .panel-head {
