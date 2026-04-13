@@ -602,10 +602,13 @@ export default async function DashboardPage({
           <main className="dash-main">
           <section className="greeting-row">
             <div>
-              <h1>Good evening, {name}👋</h1>
-              <p>Your finances are looking healthy in this period.</p>
+              <h1 className="dashboard-title">Good evening, {name}👋</h1>
+              <p className="dashboard-subtitle">Your finances are looking healthy in this period.</p>
             </div>
-            <div className="cta-row">
+          </section>
+
+          <section className="dashboard-controls">
+            <div className="dashboard-controls-left">
               <form method="get" className="month-switch-form">
                 <input type="hidden" name="lang" value={lang} />
                 <input type="hidden" name="currency" value={currency} />
@@ -629,6 +632,8 @@ export default async function DashboardPage({
                   Last 90 days
                 </Link>
               </div>
+            </div>
+            <div className="dashboard-controls-right">
               <Link
                 href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=${presetFilter}&from=${effectiveFrom}&to=${effectiveTo}`}
                 className="btn btn-dark"
