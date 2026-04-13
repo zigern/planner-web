@@ -36,6 +36,22 @@ function parseCurrencyParam(value: string | string[] | undefined) {
   return allowed.has(raw) ? raw : "USD";
 }
 
+function parseDateParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "";
+  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : "";
+}
+
+function parsePresetParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return "month";
+  return raw === "month" || raw === "30d" || raw === "90d" ? raw : "month";
+}
+
+function isoDate(value: Date) {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+}
+
 function formatMoney(value: number, lang: string, currency: string) {
   return new Intl.NumberFormat(lang, {
     style: "currency",
@@ -298,7 +314,14 @@ async function safeQueryRows<T>(db: ReturnType<typeof getDb>, sql: string, param
 export default async function DashboardPage({
   searchParams
 }: {
-  searchParams?: Promise<{ month?: string | string[]; lang?: string | string[]; currency?: string | string[] }>;
+  searchParams?: Promise<{
+    month?: string | string[];
+    lang?: string | string[];
+    currency?: string | string[];
+    preset?: string | string[];
+    from?: string | string[];
+    to?: string | string[];
+  }>;
 }) {
   if (!hasDatabaseConfig() || !process.env.AUTH_SECRET) {
     return (
@@ -318,6 +341,16 @@ export default async function DashboardPage({
   const selectedMonth = parseMonthParam(params?.month);
   const lang = parseLangParam(params?.lang);
   const currency = parseCurrencyParam(params?.currency);
+  const presetFilter = parsePresetParam(params?.preset);
+  const fromParam = parseDateParam(params?.from);
+  const toParam = parseDateParam(params?.to);
+  const monthBounds = getMonthBounds(selectedMonth);
+  const todayIso = isoDate(new Date());
+  const last30Iso = isoDate(new Date(Date.now() - 29 * 24 * 60 * 60 * 1000));
+  const last90Iso = isoDate(new Date(Date.now() - 89 * 24 * 60 * 60 * 1000));
+  const effectiveFrom =
+    fromParam || (presetFilter === "30d" ? last30Iso : presetFilter === "90d" ? last90Iso : monthBounds.from);
+  const effectiveTo = toParam || (presetFilter === "month" ? monthBounds.to : todayIso);
 
   const db = getDb();
 
@@ -328,8 +361,9 @@ export default async function DashboardPage({
       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) AS expense
      FROM transactions
      WHERE user_id = ?
-       AND DATE_FORMAT(transaction_date, '%Y-%m') = ?`,
-    [user.userId, selectedMonth]
+       AND DATE(transaction_date) >= ?
+       AND DATE(transaction_date) <= ?`,
+    [user.userId, effectiveFrom, effectiveTo]
   );
 
   const summaryRows = await safeQueryRows<MonthSummaryRow>(
@@ -351,11 +385,12 @@ export default async function DashboardPage({
      FROM transactions
      WHERE user_id = ?
        AND type = 'expense'
-       AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
+       AND DATE(transaction_date) >= ?
+       AND DATE(transaction_date) <= ?
      GROUP BY category
      ORDER BY total DESC
      LIMIT 6`,
-    [user.userId, selectedMonth]
+    [user.userId, effectiveFrom, effectiveTo]
   );
 
   const subsRows = await safeQueryRows<SubRow>(
@@ -400,10 +435,11 @@ export default async function DashboardPage({
        FROM transactions
       WHERE user_id = ?
         AND type = 'expense'
-        AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
+        AND DATE(transaction_date) >= ?
+        AND DATE(transaction_date) <= ?
       GROUP BY category
       ORDER BY spent DESC`,
-    [user.userId, selectedMonth]
+    [user.userId, effectiveFrom, effectiveTo]
   );
 
   const totals = totalsRows[0] ?? { income: "0", expense: "0" };
@@ -446,10 +482,13 @@ export default async function DashboardPage({
   const areaExpense = `${pathExpense} L 760 240 L 0 240 Z`;
 
   const totalSpent = Math.max(1, expenseCategories.reduce((sum, row) => sum + Number(row.total || 0), 0));
-  const thisMonthDay = new Date().getDate();
+  const rangeDays = Math.max(
+    1,
+    Math.floor((new Date(`${effectiveTo}T00:00:00`).getTime() - new Date(`${effectiveFrom}T00:00:00`).getTime()) / 86400000) + 1
+  );
   const overSpending = expenseCategories.slice(0, 3).map((row) => {
     const current = Number(row.total || 0);
-    const weeklyIncrease = Math.round((current / Math.max(1, thisMonthDay)) * 7 * 0.14);
+    const weeklyIncrease = Math.round((current / Math.max(1, rangeDays)) * 7 * 0.14);
     return {
       category: row.category,
       pct: Math.max(8, Math.min(68, Math.round((weeklyIncrease / Math.max(1, current)) * 100))),
@@ -511,7 +550,32 @@ export default async function DashboardPage({
 
   const name = user.email.split("@")[0];
   const initials = name.slice(0, 2).toUpperCase();
-  const monthBounds = getMonthBounds(selectedMonth);
+  const presetBase = new URLSearchParams({
+    month: selectedMonth,
+    lang,
+    currency
+  });
+  const monthPresetHref = `/dashboard?${(() => {
+    const p = new URLSearchParams(presetBase);
+    p.set("preset", "month");
+    p.set("from", monthBounds.from);
+    p.set("to", monthBounds.to);
+    return p.toString();
+  })()}`;
+  const last30PresetHref = `/dashboard?${(() => {
+    const p = new URLSearchParams(presetBase);
+    p.set("preset", "30d");
+    p.set("from", last30Iso);
+    p.set("to", todayIso);
+    return p.toString();
+  })()}`;
+  const last90PresetHref = `/dashboard?${(() => {
+    const p = new URLSearchParams(presetBase);
+    p.set("preset", "90d");
+    p.set("from", last90Iso);
+    p.set("to", todayIso);
+    return p.toString();
+  })()}`;
 
   return (
     <div className="casha-wrap">
@@ -539,16 +603,30 @@ export default async function DashboardPage({
           <section className="greeting-row">
             <div>
               <h1>Good evening, {name}👋</h1>
-              <p>Your finances are looking healthy this month.</p>
+              <p>Your finances are looking healthy in this period.</p>
             </div>
             <div className="cta-row">
+              <div className="activity-preset-group">
+                <Link className={`activity-preset ${presetFilter === "month" ? "active" : ""}`} href={monthPresetHref}>
+                  This month
+                </Link>
+                <Link className={`activity-preset ${presetFilter === "30d" ? "active" : ""}`} href={last30PresetHref}>
+                  Last 30 days
+                </Link>
+                <Link className={`activity-preset ${presetFilter === "90d" ? "active" : ""}`} href={last90PresetHref}>
+                  Last 90 days
+                </Link>
+              </div>
               <Link
-                href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}
+                href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=${presetFilter}&from=${effectiveFrom}&to=${effectiveTo}`}
                 className="btn btn-dark"
               >
                 Add Expense
               </Link>
-              <Link href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`} className="btn">
+              <Link
+                href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=${presetFilter}&from=${effectiveFrom}&to=${effectiveTo}`}
+                className="btn"
+              >
                 Add Income
               </Link>
               <Link href={`/dashboard/spreadsheet?month=${selectedMonth}&lang=${lang}&currency=${currency}`} className="btn">
@@ -723,7 +801,7 @@ export default async function DashboardPage({
                         <p>{alert.message}</p>
                         <div className="alert-actions">
                           <Link
-                            href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}&type=expense&category=${encodeURIComponent(alert.category)}&from=${monthBounds.from}&to=${monthBounds.to}`}
+                            href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=${presetFilter}&type=expense&category=${encodeURIComponent(alert.category)}&from=${effectiveFrom}&to=${effectiveTo}`}
                           >
                             View activity
                           </Link>
@@ -786,10 +864,16 @@ export default async function DashboardPage({
               </div>
               <div className="y-max">max {formatMoney(maxY, lang, currency)}</div>
               <div className="panel-actions-row">
-                <Link className="panel-manage-link" href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+                <Link
+                  className="panel-manage-link"
+                  href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=${presetFilter}&from=${effectiveFrom}&to=${effectiveTo}`}
+                >
                   Add movements
                 </Link>
-                <Link className="panel-manage-link" href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+                <Link
+                  className="panel-manage-link"
+                  href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=${presetFilter}&from=${effectiveFrom}&to=${effectiveTo}`}
+                >
                   View activity
                 </Link>
               </div>
