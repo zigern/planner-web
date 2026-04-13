@@ -11,6 +11,7 @@ type TotalsRow = { income: string | null; expense: string | null };
 type MonthSummaryRow = { month: string; income: string; expense: string };
 type CategoryRow = { category: string; total: string };
 type BudgetAlertRow = { category: string; budget_amount: string; spent: string };
+type SpendByCategoryRow = { category: string; spent: string };
 type SubRow = { id: number; service: string; cost: string; renewal_date: string | Date | null };
 type AssetRow = { asset_type: string; value: string };
 type DebtRow = { total_owed: string; amount_paid: string };
@@ -373,6 +374,18 @@ export default async function DashboardPage({
     [user.userId, selectedMonth]
   );
 
+  const spendByCategoryRows = await safeQueryRows<SpendByCategoryRow>(
+    db,
+    `SELECT category, SUM(amount) AS spent
+       FROM transactions
+      WHERE user_id = ?
+        AND type = 'expense'
+        AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
+      GROUP BY category
+      ORDER BY spent DESC`,
+    [user.userId, selectedMonth]
+  );
+
   const totals = totalsRows[0] ?? { income: "0", expense: "0" };
   const income = Number(totals.income || 0);
   const expense = Number(totals.expense || 0);
@@ -424,17 +437,57 @@ export default async function DashboardPage({
     };
   });
 
-  const budgetAlerts = budgetRows
-    .map((row) => {
+  const budgetMap = new Map(
+    budgetRows.map((row) => {
       const budget = Number(row.budget_amount || 0);
       const spent = Number(row.spent || 0);
       const left = Math.max(0, budget - spent);
       const pct = budget > 0 ? Math.round((spent / budget) * 100) : 0;
-      return { category: row.category, left, pct };
+      return [categoryKey(row.category), { category: row.category, budget, spent, left, pct }] as const;
     })
+  );
+
+  const budgetAlerts = Array.from(budgetMap.values())
     .filter((row) => row.pct >= 70)
-    .sort((a, b) => b.pct - a.pct)
-    .slice(0, 3);
+    .map((row) => {
+      const severity = row.pct >= 100 ? "out" : row.pct >= 90 ? "warn" : "in";
+      const severityText = row.pct >= 100 ? "Critical" : row.pct >= 90 ? "Warning" : "Watch";
+      return {
+        category: row.category,
+        left: row.left,
+        pct: row.pct,
+        isUnplanned: false,
+        severity,
+        severityText,
+        message: `Budget reached ${row.pct}% usage.`
+      };
+    });
+
+  const unplannedAlerts = spendByCategoryRows
+    .filter((row) => !budgetMap.has(categoryKey(row.category)))
+    .map((row) => {
+      const spent = Number(row.spent || 0);
+      const threshold = Math.max(75, expense * 0.06);
+      const severity = spent >= threshold ? "warn" : "in";
+      const severityText = spent >= threshold ? "Warning" : "Watch";
+      return {
+        category: row.category,
+        left: 0,
+        pct: 0,
+        isUnplanned: true,
+        severity,
+        severityText,
+        message: `No budget set. Already spent ${formatMoneySmall(spent, lang, currency)} this month.`
+      };
+    })
+    .slice(0, 2);
+
+  const mergedBudgetAlerts = [...budgetAlerts, ...unplannedAlerts]
+    .sort((a, b) => {
+      const rank = { out: 3, warn: 2, in: 1 } as const;
+      return rank[b.severity as keyof typeof rank] - rank[a.severity as keyof typeof rank] || b.pct - a.pct;
+    })
+    .slice(0, 4);
 
   const name = user.email.split("@")[0];
   const initials = name.slice(0, 2).toUpperCase();
@@ -627,8 +680,8 @@ export default async function DashboardPage({
                 </Link>
               </div>
               <ul className="list-simple">
-                {budgetAlerts.length ? (
-                  budgetAlerts.map((alert, i) => (
+                {mergedBudgetAlerts.length ? (
+                  mergedBudgetAlerts.map((alert, i) => (
                     <li key={`${alert.category}-${i}`}>
                       <span
                         className="icon-badge"
@@ -641,12 +694,14 @@ export default async function DashboardPage({
                       </span>
                       <div>
                         <b>
-                          {alert.category} <strong>{formatMoneySmall(alert.left, lang, currency)} left</strong>
+                          {alert.category}{" "}
+                          <strong>
+                            {alert.isUnplanned ? "Unplanned" : `${formatMoneySmall(alert.left, lang, currency)} left`}
+                          </strong>
                         </b>
-                        <p>
-                          Budget reached <strong>{alert.pct}%</strong> usage.
-                        </p>
+                        <p>{alert.message}</p>
                       </div>
+                      <span className={`activity-kind ${alert.severity}`}>{alert.severityText}</span>
                     </li>
                   ))
                 ) : (
