@@ -789,6 +789,51 @@
   color: #fff;
 }
 
+.month-switch-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 0 6px;
+}
+
+.month-switch-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #5a5a64;
+  text-transform: uppercase;
+}
+
+.month-switch-form input[type="month"] {
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text);
+  padding: 0 6px;
+  font-size: 12px;
+}
+
+.month-switch-btn {
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid #1f1f21;
+  background: #1f1f21;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 0 8px;
+  cursor: pointer;
+}
+
+.month-switch-btn:hover {
+  background: #2b2b2f;
+}
+
 .activity-filters {
   display: grid;
   grid-template-columns: repeat(5, minmax(120px, 1fr)) auto;

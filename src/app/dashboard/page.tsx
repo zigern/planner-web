@@ -606,6 +606,18 @@ export default async function DashboardPage({
               <p>Your finances are looking healthy in this period.</p>
             </div>
             <div className="cta-row">
+              <form method="get" className="month-switch-form">
+                <input type="hidden" name="lang" value={lang} />
+                <input type="hidden" name="currency" value={currency} />
+                <input type="hidden" name="preset" value="month" />
+                <label className="month-switch-label" htmlFor="dashboard-month">
+                  Month
+                </label>
+                <input id="dashboard-month" name="month" type="month" defaultValue={selectedMonth} />
+                <button type="submit" className="month-switch-btn">
+                  Apply
+                </button>
+              </form>
               <div className="activity-preset-group">
                 <Link className={`activity-preset ${presetFilter === "month" ? "active" : ""}`} href={monthPresetHref}>
                   This month
