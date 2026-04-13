@@ -1863,6 +1863,93 @@
   gap: 12px;
 }
 
+.annual-mode {
+  gap: 12px;
+}
+
+.annual-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.annual-header-text {
+  min-width: 280px;
+}
+
+.annual-title {
+  margin: 0;
+  font-size: 54px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+}
+
+.annual-subtitle {
+  margin: 8px 0 0 0;
+  color: var(--muted);
+  font-size: 21px;
+}
+
+.annual-period-label {
+  margin-top: 8px;
+  font-size: 15px;
+}
+
+.annual-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.annual-year-group .activity-preset {
+  height: 36px;
+  min-width: 54px;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.annual-export-btn {
+  height: 40px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.annual-kpi-card {
+  padding: 14px;
+}
+
+.annual-kpi-card .panel-head h3 {
+  font-size: 17px;
+}
+
+.annual-kpi-value {
+  margin: 8px 0 0 0;
+  font-size: 40px;
+  line-height: 1.04;
+  font-weight: 700;
+}
+
+.annual-kpi-income .annual-kpi-value {
+  color: #18a456;
+}
+
+.annual-kpi-expense .annual-kpi-value {
+  color: #cf4a3a;
+}
+
+.annual-kpi-savings .annual-kpi-value {
+  color: #2f6be8;
+}
+
+.annual-kpi-burn .annual-kpi-value {
+  color: #3e3e46;
+}
+
 .annual-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
@@ -2043,6 +2130,18 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .annual-title {
+    font-size: 42px;
+  }
+
+  .annual-subtitle {
+    font-size: 18px;
+  }
+
+  .annual-kpi-value {
+    font-size: 34px;
+  }
+
   .annual-grid {
     grid-template-columns: 1fr;
   }
@@ -2125,6 +2224,23 @@
 
   .annual-kpis {
     grid-template-columns: 1fr;
+  }
+
+  .annual-header-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .annual-title {
+    font-size: 34px;
+  }
+
+  .annual-subtitle {
+    font-size: 16px;
+  }
+
+  .annual-kpi-value {
+    font-size: 30px;
   }
 
   .top-row {

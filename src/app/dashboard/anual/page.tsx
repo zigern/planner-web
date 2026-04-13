@@ -208,15 +208,15 @@ export default async function AnnualOverviewPage({
         <div className="workspace-shell">
           <DashboardSidebar current="annual" selectedMonth={selectedMonth} lang={lang} currency={currency} />
 
-          <main className="dash-main">
-            <div className="greeting-row">
-              <div>
-                <h1>{text.title}</h1>
-                <p>{text.subtitle}</p>
-                <p className="budgets-period-label">{text.period}: {periodLabel}</p>
+          <main className="dash-main annual-mode">
+            <section className="annual-header">
+              <div className="annual-header-text">
+                <h1 className="annual-title">{text.title}</h1>
+                <p className="annual-subtitle">{text.subtitle}</p>
+                <p className="budgets-period-label annual-period-label">{text.period}: {periodLabel}</p>
               </div>
-              <div className="cta-row">
-                <div className="activity-preset-group" aria-label="Year quick selector">
+              <div className="annual-header-actions">
+                <div className="activity-preset-group annual-year-group" aria-label="Year quick selector">
                   {yearChoices.map((year) => {
                     const href = `/dashboard/anual?month=${year}-${selectedMonthPart}&lang=${lang}&currency=${currency}`;
                     const isActive = String(year) === selectedYear;
@@ -227,28 +227,28 @@ export default async function AnnualOverviewPage({
                     );
                   })}
                 </div>
-                <Link className="btn" href={`/dashboard/spreadsheet?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+                <Link className="btn annual-export-btn" href={`/dashboard/spreadsheet?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
                   {text.export}
                 </Link>
               </div>
-            </div>
+            </section>
 
             <section className="annual-kpis">
-              <article className="panel">
+              <article className="panel annual-kpi-card annual-kpi-income">
                 <div className="panel-head"><h3>{text.kpiIncome}</h3></div>
-                <p className="mid-number">{fmt(annualIncome, lang, currency)}</p>
+                <p className="annual-kpi-value">{fmt(annualIncome, lang, currency)}</p>
               </article>
-              <article className="panel">
+              <article className="panel annual-kpi-card annual-kpi-expense">
                 <div className="panel-head"><h3>{text.kpiExpense}</h3></div>
-                <p className="mid-number">{fmt(annualExpense, lang, currency)}</p>
+                <p className="annual-kpi-value">{fmt(annualExpense, lang, currency)}</p>
               </article>
-              <article className="panel">
+              <article className="panel annual-kpi-card annual-kpi-savings">
                 <div className="panel-head"><h3>{text.kpiSavings}</h3></div>
-                <p className="mid-number">{fmt(annualSavings, lang, currency)}</p>
+                <p className="annual-kpi-value">{fmt(annualSavings, lang, currency)}</p>
               </article>
-              <article className="panel">
+              <article className="panel annual-kpi-card annual-kpi-burn">
                 <div className="panel-head"><h3>{text.kpiBurn}</h3></div>
-                <p className="mid-number">{pct(burnRatio)}</p>
+                <p className="annual-kpi-value">{pct(burnRatio)}</p>
               </article>
             </section>
 
