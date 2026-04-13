@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatMoneyConverted } from "@/lib/currency-conversion";
 
 type BillItem = {
   id: number;
@@ -166,12 +167,7 @@ const textByLang: Record<string, Dict> = {
 };
 
 function formatMoney(value: number, lang: string, currency: string) {
-  return new Intl.NumberFormat(lang, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
+  return formatMoneyConverted(value, lang, currency, 2);
 }
 
 function formatOptionalDate(value: string | null, lang: string) {

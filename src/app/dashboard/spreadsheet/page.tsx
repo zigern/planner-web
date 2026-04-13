@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
+import { convertFromBaseEur, formatMoneyConverted } from "@/lib/currency-conversion";
 import { LogoutButton } from "../components/logout-button";
 import { ViewControls } from "../components/view-controls";
 import { DashboardSidebar } from "../components/sidebar-nav";
@@ -104,12 +105,7 @@ function monthLabel(monthIso: string) {
 }
 
 function fmt(v: number, lang: string, currency: string) {
-  return new Intl.NumberFormat(lang, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(v);
+  return formatMoneyConverted(v, lang, currency, 2);
 }
 
 function dayMonthYear(v: string | Date, lang: string) {
@@ -342,9 +338,9 @@ export default async function SpreadsheetPage({
       [
         monthFromDate(tx.transaction_date, lang),
         tx.type === "income" ? "Income" : "Expenses",
-        tx.category,
+        translateExpenseCategory(tx.category, lang),
         tx.description || "-",
-        Math.abs(Number(tx.amount || 0)).toFixed(2),
+        convertFromBaseEur(Math.abs(Number(tx.amount || 0)), currency).toFixed(2),
         dayMonthYear(tx.transaction_date, lang),
         tx.uiStatus === "late" ? "Late" : "Paid"
       ]

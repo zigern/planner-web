@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
+import { convertFromBaseEur, formatMoneyConverted } from "@/lib/currency-conversion";
 import { LogoutButton } from "../components/logout-button";
 import { ViewControls } from "../components/view-controls";
 import { ActivityDeleteButton } from "../components/activity-delete-button";
@@ -69,12 +70,7 @@ function parsePresetParam(value: string | string[] | undefined) {
 }
 
 function formatMoney(value: number, lang: string, currency: string) {
-  return new Intl.NumberFormat(lang, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
+  return formatMoneyConverted(value, lang, currency, 2);
 }
 
 function formatDate(value: string | Date, lang: string) {
@@ -279,9 +275,9 @@ export default async function ActivityPage({
       [
         formatDate(tx.transaction_date, lang),
         tx.type === "income" ? text.income : text.expense,
-        tx.category,
+        translateExpenseCategory(tx.category, lang),
         tx.description || "",
-        `${tx.type === "income" ? "+" : "-"}${Math.abs(Number(tx.amount || 0)).toFixed(2)}`
+        `${tx.type === "income" ? "+" : "-"}${convertFromBaseEur(Math.abs(Number(tx.amount || 0)), currency).toFixed(2)}`
       ]
         .map((v) => csvEscape(String(v)))
         .join(",")

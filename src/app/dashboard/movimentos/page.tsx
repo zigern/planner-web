@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
+import { formatMoneyConverted } from "@/lib/currency-conversion";
 import { LogoutButton } from "../components/logout-button";
 import { QuickAddForm } from "../components/quick-add-form";
 import { ViewControls } from "../components/view-controls";
@@ -56,12 +57,7 @@ function parseCurrencyParam(value: string | string[] | undefined) {
 }
 
 function formatMoney(value: number, lang: string, currency: string) {
-  return new Intl.NumberFormat(lang, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
+  return formatMoneyConverted(value, lang, currency, 2);
 }
 
 function formatDate(value: string | Date, lang: string) {

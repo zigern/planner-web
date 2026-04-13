@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatMoneyConverted } from "@/lib/currency-conversion";
 
 type AssetItem = {
   id: number;
@@ -19,12 +20,7 @@ type DebtItem = {
 };
 
 function formatMoney(value: number, lang: string, currency: string) {
-  return new Intl.NumberFormat(lang, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
+  return formatMoneyConverted(value, lang, currency, 2);
 }
 
 export function WealthManager({

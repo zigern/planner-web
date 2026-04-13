@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
+import { formatMoneyConverted } from "@/lib/currency-conversion";
 import { LogoutButton } from "./components/logout-button";
 import { ViewControls } from "./components/view-controls";
 import { DashboardSidebar } from "./components/sidebar-nav";
@@ -54,21 +55,11 @@ function isoDate(value: Date) {
 }
 
 function formatMoney(value: number, lang: string, currency: string) {
-  return new Intl.NumberFormat(lang, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value);
+  return formatMoneyConverted(value, lang, currency, 0);
 }
 
 function formatMoneySmall(value: number, lang: string, currency: string) {
-  return new Intl.NumberFormat(lang, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
+  return formatMoneyConverted(value, lang, currency, 2);
 }
 
 function percentChange(current: number, previous: number) {

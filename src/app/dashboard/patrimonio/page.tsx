@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
+import { formatMoneyConverted } from "@/lib/currency-conversion";
 import { LogoutButton } from "../components/logout-button";
 import { ViewControls } from "../components/view-controls";
 import { WealthManager } from "../components/wealth-manager";
@@ -69,12 +70,7 @@ function getMonthBounds(isoMonth: string) {
 }
 
 function formatMoney(value: number, lang: string, currency: string) {
-  return new Intl.NumberFormat(lang, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
+  return formatMoneyConverted(value, lang, currency, 2);
 }
 
 export default async function PatrimonioPage({

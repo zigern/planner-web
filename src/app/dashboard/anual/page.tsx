@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
+import { convertFromBaseEur, formatMoneyConverted } from "@/lib/currency-conversion";
 import { LogoutButton } from "../components/logout-button";
 import { ViewControls } from "../components/view-controls";
 import { DashboardSidebar } from "../components/sidebar-nav";
@@ -111,12 +112,7 @@ function parseCurrencyParam(value: string | string[] | undefined) {
 }
 
 function fmt(value: number, lang: string, currency: string) {
-  return new Intl.NumberFormat(lang, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
+  return formatMoneyConverted(value, lang, currency, 2);
 }
 
 function pct(value: number) {
@@ -128,10 +124,15 @@ function monthName(isoMonth: string, lang: string) {
   return new Date(year, month - 1, 1).toLocaleDateString(lang, { month: "short" });
 }
 
-function compactNumber(value: number, lang: string) {
-  if (value >= 1_000_000) return `${new Intl.NumberFormat(lang, { maximumFractionDigits: 1 }).format(value / 1_000_000)}M`;
-  if (value >= 1000) return `${new Intl.NumberFormat(lang, { maximumFractionDigits: 1 }).format(value / 1000)}k`;
-  return new Intl.NumberFormat(lang, { maximumFractionDigits: 0 }).format(value);
+function compactNumber(value: number, lang: string, currency: string) {
+  const converted = convertFromBaseEur(value, currency);
+  if (converted >= 1_000_000) {
+    return `${new Intl.NumberFormat(lang, { maximumFractionDigits: 1 }).format(converted / 1_000_000)}M`;
+  }
+  if (converted >= 1000) {
+    return `${new Intl.NumberFormat(lang, { maximumFractionDigits: 1 }).format(converted / 1000)}k`;
+  }
+  return new Intl.NumberFormat(lang, { maximumFractionDigits: 0 }).format(converted);
 }
 
 async function safeQueryRows<T>(db: ReturnType<typeof getDb>, sql: string, params: unknown[]): Promise<T[]> {
@@ -347,7 +348,7 @@ export default async function AnnualOverviewPage({
                   <div className="annual-chart-wrap">
                     <div className="annual-y-axis">
                       {yTicks.map((ratio) => (
-                        <span key={ratio}>{compactNumber(maxValue * ratio, lang)}</span>
+                        <span key={ratio}>{compactNumber(maxValue * ratio, lang, currency)}</span>
                       ))}
                     </div>
                     <div className="annual-plot-area">
