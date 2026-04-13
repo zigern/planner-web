@@ -32,7 +32,7 @@
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 14px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .app-top {
@@ -166,8 +166,9 @@
   flex-direction: column;
   gap: 10px;
   position: sticky;
-  top: 0;
-  height: calc(100vh - 64px);
+  top: 10px;
+  align-self: start;
+  max-height: calc(100vh - 20px);
   overflow: auto;
 }
 
