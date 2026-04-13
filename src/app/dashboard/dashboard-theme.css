@@ -36,12 +36,12 @@
 }
 
 .app-top {
-  height: 76px;
+  height: 64px;
   border-bottom: 1px solid var(--line);
-  display: grid;
-  grid-template-columns: auto 1fr;
+  display: flex;
   align-items: center;
-  gap: 24px;
+  justify-content: space-between;
+  gap: 16px;
   padding: 0 18px;
 }
 
@@ -158,6 +158,9 @@
   border-right: 1px solid var(--line);
   background: #f7f7f9;
   padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .side-nav-label {
@@ -171,6 +174,7 @@
 .side-nav-items {
   display: grid;
   gap: 6px;
+  align-content: start;
 }
 
 .side-nav-item {
@@ -208,6 +212,44 @@
 .side-nav-icon svg {
   width: 16px;
   height: 16px;
+}
+
+.side-nav-bottom {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.side-nav-bottom .view-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.side-nav-bottom .view-controls select {
+  width: 100%;
+  height: 34px;
+  font-size: 12px;
+}
+
+.side-nav-user-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.side-avatar {
+  width: 34px;
+  height: 34px;
+  font-size: 13px;
+}
+
+.side-logout {
+  flex: 1;
+  height: 34px !important;
+  font-size: 12px !important;
 }
 
 .greeting-row {
@@ -882,6 +924,37 @@
 
 .dashboard-controls-right {
   margin-left: auto;
+}
+
+.month-banner {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.month-chip {
+  text-decoration: none;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  color: #4a4a55;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  text-transform: lowercase;
+}
+
+.month-chip:hover {
+  background: #f5f5f7;
+}
+
+.month-chip.active {
+  background: #1f1f21;
+  border-color: #1f1f21;
+  color: #fff;
 }
 
 .dashboard-title {

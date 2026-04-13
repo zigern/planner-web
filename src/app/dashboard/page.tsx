@@ -3,8 +3,6 @@ import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { convertFromBaseEur, formatMoneyConverted } from "@/lib/currency-conversion";
-import { LogoutButton } from "./components/logout-button";
-import { ViewControls } from "./components/view-controls";
 import { DashboardSidebar } from "./components/sidebar-nav";
 import { translateExpenseCategory } from "./utils/category-translation";
 import "./dashboard-theme.css";
@@ -627,27 +625,21 @@ export default async function DashboardPage({
     lang,
     currency
   });
-  const monthPresetHref = `/dashboard?${(() => {
+  const monthTabs = Array.from({ length: 12 }, (_, idx) => {
+    const iso = `${selectedYear}-${String(idx + 1).padStart(2, "0")}`;
+    const bounds = getMonthBounds(iso);
     const p = new URLSearchParams(presetBase);
+    p.set("month", iso);
     p.set("preset", "month");
-    p.set("from", monthBounds.from);
-    p.set("to", monthBounds.to);
-    return p.toString();
-  })()}`;
-  const last30PresetHref = `/dashboard?${(() => {
-    const p = new URLSearchParams(presetBase);
-    p.set("preset", "30d");
-    p.set("from", last30Iso);
-    p.set("to", todayIso);
-    return p.toString();
-  })()}`;
-  const last90PresetHref = `/dashboard?${(() => {
-    const p = new URLSearchParams(presetBase);
-    p.set("preset", "90d");
-    p.set("from", last90Iso);
-    p.set("to", todayIso);
-    return p.toString();
-  })()}`;
+    p.set("from", bounds.from);
+    p.set("to", bounds.to);
+    return {
+      iso,
+      label: new Date(selectedYear, idx, 1).toLocaleDateString(lang, { month: "short" }),
+      href: `/dashboard?${p.toString()}`,
+      active: iso === selectedMonth
+    };
+  });
 
   return (
     <div className="casha-wrap">
@@ -661,16 +653,17 @@ export default async function DashboardPage({
             </div>
             <span>Casha</span>
           </div>
-
-          <div className="top-actions">
-            <div className="search-box">{text.search}</div>
-            <ViewControls lang={lang} currency={currency} />
-            <div className="avatar-mini">{initials}</div>
-            <LogoutButton className="logout-light" label={text.logout} />
-          </div>
         </div>
         <div className="workspace-shell">
-          <DashboardSidebar current="dashboard" selectedMonth={selectedMonth} lang={lang} currency={currency} />
+          <DashboardSidebar
+            current="dashboard"
+            selectedMonth={selectedMonth}
+            lang={lang}
+            currency={currency}
+            showBottomControls
+            userInitials={initials}
+            logoutLabel={text.logout}
+          />
           <main className="dash-main">
           <section className="greeting-row">
             <div>
@@ -693,16 +686,12 @@ export default async function DashboardPage({
                   {text.apply}
                 </button>
               </form>
-              <div className="activity-preset-group">
-                <Link className={`activity-preset ${presetFilter === "month" ? "active" : ""}`} href={monthPresetHref}>
-                  {text.thisMonth}
-                </Link>
-                <Link className={`activity-preset ${presetFilter === "30d" ? "active" : ""}`} href={last30PresetHref}>
-                  {text.last30Days}
-                </Link>
-                <Link className={`activity-preset ${presetFilter === "90d" ? "active" : ""}`} href={last90PresetHref}>
-                  {text.last90Days}
-                </Link>
+              <div className="month-banner" aria-label={lang === "pt-PT" ? "Selecionar mês" : "Select month"}>
+                {monthTabs.map((m) => (
+                  <Link key={m.iso} className={`month-chip ${m.active ? "active" : ""}`} href={m.href}>
+                    {m.label}
+                  </Link>
+                ))}
               </div>
             </div>
             <div className="dashboard-controls-right">

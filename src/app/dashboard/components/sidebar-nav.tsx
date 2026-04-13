@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ViewControls } from "./view-controls";
+import { LogoutButton } from "./logout-button";
 
 type NavKey =
   | "dashboard"
@@ -100,12 +102,18 @@ export function DashboardSidebar({
   current,
   selectedMonth,
   lang,
-  currency
+  currency,
+  showBottomControls,
+  userInitials,
+  logoutLabel
 }: {
   current: NavKey;
   selectedMonth: string;
   lang: string;
   currency: string;
+  showBottomControls?: boolean;
+  userInitials?: string;
+  logoutLabel?: string;
 }) {
   const isPt = lang === "pt-PT";
   const q = `month=${selectedMonth}&lang=${lang}&currency=${currency}`;
@@ -135,6 +143,15 @@ export function DashboardSidebar({
           </Link>
         ))}
       </nav>
+      {showBottomControls ? (
+        <div className="side-nav-bottom">
+          <ViewControls lang={lang} currency={currency} />
+          <div className="side-nav-user-row">
+            <div className="avatar-mini side-avatar">{userInitials || "U"}</div>
+            <LogoutButton className="logout-light side-logout" label={logoutLabel || (isPt ? "Terminar sessão" : "Logout")} />
+          </div>
+        </div>
+      ) : null}
     </aside>
   );
 }
