@@ -159,11 +159,13 @@ function statusText(status: GoalItem["status"], t: Dict) {
 export function GoalsManager({
   lang,
   currency,
-  initialGoals
+  initialGoals,
+  periodLabel
 }: {
   lang: string;
   currency: string;
   initialGoals: GoalItem[];
+  periodLabel?: string;
 }) {
   const router = useRouter();
   const t = textByLang[lang] || textByLang["en-US"];
@@ -326,6 +328,7 @@ export function GoalsManager({
         <div className="panel-head">
           <h3>{t.listTitle}</h3>
         </div>
+        {periodLabel ? <p className="budgets-period-label">{periodLabel}</p> : null}
         {initialGoals.length ? (
           <ul className="goals-list">
             {initialGoals.map((goal) => {
