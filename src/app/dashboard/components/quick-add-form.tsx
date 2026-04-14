@@ -21,6 +21,79 @@ const expenseItemsByCategory: Record<string, string[]> = {
 
 const incomeItems = ["Salary", "Freelance", "Bonus", "Business", "Other"];
 
+function categoryIconKind(name: string) {
+  const value = name.trim().toLowerCase();
+  if (/(housing|habita|home|house|rent|mortgage|utilities|bills|contas)/i.test(value)) return "home";
+  if (/(transport|car|fuel|uber|parking|trip)/i.test(value)) return "car";
+  if (/(food|dining|restaurant|comida)/i.test(value)) return "food";
+  if (/(shopping|store|compras)/i.test(value)) return "bag";
+  if (/(health|saude|doctor|pharmacy)/i.test(value)) return "plus";
+  if (/(pets|animais|pet|dog|cat|vet)/i.test(value)) return "paw";
+  if (/(salary|income|business|investments|bonus|freelance|receita|renda)/i.test(value)) return "income";
+  return "dot";
+}
+
+function CategoryIcon({ kind }: { kind: string }) {
+  if (kind === "home") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 11.5 12 5l8 6.5V20h-5v-5h-6v5H4z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (kind === "car") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 13 7.5 8h9L19 13v6h-2a2 2 0 0 1-4 0h-2a2 2 0 0 1-4 0H5z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (kind === "food") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 3h2v8a2 2 0 0 1-2 2zM10 3h2v8a2 2 0 0 1-2 2zM17 3h2v18h-2z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (kind === "bag") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 8h12l-1 11H7z" fill="currentColor" />
+        <path d="M9 8V6a3 3 0 1 1 6 0v2" stroke="currentColor" strokeWidth="2" fill="none" />
+      </svg>
+    );
+  }
+  if (kind === "plus") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (kind === "paw") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="7" cy="8" r="2" fill="currentColor" />
+        <circle cx="12" cy="6.8" r="2" fill="currentColor" />
+        <circle cx="17" cy="8" r="2" fill="currentColor" />
+        <path d="M6 16a6 4.6 0 0 1 12 0c0 2.2-2.2 3.6-6 3.6S6 18.2 6 16Z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (kind === "income") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M11 20V8.8L7.4 12.4 6 11l6-6 6 6-1.4 1.4L13 8.8V20z" fill="currentColor" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="6" fill="currentColor" />
+    </svg>
+  );
+}
+
   const uiByLang = {
     "pt-PT": {
       mode: "Modo",
@@ -255,27 +328,37 @@ export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
           </select>
         </label>
 
-        <label className="q-field">
+        <div className="q-field q-field-category">
           <span>{text.category}</span>
-          <select
-            value={category}
-            onChange={(e) => {
-              const nextCategory = e.target.value;
-              setCategory(nextCategory);
-              if (type === "expense") {
-                setItem((expenseItemsByCategory[nextCategory] || expenseItemsByCategory.Other)[0]);
-              } else {
-                setItem(incomeItems[0]);
-              }
-            }}
-          >
-            {categories.map((item) => (
-              <option key={item} value={item}>
-                {categoryLabels[item as keyof typeof categoryLabels] || item}
-              </option>
-            ))}
-          </select>
-        </label>
+          <div className="category-tile-grid" role="listbox" aria-label={text.category}>
+            {categories.map((cat) => {
+              const iconKind = categoryIconKind(cat);
+              const label = categoryLabels[cat as keyof typeof categoryLabels] || cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  className={`category-tile ${category === cat ? "active" : ""}`}
+                  title={label}
+                  aria-label={label}
+                  aria-pressed={category === cat}
+                  onClick={() => {
+                    setCategory(cat);
+                    if (type === "expense") {
+                      setItem((expenseItemsByCategory[cat] || expenseItemsByCategory.Other)[0]);
+                    } else {
+                      setItem(incomeItems[0]);
+                    }
+                  }}
+                >
+                  <span className={`category-tile-icon category-tile-icon-${iconKind}`}>
+                    <CategoryIcon kind={iconKind} />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {entryMode === "recurring" ? (
           <label className="q-field">

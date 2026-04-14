@@ -892,6 +892,95 @@
   font-weight: 600;
 }
 
+.q-field-category {
+  grid-column: 1 / -1;
+}
+
+.category-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+  gap: 8px;
+}
+
+.category-tile {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.category-tile:hover {
+  transform: translateY(-1px);
+  border-color: #b8c8ef;
+  box-shadow: 0 4px 12px rgba(47, 107, 232, 0.12);
+}
+
+.category-tile.active {
+  border-color: var(--blue);
+  background: #eef4ff;
+  box-shadow: inset 0 0 0 1px rgba(47, 107, 232, 0.3);
+}
+
+.category-tile-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+}
+
+.category-tile-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.category-tile-icon-home {
+  background: #e8f8ee;
+  color: #42bb67;
+}
+
+.category-tile-icon-car {
+  background: #fff2e8;
+  color: #df7a37;
+}
+
+.category-tile-icon-food {
+  background: #fff3e9;
+  color: #e68b4f;
+}
+
+.category-tile-icon-bag {
+  background: #f2ecff;
+  color: #8f5deb;
+}
+
+.category-tile-icon-plus {
+  background: #ffeef4;
+  color: #d84b85;
+}
+
+.category-tile-icon-paw {
+  background: #edf4ff;
+  color: #4f7de6;
+}
+
+.category-tile-icon-income {
+  background: #e9fbf2;
+  color: #1eaf61;
+}
+
+.category-tile-icon-dot {
+  background: #eff1f6;
+  color: #6b7386;
+}
+
 .quick-form input,
 .quick-form select,
 .quick-form button {
