@@ -354,6 +354,7 @@ export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
                   <span className={`category-tile-icon category-tile-icon-${iconKind}`}>
                     <CategoryIcon kind={iconKind} />
                   </span>
+                  <span className="category-tile-label">{label}</span>
                 </button>
               );
             })}

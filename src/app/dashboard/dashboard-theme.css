@@ -898,21 +898,23 @@
 
 .category-tile-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
 .category-tile {
   width: 100%;
-  aspect-ratio: 1 / 1;
-  min-height: 46px;
+  min-height: 72px;
   min-width: 0;
   border-radius: 12px;
   border: 1px solid var(--line);
   background: #fff;
-  padding: 0;
-  display: grid;
-  place-items: center;
+  padding: 8px 6px 6px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   cursor: pointer;
   color: #5b6479;
   transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
@@ -941,6 +943,18 @@
 .category-tile-icon svg {
   width: 14px;
   height: 14px;
+}
+
+.category-tile-label {
+  font-size: 11px;
+  line-height: 1.1;
+  font-weight: 700;
+  text-align: center;
+  color: #495067;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .category-tile-icon-home {
