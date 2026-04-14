@@ -937,7 +937,7 @@ export default async function DashboardPage({
               </div>
             </article>
 
-            <article className="panel">
+            <article className="panel panel-breakdown">
               <div className="panel-head">
                 <h3>{text.spendingBreakdown}</h3>
               </div>

@@ -670,7 +670,37 @@
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 12px;
-  align-items: start;
+  align-items: stretch;
+}
+
+.bottom-grid > .panel {
+  height: 100%;
+}
+
+.panel-chart,
+.panel-breakdown {
+  min-height: 470px;
+}
+
+.panel-chart {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-chart .annual-chart-wrap {
+  flex: 1;
+}
+
+.panel-breakdown {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-breakdown .breakdown-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
 }
 
 .panel-chart .panel-head {
