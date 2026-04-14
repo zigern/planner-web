@@ -1040,34 +1040,16 @@
   margin-left: auto;
 }
 
-.month-banner {
-  display: inline-flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.top-months {
-  display: inline-flex;
-  gap: 6px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  max-width: min(56vw, 760px);
-  padding: 4px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #f4f5f8;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
-}
-
 .top-year-nav {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 38px;
-  padding: 4px 6px 4px 10px;
-  border: 1px solid #d3d5dc;
+  gap: 8px;
+  height: 40px;
+  padding: 5px 7px 5px 10px;
+  border: 1px solid #262830;
   border-radius: 12px;
-  background: linear-gradient(180deg, #f9fafc 0%, #f0f2f7 100%);
+  background: linear-gradient(180deg, #2a2d36 0%, #1f2128 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 6px rgba(13, 14, 18, 0.24);
 }
 
 .year-caption {
@@ -1075,17 +1057,17 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #767b88;
+  color: #a6adbe;
 }
 
 .year-btn {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 8px;
-  border: 1px solid #d2d5dc;
-  color: #4f5563;
-  background: #fff;
-  font-size: 13px;
+  border: 1px solid #3a3f4a;
+  color: #d9deec;
+  background: #2d313c;
+  font-size: 12px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -1094,11 +1076,17 @@
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
+.year-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
 .year-value {
-  min-width: 54px;
-  height: 26px;
+  min-width: 58px;
+  height: 28px;
   border-radius: 8px;
-  background: #1f1f21;
+  border: 1px solid #3d4350;
+  background: #16181f;
   color: #fff;
   font-size: 12px;
   font-weight: 800;
@@ -1109,18 +1097,49 @@
 }
 
 .year-btn:hover {
-  background: #eceff6;
-  border-color: #c6cad5;
-  color: #1f1f23;
+  background: #394151;
+  border-color: #4a5365;
+  color: #ffffff;
+}
+
+.top-months-shell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(62vw, 840px);
+  height: 40px;
+  padding: 4px 6px 4px 10px;
+  border: 1px solid #d3d7e0;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fafbfe 0%, #f3f5fa 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.months-caption {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7d8596;
+  flex: 0 0 auto;
+}
+
+.top-months {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  max-width: 100%;
+  padding: 0;
 }
 
 .month-chip {
   text-decoration: none;
-  height: 30px;
+  height: 28px;
   padding: 0 10px;
-  border-radius: 9px;
+  border-radius: 8px;
   border: 1px solid transparent;
-  color: #4b5160;
+  color: #4f5667;
   background: transparent;
   font-size: 12px;
   font-weight: 700;
@@ -1131,14 +1150,15 @@
 
 .month-chip:hover {
   background: #ffffff;
-  border-color: #d3d6de;
+  border-color: #d0d6e2;
+  color: #2f3441;
 }
 
 .month-chip.active {
-  background: linear-gradient(180deg, #27292f 0%, #17181b 100%);
-  border-color: #1f1f21;
+  background: linear-gradient(180deg, #2e6ae8 0%, #2558c5 100%);
+  border-color: #214eb0;
   color: #fff;
-  box-shadow: 0 2px 8px rgba(23, 24, 27, 0.2);
+  box-shadow: 0 3px 10px rgba(37, 88, 197, 0.32);
 }
 
 .dashboard-title {
