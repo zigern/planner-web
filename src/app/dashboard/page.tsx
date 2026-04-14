@@ -646,10 +646,7 @@ export default async function DashboardPage({
               <h1 className="dashboard-title">{text.greeting}</h1>
               <p className="dashboard-subtitle">{text.subtitle}</p>
             </div>
-          </section>
-
-          <section className="dashboard-controls">
-            <div className="dashboard-controls-right">
+            <div className="cta-row">
               <Link
                 href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=${presetFilter}&from=${effectiveFrom}&to=${effectiveTo}`}
                 className="btn btn-dark"
