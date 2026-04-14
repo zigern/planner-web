@@ -904,45 +904,43 @@
 
 .category-tile {
   width: 100%;
-  min-height: 72px;
+  min-height: 62px;
   min-width: 0;
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  background: #fff;
-  padding: 8px 6px 6px 6px;
+  border-radius: 10px;
+  border: 0;
+  background: transparent;
+  padding: 6px 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   cursor: pointer;
   color: #5b6479;
-  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+  transition: transform 0.16s ease, color 0.16s ease, background 0.16s ease;
 }
 
 .category-tile:hover {
   transform: translateY(-1px);
-  border-color: #b8c8ef;
-  box-shadow: 0 4px 12px rgba(47, 107, 232, 0.12);
+  background: rgba(47, 107, 232, 0.06);
 }
 
 .category-tile.active {
-  border-color: var(--blue);
-  background: #eef4ff;
-  box-shadow: inset 0 0 0 1px rgba(47, 107, 232, 0.3);
+  background: rgba(47, 107, 232, 0.1);
+  color: #2f6be8;
 }
 
 .category-tile-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
 }
 
 .category-tile-icon svg {
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
 }
 
 .category-tile-label {
@@ -1048,10 +1046,14 @@
 .quick-form .category-tile {
   min-width: 0;
   width: 100%;
-  padding: 0;
-  background: #fff;
+  padding: 6px 4px;
+  background: transparent;
   color: #5b6479;
-  border: 1px solid var(--line);
+  border: 0;
+}
+
+.quick-form .category-tile.active .category-tile-icon {
+  box-shadow: inset 0 0 0 1px rgba(47, 107, 232, 0.35);
 }
 
 .q-msg {
