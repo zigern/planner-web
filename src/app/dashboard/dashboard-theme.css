@@ -12,6 +12,8 @@
   --red: #e05b4b;
   --red-bg: #fdeeea;
   --blue: #2f6be8;
+  --blue-dark: #2558c5;
+  --blue-soft: #e8efff;
 }
 
 * {
@@ -374,9 +376,14 @@
 }
 
 .btn.btn-dark {
-  background: #1f1f21;
+  background: var(--blue);
   color: #fff;
-  border-color: #1f1f21;
+  border-color: var(--blue);
+}
+
+.btn.btn-dark:hover {
+  background: var(--blue-dark);
+  border-color: var(--blue-dark);
 }
 
 .metrics-grid {
@@ -652,8 +659,8 @@
 }
 
 .sub-form button {
-  background: #1f1f21;
-  border-color: #1f1f21;
+  background: var(--blue);
+  border-color: var(--blue);
   color: #fff;
   font-weight: 700;
   padding-inline: 12px;
@@ -914,8 +921,8 @@
 }
 
 .quick-form button {
-  background: #1f1f21;
-  border-color: #1f1f21;
+  background: var(--blue);
+  border-color: var(--blue);
   color: #fff;
   font-weight: 700;
   width: auto;
@@ -969,8 +976,8 @@
 }
 
 .activity-preset.active {
-  background: #1f1f21;
-  border-color: #1f1f21;
+  background: var(--blue);
+  border-color: var(--blue);
   color: #fff;
 }
 
@@ -1006,8 +1013,8 @@
 .month-switch-btn {
   height: 24px;
   border-radius: 6px;
-  border: 1px solid #1f1f21;
-  background: #1f1f21;
+  border: 1px solid var(--blue);
+  background: var(--blue);
   color: #fff;
   font-size: 11px;
   font-weight: 700;
@@ -1016,7 +1023,8 @@
 }
 
 .month-switch-btn:hover {
-  background: #2b2b2f;
+  background: var(--blue-dark);
+  border-color: var(--blue-dark);
 }
 
 .dashboard-controls {
@@ -1057,7 +1065,15 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #a6adbe;
+  color: #ffffff;
+  background: var(--blue);
+  border: 1px solid var(--blue-dark);
+  border-radius: 7px;
+  padding: 0 7px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .year-btn {
@@ -1085,8 +1101,8 @@
   min-width: 58px;
   height: 28px;
   border-radius: 8px;
-  border: 1px solid #3d4350;
-  background: #16181f;
+  border: 1px solid var(--blue-dark);
+  background: linear-gradient(180deg, #3c7cff 0%, var(--blue) 100%);
   color: #fff;
   font-size: 12px;
   font-weight: 800;
@@ -1155,10 +1171,10 @@
 }
 
 .month-chip.active {
-  background: linear-gradient(180deg, #2e6ae8 0%, #2558c5 100%);
-  border-color: #214eb0;
+  background: linear-gradient(180deg, #4a87ff 0%, var(--blue) 100%);
+  border-color: var(--blue-dark);
   color: #fff;
-  box-shadow: 0 3px 10px rgba(37, 88, 197, 0.32);
+  box-shadow: 0 3px 10px rgba(47, 107, 232, 0.35);
 }
 
 .dashboard-title {
@@ -1283,14 +1299,14 @@
 }
 
 .recurring-actions button[type="submit"] {
-  background: #1f1f21;
-  border-color: #1f1f21;
+  background: var(--blue);
+  border-color: var(--blue);
   color: #fff;
 }
 
 .btn-recurring-apply {
   background: #fff;
-  color: #1f1f21;
+  color: var(--blue-dark);
 }
 
 .recurring-list-panel {
@@ -2115,8 +2131,8 @@
 }
 
 .sheet-filters button {
-  background: #1f1f21;
-  border-color: #1f1f21;
+  background: var(--blue);
+  border-color: var(--blue);
   color: #fff;
   cursor: pointer;
 }
