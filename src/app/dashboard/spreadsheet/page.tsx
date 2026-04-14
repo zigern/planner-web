@@ -3,9 +3,8 @@ import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { convertFromBaseEur, formatMoneyConverted } from "@/lib/currency-conversion";
-import { LogoutButton } from "../components/logout-button";
-import { ViewControls } from "../components/view-controls";
 import { DashboardSidebar } from "../components/sidebar-nav";
+import { DashboardTopBar } from "../components/top-bar";
 import { translateExpenseCategory } from "../utils/category-translation";
 import "../dashboard-theme.css";
 
@@ -425,28 +424,14 @@ export default async function SpreadsheetPage({
         incomeGoal: "Income Goal"
       };
   const name = user.email.split("@")[0];
+  const initials = name.slice(0, 2).toUpperCase();
 
   return (
     <div className="casha-wrap">
       <div className="casha-shell">
-        <div className="app-top">
-          <div className="app-brand">
-            <div className="logo-box">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M5 6h14v2H5zm0 5h10v2H5zm0 5h14v2H5z" fill="currentColor" />
-              </svg>
-            </div>
-            <span>Casha</span>
-          </div>
-          <div className="top-actions">
-            <div className="search-box">{selectedMonth}</div>
-            <ViewControls lang={lang} currency={currency} />
-            <div className="avatar-mini">{name.slice(0, 2).toUpperCase()}</div>
-            <LogoutButton className="logout-light" label={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
-          </div>
-        </div>
+        <DashboardTopBar selectedMonth={selectedMonth} lang={lang} currency={currency} basePath="/dashboard/spreadsheet" />
         <div className="workspace-shell">
-          <DashboardSidebar current="spreadsheet" selectedMonth={selectedMonth} lang={lang} currency={currency} />
+          <DashboardSidebar current="spreadsheet" selectedMonth={selectedMonth} lang={lang} currency={currency} showBottomControls userInitials={initials} logoutLabel={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
           <main className="dash-main spreadsheet-mode">
             <div className="greeting-row">
               <div>

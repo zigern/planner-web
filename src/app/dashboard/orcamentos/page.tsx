@@ -2,10 +2,9 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
-import { LogoutButton } from "../components/logout-button";
-import { ViewControls } from "../components/view-controls";
 import { BudgetsManager } from "../components/budgets-manager";
 import { DashboardSidebar } from "../components/sidebar-nav";
+import { DashboardTopBar } from "../components/top-bar";
 import "../dashboard-theme.css";
 
 type BudgetRow = {
@@ -188,25 +187,9 @@ export default async function OrcamentosPage({
   return (
     <div className="casha-wrap">
       <div className="casha-shell">
-        <div className="app-top">
-          <div className="app-brand">
-            <div className="logo-box">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M5 6h14v2H5zm0 5h10v2H5zm0 5h14v2H5z" fill="currentColor" />
-              </svg>
-            </div>
-            <span>Casha</span>
-          </div>
-
-          <div className="top-actions">
-            <div className="search-box">{lang === "pt-PT" ? "Pesquisar" : "Search"}</div>
-            <ViewControls lang={lang} currency={currency} />
-            <div className="avatar-mini">{initials}</div>
-            <LogoutButton className="logout-light" label={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
-          </div>
-        </div>
+        <DashboardTopBar selectedMonth={selectedMonth} lang={lang} currency={currency} basePath="/dashboard/orcamentos" />
         <div className="workspace-shell">
-          <DashboardSidebar current="budgets" selectedMonth={selectedMonth} lang={lang} currency={currency} />
+          <DashboardSidebar current="budgets" selectedMonth={selectedMonth} lang={lang} currency={currency} showBottomControls userInitials={initials} logoutLabel={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
           <main className="dash-main">
           <section className="greeting-row">
             <div>

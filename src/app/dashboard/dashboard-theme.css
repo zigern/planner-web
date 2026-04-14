@@ -173,6 +173,7 @@
 
 .side-nav {
   background: #f7f7f9;
+  border-right: 1px solid var(--line);
   padding: 14px 10px;
   display: flex;
   flex-direction: column;

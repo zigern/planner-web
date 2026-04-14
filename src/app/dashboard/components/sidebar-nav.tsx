@@ -103,7 +103,7 @@ export function DashboardSidebar({
   selectedMonth,
   lang,
   currency,
-  showBottomControls,
+  showBottomControls = true,
   userInitials,
   logoutLabel
 }: {

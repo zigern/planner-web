@@ -3,10 +3,9 @@ import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { formatMoneyConverted } from "@/lib/currency-conversion";
-import { LogoutButton } from "../components/logout-button";
-import { ViewControls } from "../components/view-controls";
 import { WealthManager } from "../components/wealth-manager";
 import { DashboardSidebar } from "../components/sidebar-nav";
+import { DashboardTopBar } from "../components/top-bar";
 import "../dashboard-theme.css";
 
 type AssetRow = {
@@ -204,25 +203,9 @@ export default async function PatrimonioPage({
   return (
     <div className="casha-wrap">
       <div className="casha-shell">
-        <div className="app-top">
-          <div className="app-brand">
-            <div className="logo-box">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M5 6h14v2H5zm0 5h10v2H5zm0 5h14v2H5z" fill="currentColor" />
-              </svg>
-            </div>
-            <span>Casha</span>
-          </div>
-
-          <div className="top-actions">
-            <div className="search-box">{t.search}</div>
-            <ViewControls lang={lang} currency={currency} />
-            <div className="avatar-mini">{initials}</div>
-            <LogoutButton className="logout-light" label={t.logout} />
-          </div>
-        </div>
+        <DashboardTopBar selectedMonth={selectedMonth} lang={lang} currency={currency} basePath="/dashboard/patrimonio" />
         <div className="workspace-shell">
-          <DashboardSidebar current="networth" selectedMonth={selectedMonth} lang={lang} currency={currency} />
+          <DashboardSidebar current="networth" selectedMonth={selectedMonth} lang={lang} currency={currency} showBottomControls userInitials={initials} logoutLabel={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
           <main className="dash-main">
             <section className="greeting-row">
               <div>
