@@ -308,41 +308,79 @@
 }
 
 .side-nav-bottom {
-  margin-top: 10px;
-  border-top: 1px solid var(--line);
-  padding-top: 10px;
+  margin-top: 12px;
+  border-top: 1px solid #d9dee8;
+  padding-top: 12px;
   display: grid;
-  gap: 8px;
+  gap: 10px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fafbff 0%, #f3f6fd 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .side-nav-bottom .view-controls {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 8px;
 }
 
 .side-nav-bottom .view-controls select {
   width: 100%;
-  height: 34px;
-  font-size: 12px;
+  height: 38px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 12px;
+  border: 1px solid #ccd4e2;
+  background: #fff;
+  color: #353b4a;
+  box-shadow: 0 2px 6px rgba(34, 51, 84, 0.06);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.side-nav-bottom .view-controls select:hover {
+  border-color: #9fb3de;
+  transform: translateY(-1px);
+}
+
+.side-nav-bottom .view-controls select:focus-visible {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(47, 107, 232, 0.18);
 }
 
 .side-nav-user-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding: 2px 0 0 0;
 }
 
 .side-avatar {
-  width: 34px;
-  height: 34px;
-  font-size: 13px;
+  width: 42px;
+  height: 42px;
+  font-size: 16px;
+  font-weight: 800;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 6px 14px rgba(47, 107, 232, 0.3);
 }
 
 .side-logout {
   flex: 1;
-  height: 34px !important;
-  font-size: 12px !important;
+  height: 42px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  border-radius: 14px !important;
+  border: 1px solid #cfd8e6 !important;
+  background: #fff !important;
+  color: #263044 !important;
+  box-shadow: 0 2px 8px rgba(31, 46, 79, 0.08) !important;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease !important;
+}
+
+.side-logout:hover {
+  transform: translateY(-1px);
+  border-color: #a8bbdf !important;
+  box-shadow: 0 6px 14px rgba(31, 46, 79, 0.12) !important;
 }
 
 .greeting-row {
