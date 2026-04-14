@@ -91,7 +91,7 @@
 .top-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   justify-self: end;
   justify-content: flex-end;
   flex-wrap: wrap;
@@ -339,6 +339,7 @@
   grid-template-columns: 1fr auto;
   align-items: end;
   gap: 16px;
+  margin-top: 12px;
 }
 
 .greeting-row h1 {
@@ -1050,47 +1051,76 @@
   flex-wrap: nowrap;
   overflow-x: auto;
   max-width: min(56vw, 760px);
-  padding-bottom: 2px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f4f5f8;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .top-year-nav {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  height: 38px;
+  padding: 4px 6px 4px 10px;
+  border: 1px solid #d3d5dc;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f9fafc 0%, #f0f2f7 100%);
 }
 
-.year-chip {
-  height: 30px;
-  min-width: 30px;
+.year-caption {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #767b88;
+}
+
+.year-btn {
+  width: 26px;
+  height: 26px;
   border-radius: 8px;
-  border: 1px solid var(--line);
-  color: #4a4a55;
+  border: 1px solid #d2d5dc;
+  color: #4f5563;
   background: #fff;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .year-value {
-  min-width: 58px;
-  padding: 0 8px;
+  min-width: 54px;
+  height: 26px;
+  border-radius: 8px;
+  background: #1f1f21;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
 }
 
-.year-shift:hover {
-  background: #f5f5f7;
+.year-btn:hover {
+  background: #eceff6;
+  border-color: #c6cad5;
+  color: #1f1f23;
 }
 
 .month-chip {
   text-decoration: none;
   height: 30px;
   padding: 0 10px;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-  color: #4a4a55;
-  background: #fff;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  color: #4b5160;
+  background: transparent;
   font-size: 12px;
   font-weight: 700;
   display: inline-flex;
@@ -1099,13 +1129,15 @@
 }
 
 .month-chip:hover {
-  background: #f5f5f7;
+  background: #ffffff;
+  border-color: #d3d6de;
 }
 
 .month-chip.active {
-  background: #1f1f21;
+  background: linear-gradient(180deg, #27292f 0%, #17181b 100%);
   border-color: #1f1f21;
   color: #fff;
+  box-shadow: 0 2px 8px rgba(23, 24, 27, 0.2);
 }
 
 .dashboard-title {

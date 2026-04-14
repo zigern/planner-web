@@ -40,11 +40,12 @@ export function DashboardTopBar({
       </div>
       <div className="top-actions">
         <div className="top-year-nav" aria-label={lang === "pt-PT" ? "Selecionar ano" : "Select year"}>
-          <Link className="year-chip year-shift" href={previousYearHref} aria-label={lang === "pt-PT" ? "Ano anterior" : "Previous year"}>
+          <span className="year-caption">{lang === "pt-PT" ? "Ano" : "Year"}</span>
+          <Link className="year-btn" href={previousYearHref} aria-label={lang === "pt-PT" ? "Ano anterior" : "Previous year"}>
             &lt;
           </Link>
-          <span className="year-chip year-value">{selectedYear}</span>
-          <Link className="year-chip year-shift" href={nextYearHref} aria-label={lang === "pt-PT" ? "Ano seguinte" : "Next year"}>
+          <span className="year-value">{selectedYear}</span>
+          <Link className="year-btn" href={nextYearHref} aria-label={lang === "pt-PT" ? "Ano seguinte" : "Next year"}>
             &gt;
           </Link>
         </div>
