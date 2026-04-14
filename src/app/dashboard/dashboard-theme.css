@@ -965,6 +965,16 @@
   color: #df7a37;
 }
 
+.category-tile-icon-people {
+  background: #f4efff;
+  color: #7e5be5;
+}
+
+.category-tile-icon-transport {
+  background: #eef5ff;
+  color: #3d74da;
+}
+
 .category-tile-icon-food {
   background: #fff3e9;
   color: #e68b4f;

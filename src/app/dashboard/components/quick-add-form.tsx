@@ -24,7 +24,8 @@ const incomeItems = ["Salary", "Freelance", "Bonus", "Business", "Other"];
 function categoryIconKind(name: string) {
   const value = name.trim().toLowerCase();
   if (/(housing|habita|home|house|rent|mortgage|utilities|bills|contas)/i.test(value)) return "home";
-  if (/(transport|car|fuel|uber|parking|trip)/i.test(value)) return "car";
+  if (/(personal|pessoal)/i.test(value)) return "people";
+  if (/(transport|car|fuel|uber|parking|trip)/i.test(value)) return "transport";
   if (/(food|dining|restaurant|comida)/i.test(value)) return "food";
   if (/(shopping|store|compras)/i.test(value)) return "bag";
   if (/(health|saude|doctor|pharmacy)/i.test(value)) return "plus";
@@ -48,10 +49,31 @@ function CategoryIcon({ kind }: { kind: string }) {
       </svg>
     );
   }
+  if (kind === "people") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="8" cy="8" r="3" fill="currentColor" />
+        <circle cx="16" cy="9" r="2.5" fill="currentColor" opacity="0.9" />
+        <path d="M3.8 18c0-3 2.4-5.4 5.4-5.4S14.6 15 14.6 18v1.2H3.8z" fill="currentColor" />
+        <path d="M13.4 19.2V18c0-2.2 1.8-4.1 4.1-4.1 2.2 0 4.1 1.8 4.1 4.1v1.2z" fill="currentColor" opacity="0.9" />
+      </svg>
+    );
+  }
+  if (kind === "transport") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 5h12a2 2 0 0 1 2 2v8a3 3 0 0 1-3 3l1 2h-2l-1-2H9l-1 2H6l1-2a3 3 0 0 1-3-3V7a2 2 0 0 1 2-2z" fill="currentColor" />
+        <rect x="7" y="7" width="10" height="4" rx="1" fill="#ffffff" opacity="0.9" />
+        <circle cx="9" cy="15" r="1.2" fill="#ffffff" />
+        <circle cx="15" cy="15" r="1.2" fill="#ffffff" />
+      </svg>
+    );
+  }
   if (kind === "food") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M6 3h2v8a2 2 0 0 1-2 2zM10 3h2v8a2 2 0 0 1-2 2zM17 3h2v18h-2z" fill="currentColor" />
+        <path d="M6 3h1.7v5.6H9V3h1.7v5.6H12V3h1.7v6.4c0 1.3-1.1 2.4-2.4 2.4h-.5V21H9.2v-9.2h-.5c-1.3 0-2.4-1.1-2.4-2.4z" fill="currentColor" />
+        <path d="M17.2 3c1.6 0 2.8 1.3 2.8 2.8V21h-1.8v-5.5h-2.7V10c0-4.1.8-7 1.7-7z" fill="currentColor" />
       </svg>
     );
   }
