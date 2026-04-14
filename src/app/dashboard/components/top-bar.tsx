@@ -40,7 +40,6 @@ export function DashboardTopBar({
       </div>
       <div className="top-actions">
         <div className="top-year-nav" aria-label={lang === "pt-PT" ? "Selecionar ano" : "Select year"}>
-          <span className="year-caption">{lang === "pt-PT" ? "Ano" : "Year"}</span>
           <Link className="year-btn" href={previousYearHref} aria-label={lang === "pt-PT" ? "Ano anterior" : "Previous year"}>
             <svg viewBox="0 0 20 20" aria-hidden="true">
               <path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
