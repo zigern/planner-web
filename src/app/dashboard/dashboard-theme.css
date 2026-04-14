@@ -1053,6 +1053,36 @@
   padding-bottom: 2px;
 }
 
+.top-year-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.year-chip {
+  height: 30px;
+  min-width: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  color: #4a4a55;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.year-value {
+  min-width: 58px;
+  padding: 0 8px;
+}
+
+.year-shift:hover {
+  background: #f5f5f7;
+}
+
 .month-chip {
   text-decoration: none;
   height: 30px;

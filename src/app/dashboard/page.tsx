@@ -649,20 +649,6 @@ export default async function DashboardPage({
           </section>
 
           <section className="dashboard-controls">
-            <div className="dashboard-controls-left">
-              <form method="get" className="month-switch-form">
-                <input type="hidden" name="lang" value={lang} />
-                <input type="hidden" name="currency" value={currency} />
-                <input type="hidden" name="preset" value="month" />
-                <label className="month-switch-label" htmlFor="dashboard-month">
-                  {text.month}
-                </label>
-                <input id="dashboard-month" name="month" type="month" defaultValue={selectedMonth} />
-                <button type="submit" className="month-switch-btn">
-                  {text.apply}
-                </button>
-              </form>
-            </div>
             <div className="dashboard-controls-right">
               <Link
                 href={`/dashboard/movimentos?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=${presetFilter}&from=${effectiveFrom}&to=${effectiveTo}`}
