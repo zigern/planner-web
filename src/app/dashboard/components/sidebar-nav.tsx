@@ -121,10 +121,6 @@ export function DashboardSidebar({
     { key: "spreadsheet", label: "Spreadsheet", href: `/dashboard/spreadsheet?${q}` }
   ];
 
-  const quickActions = [
-    { label: isPt ? "Novo movimento" : "New movement", href: `/dashboard/movimentos?${q}` },
-    { label: isPt ? "Ver atividade" : "View activity", href: `/dashboard/activity?${q}` }
-  ];
 
   return (
     <aside className="side-nav">
@@ -145,13 +141,6 @@ export function DashboardSidebar({
           <div className="side-nav-user-row">
             <div className="avatar-mini side-avatar">{userInitials || "U"}</div>
             <LogoutButton className="logout-light side-logout" label={logoutLabel || (isPt ? "Terminar sessão" : "Logout")} />
-          </div>
-          <div className="side-quick-actions">
-            {quickActions.map((action) => (
-              <Link key={action.href} href={action.href} className="side-quick-link">
-                {action.label}
-              </Link>
-            ))}
           </div>
         </div>
       ) : null}
