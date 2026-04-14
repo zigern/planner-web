@@ -227,15 +227,73 @@
 }
 
 .side-nav-icon {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
+  flex: 0 0 24px;
+  background: #eef1f8;
+  color: #5a6b91;
+}
+
+.side-nav-item.active .side-nav-icon {
+  box-shadow: inset 0 0 0 1px rgba(47, 107, 232, 0.2);
+}
+
+.side-nav-icon-dashboard {
+  background: #e8efff;
+  color: #2f6be8;
+}
+
+.side-nav-icon-annual {
+  background: #eaf8f4;
+  color: #1f9f79;
+}
+
+.side-nav-icon-movements {
+  background: #efe9ff;
+  color: #7a52f2;
+}
+
+.side-nav-icon-bills {
+  background: #fff0e8;
+  color: #df7a37;
+}
+
+.side-nav-icon-recurring {
+  background: #ffeef4;
+  color: #d54f81;
+}
+
+.side-nav-icon-budgets {
+  background: #eaf4ff;
+  color: #2f86d8;
+}
+
+.side-nav-icon-goals {
+  background: #edf7ea;
+  color: #3c9c4a;
+}
+
+.side-nav-icon-networth {
+  background: #f3f0ff;
+  color: #6f53d9;
+}
+
+.side-nav-icon-activity {
+  background: #fff3ea;
+  color: #dc6e2f;
+}
+
+.side-nav-icon-spreadsheet {
+  background: #edf0f5;
+  color: #5a6475;
 }
 
 .side-nav-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 13px;
+  height: 13px;
 }
 
 .side-nav-bottom {

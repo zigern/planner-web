@@ -136,7 +136,7 @@ export function DashboardSidebar({
       <nav className="side-nav-items">
         {items.map((item) => (
           <Link key={item.key} className={`side-nav-item ${item.key === current ? "active" : ""}`} href={item.href}>
-            <span className="side-nav-icon">
+            <span className={`side-nav-icon side-nav-icon-${item.key}`}>
               <Icon kind={item.key} />
             </span>
             <span>{item.label}</span>
