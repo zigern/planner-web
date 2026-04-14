@@ -155,7 +155,8 @@
   display: grid;
   grid-template-columns: 220px 1fr;
   min-height: calc(100vh - 76px);
-  align-items: start;
+  align-items: stretch;
+  background: #f7f7f9;
 }
 
 .side-nav {
@@ -166,9 +167,10 @@
   flex-direction: column;
   gap: 10px;
   position: sticky;
-  top: 10px;
-  align-self: start;
-  max-height: calc(100vh - 20px);
+  top: 0;
+  align-self: stretch;
+  min-height: calc(100vh - 64px);
+  max-height: calc(100vh - 64px);
   overflow: auto;
 }
 
