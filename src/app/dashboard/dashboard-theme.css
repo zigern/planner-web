@@ -339,7 +339,6 @@
   grid-template-columns: 1fr auto;
   align-items: end;
   gap: 16px;
-  margin-top: 12px;
 }
 
 .greeting-row h1 {
@@ -1025,6 +1024,8 @@
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
+  margin-top: -6px;
+  margin-bottom: -6px;
 }
 
 .dashboard-controls-left,
