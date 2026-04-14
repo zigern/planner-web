@@ -402,7 +402,7 @@ export function QuickAddForm({ lang = "pt-PT" }: { lang?: string }) {
               ? text.income
               : text.expense}
         </div>
-        <button type="submit" disabled={loading}>
+        <button type="submit" className="q-submit-btn" disabled={loading}>
           {loading ? text.saving : text.add}
         </button>
       </div>
