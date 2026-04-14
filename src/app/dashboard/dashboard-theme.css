@@ -156,11 +156,19 @@
   grid-template-columns: 220px 1fr;
   min-height: calc(100vh - 76px);
   align-items: stretch;
-  background: #f7f7f9;
+  background:
+    linear-gradient(
+      to right,
+      #f7f7f9 0,
+      #f7f7f9 219px,
+      var(--line) 219px,
+      var(--line) 220px,
+      transparent 220px,
+      transparent 100%
+    );
 }
 
 .side-nav {
-  border-right: 1px solid var(--line);
   background: #f7f7f9;
   padding: 14px 10px;
   display: flex;
