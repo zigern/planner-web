@@ -7,7 +7,6 @@ type NavKey =
   | "annual"
   | "movements"
   | "bills"
-  | "recurring"
   | "budgets"
   | "goals"
   | "networth"
@@ -46,13 +45,6 @@ function Icon({ kind }: { kind: NavKey }) {
       <svg viewBox="0 0 20 20" aria-hidden="true">
         <path d="M3 15h14v2H3z" fill="currentColor" />
         <path d="M5 13 8 9l3 2 4-5 2 1.5-5.2 6.5-3-2-2.4 3z" fill="currentColor" />
-      </svg>
-    );
-  }
-  if (kind === "recurring") {
-    return (
-      <svg viewBox="0 0 20 20" aria-hidden="true">
-        <path d="M10 3a7 7 0 1 1-6.5 9.5h2.2A5 5 0 1 0 10 5v2L6.5 4 10 1z" fill="currentColor" />
       </svg>
     );
   }
@@ -122,7 +114,6 @@ export function DashboardSidebar({
     { key: "annual", label: isPt ? "Resumo anual" : "Annual Overview", href: `/dashboard/anual?${q}` },
     { key: "movements", label: isPt ? "Movimentos" : "Movements", href: `/dashboard/movimentos?${q}` },
     { key: "bills", label: isPt ? "Contas" : "Bills", href: `/dashboard/bills?${q}` },
-    { key: "recurring", label: isPt ? "Recorrentes" : "Recurring", href: `/dashboard/recorrentes?${q}` },
     { key: "budgets", label: isPt ? "Orçamentos" : "Budgets", href: `/dashboard/orcamentos?${q}` },
     { key: "goals", label: isPt ? "Objetivos" : "Goals", href: `/dashboard/objetivos?${q}` },
     { key: "networth", label: isPt ? "Património" : "Net Worth", href: `/dashboard/patrimonio?${q}` },

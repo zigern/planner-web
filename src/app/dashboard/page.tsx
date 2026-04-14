@@ -770,7 +770,7 @@ export default async function DashboardPage({
             <article className="panel">
               <div className="panel-head">
                 <h3>{text.subscription}</h3>
-                <Link className="panel-manage-link" href={`/dashboard/recorrentes?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
+                <Link className="panel-manage-link" href={`/dashboard/bills?month=${selectedMonth}&lang=${lang}&currency=${currency}`}>
                   {text.manage}
                 </Link>
               </div>
