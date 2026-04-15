@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ViewControls } from "./view-controls";
 import { LogoutButton } from "./logout-button";
 
 type NavKey =
@@ -109,6 +108,14 @@ export function DashboardSidebar({
 }) {
   const isPt = lang === "pt-PT";
   const q = `month=${selectedMonth}&lang=${lang}&currency=${currency}`;
+  const monthQ = `month=${selectedMonth}`;
+  const langOptions = [
+    { value: "pt-PT", label: "PT" },
+    { value: "en-US", label: "EN" },
+    { value: "es-ES", label: "ES" },
+    { value: "fr-FR", label: "FR" }
+  ];
+  const currencyOptions = ["EUR", "USD", "GBP", "BRL"];
   const items: Array<{ key: NavKey; label: string; href: string }> = [
     { key: "dashboard", label: isPt ? "Dashboard" : "Dashboard", href: `/dashboard?${q}` },
     { key: "annual", label: isPt ? "Resumo anual" : "Annual Overview", href: `/dashboard/anual?${q}` },
@@ -137,10 +144,61 @@ export function DashboardSidebar({
       </nav>
       {showBottomControls ? (
         <div className="side-nav-bottom">
-          <ViewControls lang={lang} currency={currency} />
-          <div className="side-nav-user-row">
-            <div className="avatar-mini side-avatar">{userInitials || "U"}</div>
-            <LogoutButton className="logout-light side-logout" label={logoutLabel || (isPt ? "Terminar sessão" : "Logout")} />
+          <div className="side-account-title">{isPt ? "Conta" : "Account"}</div>
+
+          <div className="side-account-row">
+            <span className="side-account-icon" aria-hidden="true">
+              <svg viewBox="0 0 20 20">
+                <circle cx="10" cy="7" r="3" fill="currentColor" />
+                <path d="M3.5 17a6.5 6.5 0 0 1 13 0z" fill="currentColor" />
+              </svg>
+            </span>
+            <span className="side-account-label">{isPt ? "Idioma" : "Language"}</span>
+            <div className="side-inline-options">
+              {langOptions.map((opt) => (
+                <Link
+                  key={opt.value}
+                  className={`side-inline-link ${lang === opt.value ? "active" : ""}`}
+                  href={`?${monthQ}&lang=${opt.value}&currency=${currency}`}
+                >
+                  {opt.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="side-account-row">
+            <span className="side-account-icon" aria-hidden="true">
+              <svg viewBox="0 0 20 20">
+                <circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" strokeWidth="1.7" />
+                <path d="M10 5.5v9M6.5 8.2c0-1.2 1.1-2 3.5-2s3.5.8 3.5 2-1 1.8-3.5 2-3.5.9-3.5 2.1 1 2 3.5 2 3.5-.8 3.5-2" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+              </svg>
+            </span>
+            <span className="side-account-label">{isPt ? "Moeda" : "Currency"}</span>
+            <div className="side-inline-options">
+              {currencyOptions.map((opt) => (
+                <Link
+                  key={opt}
+                  className={`side-inline-link ${currency === opt ? "active" : ""}`}
+                  href={`?${monthQ}&lang=${lang}&currency=${opt}`}
+                >
+                  {opt}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="side-account-row">
+            <span className="side-account-icon" aria-hidden="true">
+              <svg viewBox="0 0 20 20">
+                <path d="M10 3v7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <path d="M6.3 5.4A6 6 0 1 0 13.7 5.4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </span>
+            <div className="side-nav-user-row">
+              <div className="avatar-mini side-avatar">{userInitials || "U"}</div>
+              <LogoutButton className="logout-light side-logout side-logout-link" label={logoutLabel || (isPt ? "Terminar sessão" : "Logout")} />
+            </div>
           </div>
         </div>
       ) : null}
