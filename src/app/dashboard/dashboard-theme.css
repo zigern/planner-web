@@ -308,72 +308,40 @@
 }
 
 .side-nav-bottom {
-  margin-top: 10px;
+  margin-top: 8px;
   border-top: 1px solid var(--line);
-  padding-top: 10px;
+  padding-top: 8px;
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
-.side-account-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: #6f7484;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.side-account-row {
+.side-nav-bottom .view-controls {
   display: grid;
-  grid-template-columns: 16px auto 1fr;
-  align-items: center;
-  gap: 8px;
-  min-height: 28px;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
 }
 
-.side-account-icon {
-  width: 16px;
-  height: 16px;
-  color: #868c9e;
-  display: grid;
-  place-items: center;
-}
-
-.side-account-icon svg {
-  width: 16px;
-  height: 16px;
-}
-
-.side-account-label {
+.side-nav-bottom .view-controls select {
+  width: 100%;
+  height: 32px;
   font-size: 12px;
   font-weight: 600;
-  color: #555b6d;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: #3b3f4a;
+  transition: border-color 0.16s ease, background 0.16s ease;
 }
 
-.side-inline-options {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+.side-nav-bottom .view-controls select:hover {
+  border-color: #c4cada;
+  background: #fbfbfd;
 }
 
-.side-inline-link {
-  text-decoration: none;
-  font-size: 12px;
-  font-weight: 700;
-  color: #7a8091;
-  padding: 1px 0;
-  border-bottom: 2px solid transparent;
-  transition: color 0.14s ease, border-color 0.14s ease;
-}
-
-.side-inline-link:hover {
-  color: #3e4558;
-}
-
-.side-inline-link.active {
-  color: #2f6be8;
-  border-bottom-color: #2f6be8;
+.side-nav-bottom .view-controls select:focus-visible {
+  outline: none;
+  border-color: #8fa7d8;
+  box-shadow: 0 0 0 2px rgba(47, 107, 232, 0.14);
 }
 
 .side-nav-user-row {
@@ -384,38 +352,30 @@
 }
 
 .side-avatar {
-  width: 30px;
-  height: 30px;
-  font-size: 12px;
+  width: 34px;
+  height: 34px;
+  font-size: 13px;
   font-weight: 700;
   border: 1px solid #d7dce9;
   box-shadow: none;
 }
 
 .side-logout {
-  height: 30px !important;
+  flex: 1;
+  height: 34px !important;
   font-size: 12px !important;
   font-weight: 600 !important;
-  border-radius: 8px !important;
-  border: 0 !important;
-  background: transparent !important;
-  color: #434a5e !important;
+  border-radius: 9px !important;
+  border: 1px solid var(--line) !important;
+  background: #fff !important;
+  color: #2d3340 !important;
   box-shadow: none !important;
-  padding: 0 6px !important;
-  text-align: left;
-  transition: color 0.16s ease !important;
+  transition: border-color 0.16s ease, background 0.16s ease !important;
 }
 
 .side-logout:hover {
-  color: #22283a !important;
-}
-
-.side-logout-link {
-  min-width: auto !important;
-}
-
-.side-account-row .side-nav-user-row {
-  justify-self: start;
+  border-color: #c4cada !important;
+  background: #fbfbfd !important;
 }
 
 
