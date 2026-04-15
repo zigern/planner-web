@@ -58,7 +58,7 @@
 }
 
 .brand-logo-image {
-  width: 112px;
+  width: 124px;
   height: auto;
   display: block;
   object-fit: contain;
@@ -506,7 +506,7 @@
 .greeting-main {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0;
 }
 
 .greeting-copy {
@@ -514,14 +514,7 @@
 }
 
 .greeting-robot {
-  width: 72px;
-  height: 72px;
-  border-radius: 16px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  box-shadow: 0 8px 20px rgba(24, 42, 82, 0.12);
-  flex: 0 0 72px;
+  display: none;
 }
 
 .greeting-robot img {
