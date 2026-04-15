@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
 import { convertFromBaseEur, formatMoneyConverted } from "@/lib/currency-conversion";
@@ -310,7 +311,6 @@ export default async function DashboardPage({
   const user = await getSessionUser();
   if (!user) redirect("/login");
   const name = user.displayName?.trim() || user.email.split("@")[0];
-  const initials = name.slice(0, 2).toUpperCase();
 
   const params = await searchParams;
   const selectedMonth = parseMonthParam(params?.month);
@@ -682,12 +682,12 @@ export default async function DashboardPage({
           <main className="dash-main">
           <section className="greeting-row">
             <div className="greeting-main">
+              <div className="greeting-robot" aria-hidden="true">
+                <Image src="/images/default-robot.png" alt="Robot avatar" width={72} height={72} />
+              </div>
               <div className="greeting-copy">
                 <h1 className="dashboard-title">{text.greeting}</h1>
                 <p className="dashboard-subtitle">{text.subtitle}</p>
-              </div>
-              <div className="greeting-avatar" aria-label={name}>
-                {initials}
               </div>
             </div>
             <div className="cta-row">
