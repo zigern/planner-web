@@ -510,6 +510,7 @@
   grid-template-columns: 1fr auto;
   align-items: end;
   gap: 16px;
+  margin-top: 12px;
 }
 
 .greeting-main {
