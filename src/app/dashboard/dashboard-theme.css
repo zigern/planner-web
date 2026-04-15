@@ -2647,6 +2647,47 @@
   color: #23232a;
 }
 
+.annual-kpi-value-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.annual-kpi-value-row .annual-kpi-value {
+  margin: 0;
+}
+
+.annual-kpi-trend {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  flex: 0 0 30px;
+}
+
+.annual-kpi-trend svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.annual-kpi-trend.positive {
+  color: #169b57;
+  background: #eaf9f0;
+  border-color: #caecd9;
+}
+
+.annual-kpi-trend.negative {
+  color: #d85745;
+  background: #fdeeea;
+  border-color: #f2cec6;
+}
+
 .annual-kpi-income .annual-kpi-value {
   color: #23232a;
 }
