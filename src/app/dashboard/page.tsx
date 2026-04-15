@@ -90,6 +90,30 @@ function dayText(v: string | Date | null, lang: string) {
   return d.toLocaleDateString(lang, { day: "numeric", month: "short", year: "numeric" });
 }
 
+function buildSparklineGeometry(series: number[], width = 132, height = 58, padding = 4) {
+  const safeSeries = series.length ? series : [0, 0];
+  const min = Math.min(...safeSeries);
+  const max = Math.max(...safeSeries);
+  const range = max - min || 1;
+  const step = safeSeries.length > 1 ? (width - padding * 2) / (safeSeries.length - 1) : 0;
+
+  const points = safeSeries.map((value, index) => {
+    const x = padding + index * step;
+    const y = height - padding - ((value - min) / range) * (height - padding * 2);
+    return { x, y };
+  });
+
+  const linePath = points
+    .map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+    .join(" ");
+
+  const first = points[0];
+  const last = points[points.length - 1];
+  const areaPath = `${linePath} L${last.x.toFixed(2)} ${(height - padding).toFixed(2)} L${first.x.toFixed(2)} ${(height - padding).toFixed(2)} Z`;
+
+  return { linePath, areaPath };
+}
+
 function getMonthBounds(isoMonth: string) {
   const [year, month] = isoMonth.split("-").map(Number);
   if (!year || !month) {
@@ -548,6 +572,22 @@ export default async function DashboardPage({
 
   const incomeSeries = buildYearSeries(yearSummaryRows, "income");
   const expenseSeries = buildYearSeries(yearSummaryRows, "expense");
+  const netSeries = incomeSeries.map((item, index) => item - expenseSeries[index]);
+  const savingsRatioSeries = incomeSeries.map((item, index) =>
+    item > 0 ? (Math.max(item - expenseSeries[index], 0) / item) * 100 : 0
+  );
+  const remainingBalanceSeries = (() => {
+    let running = 0;
+    return netSeries.map((value) => {
+      running += value;
+      return Math.max(running, 0);
+    });
+  })();
+  const netSpark = buildSparklineGeometry(netSeries);
+  const incomeSpark = buildSparklineGeometry(incomeSeries);
+  const expenseSpark = buildSparklineGeometry(expenseSeries);
+  const savingsSpark = buildSparklineGeometry(savingsRatioSeries);
+  const remainingSpark = buildSparklineGeometry(remainingBalanceSeries);
   const labels = buildYearLabels(selectedYear, lang);
   const maxY = Math.max(1, ...incomeSeries, ...expenseSeries);
   const barHeightPx = 220;
@@ -675,14 +715,24 @@ export default async function DashboardPage({
                 <h3>{text.netBalance}</h3>
                 <span className="safe-pill">{text.safe}</span>
               </div>
-              <p className="big-number">
-                {netBalance >= 0 ? "+" : "-"}
-                {formatMoney(Math.abs(netBalance), lang, currency)}
-              </p>
-              <p className={`delta ${netDelta >= 0 ? "up" : "down"}`}>
-                {netDelta >= 0 ? "↑" : "↓"}
-                {Math.abs(netDelta).toFixed(1)}% {text.vsLastMonth}
-              </p>
+              <div className="kpi-body">
+                <div>
+                  <p className="big-number">
+                    {netBalance >= 0 ? "+" : "-"}
+                    {formatMoney(Math.abs(netBalance), lang, currency)}
+                  </p>
+                  <p className={`delta ${netDelta >= 0 ? "up" : "down"}`}>
+                    {netDelta >= 0 ? "↑" : "↓"}
+                    {Math.abs(netDelta).toFixed(1)}% {text.vsLastMonth}
+                  </p>
+                </div>
+                <div className="kpi-spark kpi-spark-net" aria-hidden="true">
+                  <svg viewBox="0 0 132 58" preserveAspectRatio="none">
+                    <path d={netSpark.areaPath} className="kpi-spark-area" />
+                    <path d={netSpark.linePath} className="kpi-spark-line" />
+                  </svg>
+                </div>
+              </div>
               <div className="hr" />
               <div className="burn-row">
                 <span>{text.burnRate}</span>
@@ -698,42 +748,82 @@ export default async function DashboardPage({
               <div className="panel-head">
                 <h3>{text.income}</h3>
               </div>
-              <p className="mid-number">{formatMoney(income, lang, currency)}</p>
-              <p className={`delta ${incomeDelta >= 0 ? "up" : "down"}`}>
-                {incomeDelta >= 0 ? "↑" : "↓"}
-                {Math.abs(incomeDelta).toFixed(1)}% {text.vsLastMonth}
-              </p>
+              <div className="kpi-body">
+                <div>
+                  <p className="mid-number">{formatMoney(income, lang, currency)}</p>
+                  <p className={`delta ${incomeDelta >= 0 ? "up" : "down"}`}>
+                    {incomeDelta >= 0 ? "↑" : "↓"}
+                    {Math.abs(incomeDelta).toFixed(1)}% {text.vsLastMonth}
+                  </p>
+                </div>
+                <div className="kpi-spark kpi-spark-income" aria-hidden="true">
+                  <svg viewBox="0 0 132 58" preserveAspectRatio="none">
+                    <path d={incomeSpark.areaPath} className="kpi-spark-area" />
+                    <path d={incomeSpark.linePath} className="kpi-spark-line" />
+                  </svg>
+                </div>
+              </div>
             </article>
 
             <article className="panel">
               <div className="panel-head">
                 <h3>{text.expense}</h3>
               </div>
-              <p className="mid-number">{formatMoney(expense, lang, currency)}</p>
-              <p className={`delta ${expenseDelta <= 0 ? "up" : "down"}`}>
-                {expenseDelta <= 0 ? "↑" : "↓"}
-                {Math.abs(expenseDelta).toFixed(1)}% {text.vsLastMonth}
-              </p>
+              <div className="kpi-body">
+                <div>
+                  <p className="mid-number">{formatMoney(expense, lang, currency)}</p>
+                  <p className={`delta ${expenseDelta <= 0 ? "up" : "down"}`}>
+                    {expenseDelta <= 0 ? "↑" : "↓"}
+                    {Math.abs(expenseDelta).toFixed(1)}% {text.vsLastMonth}
+                  </p>
+                </div>
+                <div className="kpi-spark kpi-spark-expense" aria-hidden="true">
+                  <svg viewBox="0 0 132 58" preserveAspectRatio="none">
+                    <path d={expenseSpark.areaPath} className="kpi-spark-area" />
+                    <path d={expenseSpark.linePath} className="kpi-spark-line" />
+                  </svg>
+                </div>
+              </div>
             </article>
 
             <article className="panel">
               <div className="panel-head">
                 <h3>{text.savingsRatio}</h3>
               </div>
-              <p className="mid-number">{Math.max(0, savingsRatio).toFixed(0)}%</p>
-              <p className="delta up">
-                ↑{Math.max(0, netDelta).toFixed(1)}% {text.vsLastMonth}
-              </p>
+              <div className="kpi-body">
+                <div>
+                  <p className="mid-number">{Math.max(0, savingsRatio).toFixed(0)}%</p>
+                  <p className="delta up">
+                    ↑{Math.max(0, netDelta).toFixed(1)}% {text.vsLastMonth}
+                  </p>
+                </div>
+                <div className="kpi-spark kpi-spark-savings" aria-hidden="true">
+                  <svg viewBox="0 0 132 58" preserveAspectRatio="none">
+                    <path d={savingsSpark.areaPath} className="kpi-spark-area" />
+                    <path d={savingsSpark.linePath} className="kpi-spark-line" />
+                  </svg>
+                </div>
+              </div>
             </article>
 
             <article className="panel">
               <div className="panel-head">
                 <h3>{text.remainingBalance}</h3>
               </div>
-              <p className="mid-number">{formatMoney(remainingBalance, lang, currency)}</p>
-              <p className="sub-copy">
-                {text.netWorth}: {formatMoney(netWorth, lang, currency)}
-              </p>
+              <div className="kpi-body">
+                <div>
+                  <p className="mid-number">{formatMoney(remainingBalance, lang, currency)}</p>
+                  <p className="sub-copy">
+                    {text.netWorth}: {formatMoney(netWorth, lang, currency)}
+                  </p>
+                </div>
+                <div className="kpi-spark kpi-spark-remaining" aria-hidden="true">
+                  <svg viewBox="0 0 132 58" preserveAspectRatio="none">
+                    <path d={remainingSpark.areaPath} className="kpi-spark-area" />
+                    <path d={remainingSpark.linePath} className="kpi-spark-line" />
+                  </svg>
+                </div>
+              </div>
             </article>
           </section>
 
