@@ -331,7 +331,7 @@ export default async function DashboardPage({
     ? {
         search: "Pesquisar",
         logout: "Terminar sessão",
-        greeting: `Boa tarde, ${name}👋`,
+        greeting: `Boa tarde, ${name} 👋`,
         subtitle: "As tuas finanças estão saudáveis neste período.",
         month: "Mês",
         apply: "Aplicar",
@@ -385,7 +385,7 @@ export default async function DashboardPage({
     : {
         search: "Search",
         logout: "Logout",
-        greeting: `Good evening, ${name}👋`,
+        greeting: `Good evening, ${name} 👋`,
         subtitle: "Your finances are looking healthy in this period.",
         month: "Month",
         apply: "Apply",
