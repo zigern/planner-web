@@ -139,15 +139,17 @@ export function DashboardSidebar({
       </nav>
       {showBottomControls ? (
         <div className="side-nav-bottom">
-          <SidebarSettings
-            lang={lang}
-            currency={currency}
-            isPt={isPt}
-            userDisplayName={userDisplayName}
-          />
           <div className="side-account-row">
             <div className="side-account-avatar">{(userInitials || "U").slice(0, 2).toUpperCase()}</div>
-            <LogoutButton className="side-account-logout" label={logoutLabel || (isPt ? "Terminar sessão" : "Logout")} />
+            <div className="side-account-actions">
+              <LogoutButton className="side-account-logout" label={logoutLabel || (isPt ? "Terminar sessão" : "Logout")} />
+              <SidebarSettings
+                lang={lang}
+                currency={currency}
+                isPt={isPt}
+                userDisplayName={userDisplayName}
+              />
+            </div>
           </div>
         </div>
       ) : null}

@@ -468,9 +468,15 @@
 
 .side-account-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   padding: 2px 0 0 0;
+}
+
+.side-account-actions {
+  flex: 1;
+  display: grid;
+  gap: 4px;
 }
 
 .side-account-avatar {
@@ -488,6 +494,8 @@
 
 .side-account-logout {
   height: 32px !important;
+  width: 100%;
+  justify-content: center;
   padding: 0 8px !important;
   border-radius: 8px !important;
   border: 1px solid transparent !important;
@@ -503,6 +511,13 @@
   border-color: #d6dbe6 !important;
   background: #f6f8fc !important;
   color: #2f3749 !important;
+}
+
+.side-account-actions .side-settings-trigger {
+  justify-content: center;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 8px;
 }
 
 
