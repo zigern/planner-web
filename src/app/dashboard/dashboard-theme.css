@@ -308,74 +308,162 @@
 }
 
 .side-nav-bottom {
-  margin-top: 8px;
+  margin-top: 10px;
   border-top: 1px solid var(--line);
-  padding-top: 8px;
+  padding-top: 10px;
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
-.side-nav-bottom .view-controls {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-
-.side-nav-bottom .view-controls select {
+.side-settings-trigger {
   width: 100%;
-  height: 32px;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 9px;
-  border: 1px solid var(--line);
-  background: #fff;
-  color: #3b3f4a;
-  transition: border-color 0.16s ease, background 0.16s ease;
-}
-
-.side-nav-bottom .view-controls select:hover {
-  border-color: #c4cada;
-  background: #fbfbfd;
-}
-
-.side-nav-bottom .view-controls select:focus-visible {
-  outline: none;
-  border-color: #8fa7d8;
-  box-shadow: 0 0 0 2px rgba(47, 107, 232, 0.14);
-}
-
-.side-nav-user-row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 1px 0 0 0;
-}
-
-.side-avatar {
-  width: 34px;
   height: 34px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #4b5263;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
   font-size: 13px;
   font-weight: 700;
-  border: 1px solid #d7dce9;
-  box-shadow: none;
+  cursor: pointer;
 }
 
-.side-logout {
-  flex: 1;
-  height: 34px !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  border-radius: 9px !important;
-  border: 1px solid var(--line) !important;
-  background: #fff !important;
-  color: #2d3340 !important;
-  box-shadow: none !important;
-  transition: border-color 0.16s ease, background 0.16s ease !important;
+.side-settings-trigger:hover {
+  border-color: #d5d9e3;
+  background: #f8f9fc;
 }
 
-.side-logout:hover {
-  border-color: #c4cada !important;
-  background: #fbfbfd !important;
+.side-settings-trigger-icon {
+  width: 20px;
+  height: 20px;
+  color: #737b8f;
+  display: grid;
+  place-items: center;
+}
+
+.side-settings-trigger-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.side-settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 21, 35, 0.28);
+  display: grid;
+  place-items: center;
+  z-index: 60;
+  padding: 16px;
+}
+
+.side-settings-modal {
+  width: min(390px, 96vw);
+  border-radius: 14px;
+  border: 1px solid #d8dde8;
+  background: #fff;
+  padding: 14px;
+  box-shadow: 0 24px 40px rgba(12, 22, 42, 0.16);
+  display: grid;
+  gap: 10px;
+}
+
+.side-settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.side-settings-head h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #262d3d;
+}
+
+.side-settings-head button {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid #d6dbe6;
+  background: #fff;
+  color: #5d6474;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.side-settings-field {
+  display: grid;
+  gap: 4px;
+}
+
+.side-settings-field span {
+  font-size: 11px;
+  font-weight: 700;
+  color: #727a8d;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.side-settings-field select,
+.side-settings-field input {
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid #d3d9e6;
+  background: #fff;
+  padding: 0 10px;
+  font-size: 13px;
+  color: #2f3544;
+}
+
+.side-settings-divider {
+  height: 1px;
+  background: #e7ebf3;
+  margin: 2px 0;
+}
+
+.side-settings-subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: #6a7286;
+  font-weight: 700;
+}
+
+.side-settings-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.side-settings-save,
+.side-settings-logout {
+  height: 36px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.side-settings-save {
+  border: 1px solid #2f6be8;
+  background: #2f6be8;
+  color: #fff;
+}
+
+.side-settings-logout {
+  border: 1px solid #d3d9e6;
+  background: #fff;
+  color: #2f3544;
+}
+
+.side-settings-status {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2a8d57;
 }
 
 

@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { ViewControls } from "./view-controls";
-import { LogoutButton } from "./logout-button";
+import { SidebarSettings } from "./sidebar-settings";
 
 type NavKey =
   | "dashboard"
@@ -137,11 +136,13 @@ export function DashboardSidebar({
       </nav>
       {showBottomControls ? (
         <div className="side-nav-bottom">
-          <ViewControls lang={lang} currency={currency} />
-          <div className="side-nav-user-row">
-            <div className="avatar-mini side-avatar">{userInitials || "U"}</div>
-            <LogoutButton className="logout-light side-logout" label={logoutLabel || (isPt ? "Terminar sessão" : "Logout")} />
-          </div>
+          <SidebarSettings
+            lang={lang}
+            currency={currency}
+            isPt={isPt}
+            userInitials={userInitials || "U"}
+            logoutLabel={logoutLabel || (isPt ? "Terminar sessão" : "Logout")}
+          />
         </div>
       ) : null}
     </aside>
