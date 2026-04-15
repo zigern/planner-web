@@ -312,7 +312,7 @@
   border-top: 1px solid var(--line);
   padding-top: 10px;
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .side-settings-trigger {
@@ -469,24 +469,51 @@
 .side-account-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 2px 2px 2px;
+}
+
+.side-account-chip {
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
 }
 
 .side-account-avatar {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   color: #fff;
   font-weight: 800;
-  font-size: 13px;
+  font-size: 12px;
   background: linear-gradient(135deg, #5a89ff, #26c4d3);
-  flex: 0 0 36px;
+  flex: 0 0 34px;
+}
+
+.side-account-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #667087;
 }
 
 .side-account-logout {
-  flex: 1;
+  height: 30px !important;
+  min-width: 104px;
+  padding: 0 10px !important;
+  border-radius: 999px !important;
+  border: 1px solid #d4d9e4 !important;
+  background: #f7f9fd !important;
+  color: #3a4355 !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+}
+
+.side-account-logout:hover {
+  background: #edf1f9 !important;
 }
 
 

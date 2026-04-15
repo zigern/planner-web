@@ -146,8 +146,11 @@ export function DashboardSidebar({
             userDisplayName={userDisplayName}
           />
           <div className="side-account-row">
-            <div className="side-account-avatar">{(userInitials || "U").slice(0, 2).toUpperCase()}</div>
-            <LogoutButton className="logout-mini side-account-logout" label={logoutLabel || (isPt ? "Terminar sessão" : "Logout")} />
+            <div className="side-account-chip">
+              <div className="side-account-avatar">{(userInitials || "U").slice(0, 2).toUpperCase()}</div>
+              <span className="side-account-label">{isPt ? "Conta" : "Account"}</span>
+            </div>
+            <LogoutButton className="side-account-logout" label={logoutLabel || (isPt ? "Terminar sessão" : "Logout")} />
           </div>
         </div>
       ) : null}
