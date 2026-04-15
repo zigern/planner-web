@@ -91,15 +91,11 @@ function Icon({ kind }: { kind: string }) {
 }
 
 function TrendIndicator({
-  direction,
-  positive
+  direction
 }: {
   direction: "up" | "down";
-  positive: boolean;
 }) {
-  const cls = `annual-kpi-trend ${direction === "up" ? "up" : "down"} ${
-    positive ? "positive" : "negative"
-  }`;
+  const cls = `annual-kpi-trend ${direction === "up" ? "positive" : "negative"}`;
   return (
     <span className={cls} aria-hidden="true">
       <svg viewBox="0 0 24 24">
@@ -288,10 +284,8 @@ export default async function AnnualOverviewPage({
   const annualExpense = months.reduce((sum, m) => sum + m.expense, 0);
   const annualSavings = annualIncome - annualExpense;
   const burnRatio = annualIncome > 0 ? (annualExpense / annualIncome) * 100 : 0;
-  const incomeIsPositive = annualIncome >= annualExpense;
-  const expenseIsPositive = annualExpense <= annualIncome;
-  const savingsIsPositive = annualSavings >= 0;
-  const burnIsPositive = burnRatio <= 60;
+  const savingsDirection = annualSavings >= 0 ? "up" : "down";
+  const burnDirection = burnRatio <= 60 ? "down" : "up";
   const maxValue = Math.max(1, ...months.flatMap((m) => [m.income, m.expense]));
   const barHeightPx = 220;
   const yTicks = [1, 0.75, 0.5, 0.25, 0];
@@ -337,28 +331,28 @@ export default async function AnnualOverviewPage({
                 <div className="panel-head"><h3>{text.kpiIncome}</h3></div>
                 <div className="annual-kpi-value-row">
                   <p className="annual-kpi-value">{fmt(annualIncome, lang, currency)}</p>
-                  <TrendIndicator direction="up" positive={incomeIsPositive} />
+                  <TrendIndicator direction="up" />
                 </div>
               </article>
               <article className="panel annual-kpi-card annual-kpi-expense">
                 <div className="panel-head"><h3>{text.kpiExpense}</h3></div>
                 <div className="annual-kpi-value-row">
                   <p className="annual-kpi-value">{fmt(annualExpense, lang, currency)}</p>
-                  <TrendIndicator direction="down" positive={expenseIsPositive} />
+                  <TrendIndicator direction="down" />
                 </div>
               </article>
               <article className="panel annual-kpi-card annual-kpi-savings">
                 <div className="panel-head"><h3>{text.kpiSavings}</h3></div>
                 <div className="annual-kpi-value-row">
                   <p className="annual-kpi-value">{fmt(annualSavings, lang, currency)}</p>
-                  <TrendIndicator direction={savingsIsPositive ? "up" : "down"} positive={savingsIsPositive} />
+                  <TrendIndicator direction={savingsDirection} />
                 </div>
               </article>
               <article className="panel annual-kpi-card annual-kpi-burn">
                 <div className="panel-head"><h3>{text.kpiBurn}</h3></div>
                 <div className="annual-kpi-value-row">
                   <p className="annual-kpi-value">{pct(burnRatio)}</p>
-                  <TrendIndicator direction={burnIsPositive ? "down" : "up"} positive={burnIsPositive} />
+                  <TrendIndicator direction={burnDirection} />
                 </div>
               </article>
             </section>
