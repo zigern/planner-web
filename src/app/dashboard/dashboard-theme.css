@@ -453,7 +453,7 @@
   color: #fff;
 }
 
-.side-settings-logout {
+.side-settings-close {
   border: 1px solid #d3d9e6;
   background: #fff;
   color: #2f3544;
@@ -464,6 +464,29 @@
   font-size: 12px;
   font-weight: 600;
   color: #2a8d57;
+}
+
+.side-account-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.side-account-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+  background: linear-gradient(135deg, #5a89ff, #26c4d3);
+  flex: 0 0 36px;
+}
+
+.side-account-logout {
+  flex: 1;
 }
 
 

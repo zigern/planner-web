@@ -15,6 +15,7 @@ function getSecret() {
 export type SessionUser = {
   userId: number;
   email: string;
+  displayName?: string;
 };
 
 export async function setSessionCookie(user: SessionUser) {
@@ -62,7 +63,8 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
     return {
       userId: payload.userId,
-      email: payload.email
+      email: payload.email,
+      displayName: typeof payload.displayName === "string" ? payload.displayName : undefined
     };
   } catch {
     return null;

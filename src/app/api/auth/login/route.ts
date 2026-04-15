@@ -13,6 +13,7 @@ type DbUser = {
   id: number;
   email: string;
   password_hash: string;
+  display_name?: string | null;
 };
 
 export async function POST(request: Request) {
@@ -21,9 +22,29 @@ export async function POST(request: Request) {
     const { email, password } = schema.parse(body);
 
     const db = getDb();
-    const [rows] = await db.query("SELECT id, email, password_hash FROM users WHERE email = ? LIMIT 1", [
-      email
-    ]);
+    let rows;
+    try {
+      const [withDisplayName] = await db.query(
+        "SELECT id, email, password_hash, display_name FROM users WHERE email = ? LIMIT 1",
+        [email]
+      );
+      rows = withDisplayName;
+    } catch (error) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        (error as { code?: string }).code === "ER_BAD_FIELD_ERROR"
+      ) {
+        const [withoutDisplayName] = await db.query(
+          "SELECT id, email, password_hash FROM users WHERE email = ? LIMIT 1",
+          [email]
+        );
+        rows = withoutDisplayName;
+      } else {
+        throw error;
+      }
+    }
 
     const user = (rows as DbUser[])[0];
 
@@ -37,7 +58,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Credenciais inválidas." }, { status: 401 });
     }
 
-    await setSessionCookie({ userId: user.id, email: user.email });
+    await setSessionCookie({ userId: user.id, email: user.email, displayName: user.display_name || undefined });
     return NextResponse.json({ ok: true });
   } catch (error) {
     if (error instanceof z.ZodError) {

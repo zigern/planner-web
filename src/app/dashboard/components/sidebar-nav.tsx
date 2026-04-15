@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SidebarSettings } from "./sidebar-settings";
+import { LogoutButton } from "./logout-button";
 
 type NavKey =
   | "dashboard"
@@ -95,6 +96,7 @@ export function DashboardSidebar({
   lang,
   currency,
   showBottomControls = true,
+  userDisplayName,
   userInitials,
   logoutLabel
 }: {
@@ -103,6 +105,7 @@ export function DashboardSidebar({
   lang: string;
   currency: string;
   showBottomControls?: boolean;
+  userDisplayName?: string;
   userInitials?: string;
   logoutLabel?: string;
 }) {
@@ -140,9 +143,12 @@ export function DashboardSidebar({
             lang={lang}
             currency={currency}
             isPt={isPt}
-            userInitials={userInitials || "U"}
-            logoutLabel={logoutLabel || (isPt ? "Terminar sessão" : "Logout")}
+            userDisplayName={userDisplayName}
           />
+          <div className="side-account-row">
+            <div className="side-account-avatar">{(userInitials || "U").slice(0, 2).toUpperCase()}</div>
+            <LogoutButton className="logout-mini side-account-logout" label={logoutLabel || (isPt ? "Terminar sessão" : "Logout")} />
+          </div>
         </div>
       ) : null}
     </aside>

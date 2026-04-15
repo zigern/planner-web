@@ -141,7 +141,8 @@ export default async function ObjetivosPage({
     status: row.status
   }));
 
-  const initials = user.email.slice(0, 2).toUpperCase();
+  const name = user.displayName?.trim() || user.email.split("@")[0];
+  const initials = name.slice(0, 2).toUpperCase();
   const presetBase = new URLSearchParams({
     month: selectedMonth,
     lang,
@@ -175,7 +176,7 @@ export default async function ObjetivosPage({
       <div className="casha-shell">
         <DashboardTopBar selectedMonth={selectedMonth} lang={lang} currency={currency} basePath="/dashboard/objetivos" />
         <div className="workspace-shell">
-          <DashboardSidebar current="goals" selectedMonth={selectedMonth} lang={lang} currency={currency} showBottomControls userInitials={initials} logoutLabel={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
+          <DashboardSidebar current="goals" selectedMonth={selectedMonth} lang={lang} currency={currency} showBottomControls userDisplayName={name} userInitials={initials} logoutLabel={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
           <main className="dash-main">
             <section className="greeting-row">
               <div>

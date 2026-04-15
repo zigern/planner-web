@@ -7,35 +7,28 @@ export function SidebarSettings({
   lang,
   currency,
   isPt,
-  userInitials = "U",
-  logoutLabel
+  userDisplayName = "",
+  onUpdated
 }: {
   lang: string;
   currency: string;
   isPt: boolean;
-  userInitials?: string;
-  logoutLabel?: string;
+  userDisplayName?: string;
+  onUpdated?: () => void;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
   const [open, setOpen] = useState(false);
-  const [displayName, setDisplayName] = useState("");
-  const [initials, setInitials] = useState(userInitials);
+  const [displayName, setDisplayName] = useState(userDisplayName);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [saved, setSaved] = useState<string | null>(null);
-  const [loadingLogout, setLoadingLogout] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    try {
-      const name = localStorage.getItem("planner_display_name") || "";
-      const localInitials = localStorage.getItem("planner_avatar_initials") || userInitials;
-      setDisplayName(name);
-      setInitials(localInitials.toUpperCase().slice(0, 2));
-    } catch {
-      setDisplayName("");
-      setInitials(userInitials);
-    }
-  }, [userInitials]);
+    setDisplayName(userDisplayName);
+  }, [userDisplayName]);
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(search.toString());
@@ -43,23 +36,39 @@ export function SidebarSettings({
     router.replace(`${pathname}?${params.toString()}`);
   }
 
-  function onSaveAccount() {
+  async function onSaveAccount() {
+    setSaving(true);
+    setSaved(null);
     try {
-      localStorage.setItem("planner_display_name", displayName.trim());
-      localStorage.setItem("planner_avatar_initials", initials.trim().toUpperCase().slice(0, 2));
-      setSaved(isPt ? "Dados guardados." : "Saved.");
-      setTimeout(() => setSaved(null), 1800);
-    } catch {
-      setSaved(isPt ? "Falha ao guardar." : "Failed to save.");
-      setTimeout(() => setSaved(null), 1800);
-    }
-  }
+      const payload: Record<string, string> = {};
+      if (displayName.trim()) payload.displayName = displayName.trim();
+      if (newPassword.trim()) {
+        payload.currentPassword = currentPassword;
+        payload.newPassword = newPassword;
+      }
 
-  async function onLogout() {
-    setLoadingLogout(true);
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
-    router.refresh();
+      const response = await fetch("/api/auth/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        setSaved(data.error || (isPt ? "Falha ao guardar." : "Failed to save."));
+        setTimeout(() => setSaved(null), 2600);
+        return;
+      }
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setSaved(isPt ? "Dados guardados." : "Saved.");
+      router.refresh();
+      setTimeout(() => setSaved(null), 1800);
+      onUpdated?.();
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -113,16 +122,21 @@ export function SidebarSettings({
             </label>
 
             <label className="side-settings-field">
-              <span>{isPt ? "Iniciais" : "Initials"}</span>
-              <input value={initials} onChange={(e) => setInitials(e.target.value.toUpperCase().slice(0, 2))} placeholder="JO" />
+              <span>{isPt ? "Password atual" : "Current password"}</span>
+              <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="******" />
+            </label>
+
+            <label className="side-settings-field">
+              <span>{isPt ? "Nova password" : "New password"}</span>
+              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="******" />
             </label>
 
             <div className="side-settings-actions">
-              <button type="button" className="side-settings-save" onClick={onSaveAccount}>
-                {isPt ? "Guardar" : "Save"}
+              <button type="button" className="side-settings-save" onClick={onSaveAccount} disabled={saving}>
+                {saving ? (isPt ? "A guardar..." : "Saving...") : isPt ? "Guardar" : "Save"}
               </button>
-              <button type="button" className="side-settings-logout" onClick={onLogout} disabled={loadingLogout}>
-                {loadingLogout ? (isPt ? "A sair..." : "Logging out...") : logoutLabel || (isPt ? "Terminar sessão" : "Logout")}
+              <button type="button" className="side-settings-save side-settings-close" onClick={() => setOpen(false)}>
+                {isPt ? "Fechar" : "Close"}
               </button>
             </div>
 
@@ -133,4 +147,3 @@ export function SidebarSettings({
     </>
   );
 }
-

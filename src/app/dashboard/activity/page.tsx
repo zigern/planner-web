@@ -283,7 +283,7 @@ export default async function ActivityPage({
     )
   ];
   const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(csvLines.join("\n"))}`;
-  const name = user.email.split("@")[0];
+  const name = user.displayName?.trim() || user.email.split("@")[0];
   const initials = name.slice(0, 2).toUpperCase();
 
   return (
@@ -291,7 +291,7 @@ export default async function ActivityPage({
       <div className="casha-shell">
         <DashboardTopBar selectedMonth={selectedMonth} lang={lang} currency={currency} basePath="/dashboard/activity" />
         <div className="workspace-shell">
-          <DashboardSidebar current="activity" selectedMonth={selectedMonth} lang={lang} currency={currency} showBottomControls userInitials={initials} logoutLabel={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
+          <DashboardSidebar current="activity" selectedMonth={selectedMonth} lang={lang} currency={currency} showBottomControls userDisplayName={name} userInitials={initials} logoutLabel={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
           <main className="dash-main">
           <section className="greeting-row">
             <div>

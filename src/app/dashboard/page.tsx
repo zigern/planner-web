@@ -285,7 +285,7 @@ export default async function DashboardPage({
 
   const user = await getSessionUser();
   if (!user) redirect("/login");
-  const name = user.email.split("@")[0];
+  const name = user.displayName?.trim() || user.email.split("@")[0];
   const initials = name.slice(0, 2).toUpperCase();
 
   const params = await searchParams;
@@ -637,8 +637,7 @@ export default async function DashboardPage({
             lang={lang}
             currency={currency}
             showBottomControls
-            userInitials={initials}
-            logoutLabel={text.logout}
+            userDisplayName={name} userInitials={initials} logoutLabel={text.logout}
           />
           <main className="dash-main">
           <section className="greeting-row">
