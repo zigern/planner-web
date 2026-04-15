@@ -7,6 +7,7 @@ import { convertFromBaseEur, formatMoneyConverted } from "@/lib/currency-convers
 import { DashboardSidebar } from "./components/sidebar-nav";
 import { DashboardTopBar } from "./components/top-bar";
 import { translateExpenseCategory } from "./utils/category-translation";
+import { CategoryIcon, categoryIconKind } from "./utils/category-icons";
 import "./dashboard-theme.css";
 
 type TotalsRow = { income: string | null; expense: string | null };
@@ -135,22 +136,6 @@ function getMonthBounds(isoMonth: string) {
   };
 }
 
-function categoryKey(name: string) {
-  return name.trim().toLowerCase();
-}
-
-function iconByCategory(name: string) {
-  const k = categoryKey(name);
-  if (/(housing|habita|rent|mortgage|home|house|utilities|bills)/i.test(k)) return "home";
-  if (/(transport|car|fuel|uber|parking|trip)/i.test(k)) return "car";
-  if (/(food|dining|restaurant|comida)/i.test(k)) return "food";
-  if (/(shopping|store|compras)/i.test(k)) return "bag";
-  if (/(health|saude|doctor|pharmacy)/i.test(k)) return "plus";
-  if (/(pets|animal|dog|cat|vet)/i.test(k)) return "paw";
-  if (/(entertainment|movie|fun|games)/i.test(k)) return "play";
-  return "dot";
-}
-
 type SubscriptionVisual = {
   logoUrl: string | null;
   bg: string;
@@ -202,67 +187,6 @@ function getSubscriptionVisual(service: string): SubscriptionVisual {
     fg: "#2f6be8",
     initials: initials || "S"
   };
-}
-
-function Icon({ kind }: { kind: string }) {
-  if (kind === "home") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 11.5 12 5l8 6.5V20h-5v-5h-6v5H4z" fill="currentColor" />
-      </svg>
-    );
-  }
-  if (kind === "car") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M5 13 7.5 8h9L19 13v6h-2a2 2 0 0 1-4 0h-2a2 2 0 0 1-4 0H5z" fill="currentColor" />
-      </svg>
-    );
-  }
-  if (kind === "food") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M6 3h2v8a2 2 0 0 1-2 2zM10 3h2v8a2 2 0 0 1-2 2zM17 3h2v18h-2z" fill="currentColor" />
-      </svg>
-    );
-  }
-  if (kind === "bag") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M6 8h12l-1 11H7z" fill="currentColor" />
-        <path d="M9 8V6a3 3 0 1 1 6 0v2" stroke="currentColor" strokeWidth="2" fill="none" />
-      </svg>
-    );
-  }
-  if (kind === "plus") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6z" fill="currentColor" />
-      </svg>
-    );
-  }
-  if (kind === "paw") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="7" cy="8" r="2" fill="currentColor" />
-        <circle cx="12" cy="6.8" r="2" fill="currentColor" />
-        <circle cx="17" cy="8" r="2" fill="currentColor" />
-        <path d="M6 16a6 4.6 0 0 1 12 0c0 2.2-2.2 3.6-6 3.6S6 18.2 6 16Z" fill="currentColor" />
-      </svg>
-    );
-  }
-  if (kind === "play") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M8 6v12l10-6z" fill="currentColor" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="6" fill="currentColor" />
-    </svg>
-  );
 }
 
 const accent = ["#46d369", "#f0a474", "#5f89ff", "#f15eaa", "#b07cff", "#ff6b6b", "#45b4ff", "#9bd664"];
@@ -840,7 +764,7 @@ export default async function DashboardPage({
                         className="icon-badge"
                         style={{ backgroundColor: `${accent[i % accent.length]}20`, color: accent[i % accent.length] }}
                       >
-                        <Icon kind={iconByCategory(item.category)} />
+                        <CategoryIcon kind={categoryIconKind(item.category)} />
                       </span>
                       <div>
                         <b>{translateExpenseCategory(item.category, lang)}</b>
@@ -919,7 +843,7 @@ export default async function DashboardPage({
                           color: accent[(i + 3) % accent.length]
                         }}
                       >
-                        <Icon kind={iconByCategory(alert.category)} />
+                        <CategoryIcon kind={categoryIconKind(alert.category)} />
                       </span>
                       <div>
                         <b>
@@ -1036,7 +960,7 @@ export default async function DashboardPage({
                               }}
                               aria-hidden="true"
                             >
-                              <Icon kind={iconByCategory(row.category)} />
+                              <CategoryIcon kind={categoryIconKind(row.category)} />
                             </span>
                             <span>{translateExpenseCategory(row.category, lang)}</span>
                           </span>
