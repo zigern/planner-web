@@ -54,11 +54,11 @@
 .app-brand {
   display: flex;
   align-items: center;
-  min-width: 220px;
+  min-width: 150px;
 }
 
 .brand-logo-image {
-  width: 220px;
+  width: 150px;
   height: auto;
   display: block;
   object-fit: contain;
