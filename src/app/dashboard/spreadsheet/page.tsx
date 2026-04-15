@@ -424,14 +424,13 @@ export default async function SpreadsheetPage({
         incomeGoal: "Income Goal"
       };
   const name = user.displayName?.trim() || user.email.split("@")[0];
-  const initials = name.slice(0, 2).toUpperCase();
 
   return (
     <div className="casha-wrap">
       <div className="casha-shell">
         <DashboardTopBar selectedMonth={selectedMonth} lang={lang} currency={currency} basePath="/dashboard/spreadsheet" />
         <div className="workspace-shell">
-          <DashboardSidebar current="spreadsheet" selectedMonth={selectedMonth} lang={lang} currency={currency} showBottomControls userDisplayName={name} userInitials={initials} logoutLabel={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
+          <DashboardSidebar current="spreadsheet" selectedMonth={selectedMonth} lang={lang} currency={currency} showBottomControls userDisplayName={name} logoutLabel={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
           <main className="dash-main spreadsheet-mode">
             <div className="greeting-row">
               <div>

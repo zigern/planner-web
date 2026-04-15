@@ -97,7 +97,6 @@ export function DashboardSidebar({
   currency,
   showBottomControls = true,
   userDisplayName,
-  userInitials,
   logoutLabel
 }: {
   current: NavKey;
@@ -106,7 +105,6 @@ export function DashboardSidebar({
   currency: string;
   showBottomControls?: boolean;
   userDisplayName?: string;
-  userInitials?: string;
   logoutLabel?: string;
 }) {
   const isPt = lang === "pt-PT";
@@ -139,17 +137,14 @@ export function DashboardSidebar({
       </nav>
       {showBottomControls ? (
         <div className="side-nav-bottom">
-          <div className="side-account-row">
-            <div className="side-account-avatar">{(userInitials || "U").slice(0, 2).toUpperCase()}</div>
-            <div className="side-account-actions">
-              <LogoutButton className="side-account-logout" label={logoutLabel || (isPt ? "Terminar sessão" : "Logout")} />
-              <SidebarSettings
-                lang={lang}
-                currency={currency}
-                isPt={isPt}
-                userDisplayName={userDisplayName}
-              />
-            </div>
+          <div className="side-account-actions">
+            <LogoutButton className="side-account-action" label={logoutLabel || (isPt ? "Terminar sessão" : "Logout")} />
+            <SidebarSettings
+              lang={lang}
+              currency={currency}
+              isPt={isPt}
+              userDisplayName={userDisplayName}
+            />
           </div>
         </div>
       ) : null}

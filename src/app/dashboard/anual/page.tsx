@@ -269,7 +269,6 @@ export default async function AnnualOverviewPage({
   const barHeightPx = 220;
   const yTicks = [1, 0.75, 0.5, 0.25, 0];
   const name = user.displayName?.trim() || user.email.split("@")[0];
-  const initials = name.slice(0, 2).toUpperCase();
   const selectedYearNum = Number(selectedYear);
   const yearChoices = Array.from({ length: 4 }).map((_, index) => selectedYearNum - index);
   const periodLabel = `${selectedYear}-01-01 → ${selectedYear}-12-31`;
@@ -279,7 +278,7 @@ export default async function AnnualOverviewPage({
       <div className="casha-shell">
         <DashboardTopBar selectedMonth={selectedMonth} lang={lang} currency={currency} basePath="/dashboard/anual" />
         <div className="workspace-shell">
-          <DashboardSidebar current="annual" selectedMonth={selectedMonth} lang={lang} currency={currency} showBottomControls userDisplayName={name} userInitials={initials} logoutLabel={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
+          <DashboardSidebar current="annual" selectedMonth={selectedMonth} lang={lang} currency={currency} showBottomControls userDisplayName={name} logoutLabel={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
 
           <main className="dash-main annual-mode">
             <section className="annual-header">

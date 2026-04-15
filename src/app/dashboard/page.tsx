@@ -637,13 +637,18 @@ export default async function DashboardPage({
             lang={lang}
             currency={currency}
             showBottomControls
-            userDisplayName={name} userInitials={initials} logoutLabel={text.logout}
+            userDisplayName={name} logoutLabel={text.logout}
           />
           <main className="dash-main">
           <section className="greeting-row">
-            <div>
-              <h1 className="dashboard-title">{text.greeting}</h1>
-              <p className="dashboard-subtitle">{text.subtitle}</p>
+            <div className="greeting-main">
+              <div className="greeting-copy">
+                <h1 className="dashboard-title">{text.greeting}</h1>
+                <p className="dashboard-subtitle">{text.subtitle}</p>
+              </div>
+              <div className="greeting-avatar" aria-label={name}>
+                {initials}
+              </div>
             </div>
             <div className="cta-row">
               <Link

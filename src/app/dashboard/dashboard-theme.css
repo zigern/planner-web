@@ -317,18 +317,20 @@
 
 .side-settings-trigger {
   width: 100%;
-  height: 34px;
-  border-radius: 10px;
+  height: 32px;
+  border-radius: 8px;
   border: 1px solid transparent;
   background: transparent;
-  color: #4b5263;
+  color: #545d70;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 0 8px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+  justify-content: flex-start;
+  line-height: 1;
 }
 
 .side-settings-trigger:hover {
@@ -345,8 +347,8 @@
 }
 
 .side-settings-trigger-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .side-settings-overlay {
@@ -466,36 +468,19 @@
   color: #2a8d57;
 }
 
-.side-account-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 2px 0 0 0;
-}
-
 .side-account-actions {
-  flex: 1;
   display: grid;
   gap: 4px;
+  width: 100%;
 }
 
-.side-account-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  font-weight: 800;
-  font-size: 12px;
-  background: linear-gradient(135deg, #5a89ff, #26c4d3);
-  flex: 0 0 34px;
-}
-
-.side-account-logout {
+.side-account-action {
   height: 32px !important;
   width: 100%;
-  justify-content: center;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-start !important;
   padding: 0 8px !important;
   border-radius: 8px !important;
   border: 1px solid transparent !important;
@@ -507,17 +492,16 @@
   white-space: nowrap;
 }
 
-.side-account-logout:hover {
+.side-account-action .side-action-icon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+}
+
+.side-account-action:hover {
   border-color: #d6dbe6 !important;
   background: #f6f8fc !important;
   color: #2f3749 !important;
-}
-
-.side-account-actions .side-settings-trigger {
-  justify-content: center;
-  height: 30px;
-  padding: 0 8px;
-  border-radius: 8px;
 }
 
 
@@ -526,6 +510,30 @@
   grid-template-columns: 1fr auto;
   align-items: end;
   gap: 16px;
+}
+
+.greeting-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.greeting-copy {
+  min-width: 0;
+}
+
+.greeting-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+  background: linear-gradient(135deg, #5a89ff, #26c4d3);
+  flex: 0 0 40px;
+  box-shadow: 0 8px 16px rgba(46, 111, 233, 0.22);
 }
 
 .greeting-row h1 {
@@ -2734,6 +2742,11 @@
 
   .greeting-row {
     grid-template-columns: 1fr;
+  }
+
+  .greeting-main {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .dashboard-controls {

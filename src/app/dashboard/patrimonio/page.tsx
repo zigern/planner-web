@@ -147,7 +147,6 @@ export default async function PatrimonioPage({
   const liabilitiesTotal = debts.reduce((acc, row) => acc + Math.max(0, row.totalOwed - row.amountPaid), 0);
   const netWorth = assetsTotal - liabilitiesTotal;
   const name = user.displayName?.trim() || user.email.split("@")[0];
-  const initials = name.slice(0, 2).toUpperCase();
   const t = isPt
     ? {
         search: "Pesquisar",
@@ -206,7 +205,7 @@ export default async function PatrimonioPage({
       <div className="casha-shell">
         <DashboardTopBar selectedMonth={selectedMonth} lang={lang} currency={currency} basePath="/dashboard/patrimonio" />
         <div className="workspace-shell">
-          <DashboardSidebar current="networth" selectedMonth={selectedMonth} lang={lang} currency={currency} showBottomControls userDisplayName={name} userInitials={initials} logoutLabel={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
+          <DashboardSidebar current="networth" selectedMonth={selectedMonth} lang={lang} currency={currency} showBottomControls userDisplayName={name} logoutLabel={lang === "pt-PT" ? "Terminar sessão" : "Logout"} />
           <main className="dash-main">
             <section className="greeting-row">
               <div>
