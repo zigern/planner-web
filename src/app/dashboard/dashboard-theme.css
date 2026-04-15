@@ -54,24 +54,14 @@
 .app-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 16px;
-  font-weight: 700;
+  min-width: 220px;
 }
 
-.logo-box {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  background: #2f6be8;
-  color: #fff;
-}
-
-.logo-box svg {
-  width: 18px;
-  height: 18px;
+.brand-logo-image {
+  width: 220px;
+  height: auto;
+  display: block;
+  object-fit: contain;
 }
 
 .main-nav {

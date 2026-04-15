@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export function DashboardTopBar({
   selectedMonth,
@@ -26,12 +27,7 @@ export function DashboardTopBar({
   return (
     <div className="app-top">
       <div className="app-brand">
-        <div className="logo-box">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M5 6h14v2H5zm0 5h10v2H5zm0 5h14v2H5z" fill="currentColor" />
-          </svg>
-        </div>
-        <span>Casha</span>
+        <Image src="/images/site-logo.png" alt="Planqly Assets" width={220} height={66} className="brand-logo-image" />
       </div>
       <div className="top-actions">
         <div className="top-months-shell">
