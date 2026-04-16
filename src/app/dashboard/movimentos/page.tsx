@@ -19,6 +19,8 @@ type TxRow = {
   transaction_date: string | Date;
 };
 
+type CountRow = { total: string | number };
+
 function parseMonthParam(value: string | string[] | undefined) {
   const raw = Array.isArray(value) ? value[0] : value;
   if (!raw) return new Date().toISOString().slice(0, 7);
@@ -35,6 +37,13 @@ function parsePresetParam(value: string | string[] | undefined) {
   const raw = Array.isArray(value) ? value[0] : value;
   if (!raw) return "month";
   return raw === "month" || raw === "30d" || raw === "90d" ? raw : "month";
+}
+
+function parsePageParam(value: string | string[] | undefined) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const parsed = Number(raw || "1");
+  if (!Number.isFinite(parsed) || parsed < 1) return 1;
+  return Math.floor(parsed);
 }
 
 function isoDate(value: Date) {
@@ -80,6 +89,11 @@ function getText(lang: string) {
       thisMonth: "Este mês",
       last30Days: "Últimos 30 dias",
       last90Days: "Últimos 90 dias",
+      page: "Página",
+      previous: "Anterior",
+      next: "Seguinte",
+      showing: "A mostrar",
+      of: "de",
       noItems: "Sem movimentos para este mês.",
       date: "Data",
       kind: "Tipo",
@@ -103,6 +117,11 @@ function getText(lang: string) {
     thisMonth: "This month",
     last30Days: "Last 30 days",
     last90Days: "Last 90 days",
+    page: "Page",
+    previous: "Previous",
+    next: "Next",
+    showing: "Showing",
+    of: "of",
     noItems: "No transactions found for this month.",
     date: "Date",
     kind: "Type",
@@ -127,6 +146,7 @@ export default async function MovimentosPage({
     from?: string | string[];
     to?: string | string[];
     preset?: string | string[];
+    page?: string | string[];
   }>;
 }) {
   if (!hasDatabaseConfig() || !process.env.AUTH_SECRET) {
@@ -148,9 +168,11 @@ export default async function MovimentosPage({
   const lang = parseLangParam(params?.lang);
   const currency = parseCurrencyParam(params?.currency);
   const presetFilter = parsePresetParam(params?.preset);
+  const requestedPage = parsePageParam(params?.page);
   const fromParam = parseDateParam(params?.from);
   const toParam = parseDateParam(params?.to);
   const text = getText(lang);
+  const pageSize = 16;
 
   const [year, month] = selectedMonth.split("-").map(Number);
   const monthStart = isoDate(new Date(year, month - 1, 1));
@@ -164,6 +186,19 @@ export default async function MovimentosPage({
   const effectiveTo = toParam || (presetFilter === "month" ? monthEnd : todayIso);
 
   const db = getDb();
+  const [countRows] = await db.query(
+    `SELECT COUNT(*) AS total
+     FROM transactions
+     WHERE user_id = ?
+       AND DATE(transaction_date) >= ?
+       AND DATE(transaction_date) <= ?`,
+    [user.userId, effectiveFrom, effectiveTo]
+  );
+  const totalItems = Number(((countRows as CountRow[])[0]?.total ?? 0));
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const currentPage = Math.min(requestedPage, totalPages);
+  const offset = (currentPage - 1) * pageSize;
+
   const [rows] = await db.query(
     `SELECT id, type, amount, category, description, transaction_date
      FROM transactions
@@ -171,8 +206,9 @@ export default async function MovimentosPage({
        AND DATE(transaction_date) >= ?
        AND DATE(transaction_date) <= ?
      ORDER BY transaction_date DESC, id DESC
-     LIMIT 300`,
-    [user.userId, effectiveFrom, effectiveTo]
+     LIMIT ?
+     OFFSET ?`,
+    [user.userId, effectiveFrom, effectiveTo, pageSize, offset]
   );
 
   const items = rows as TxRow[];
@@ -187,6 +223,7 @@ export default async function MovimentosPage({
     p.set("preset", "month");
     p.set("from", monthStart);
     p.set("to", monthEnd);
+    p.set("page", "1");
     return p.toString();
   })()}`;
   const last30PresetHref = `/dashboard/movimentos?${(() => {
@@ -194,6 +231,7 @@ export default async function MovimentosPage({
     p.set("preset", "30d");
     p.set("from", last30Iso);
     p.set("to", todayIso);
+    p.set("page", "1");
     return p.toString();
   })()}`;
   const last90PresetHref = `/dashboard/movimentos?${(() => {
@@ -201,8 +239,26 @@ export default async function MovimentosPage({
     p.set("preset", "90d");
     p.set("from", last90Iso);
     p.set("to", todayIso);
+    p.set("page", "1");
     return p.toString();
   })()}`;
+  const pageBase = new URLSearchParams({
+    month: selectedMonth,
+    lang,
+    currency,
+    preset: presetFilter,
+    from: effectiveFrom,
+    to: effectiveTo
+  });
+  const buildPageHref = (targetPage: number) => {
+    const p = new URLSearchParams(pageBase);
+    p.set("page", String(targetPage));
+    return `/dashboard/movimentos?${p.toString()}`;
+  };
+  const prevHref = buildPageHref(Math.max(1, currentPage - 1));
+  const nextHref = buildPageHref(Math.min(totalPages, currentPage + 1));
+  const showingFrom = totalItems === 0 ? 0 : offset + 1;
+  const showingTo = Math.min(offset + items.length, totalItems);
 
   return (
     <div className="casha-wrap">
@@ -288,6 +344,16 @@ export default async function MovimentosPage({
                     )}
                   </tbody>
                 </table>
+              </div>
+              <div className="sheet-pagination">
+                <span>
+                  {text.showing} <strong>{showingFrom}-{showingTo}</strong> {text.of} <strong>{totalItems}</strong>
+                </span>
+                <div className="sheet-pagination-actions">
+                  {currentPage > 1 ? <Link href={prevHref}>{text.previous}</Link> : <span className="disabled">{text.previous}</span>}
+                  <span>{text.page} {currentPage} / {totalPages}</span>
+                  {currentPage < totalPages ? <Link href={nextHref}>{text.next}</Link> : <span className="disabled">{text.next}</span>}
+                </div>
               </div>
             </article>
           </section>

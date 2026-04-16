@@ -1648,6 +1648,11 @@
   display: grid;
   grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.6fr);
   gap: 12px;
+  align-items: start;
+}
+
+.movement-grid > .panel {
+  height: auto;
 }
 
 .movement-list-head {
