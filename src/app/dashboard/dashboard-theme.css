@@ -150,6 +150,44 @@
   overflow-x: hidden;
 }
 
+/* Keep text boxes visible across all pages/forms */
+.dash-main input,
+.dash-main select,
+.dash-main textarea,
+.side-nav input,
+.side-nav select,
+.side-nav textarea {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #bcc3d1;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1f1f22;
+  padding: 8px 10px;
+  font-size: 14px;
+  line-height: 1.2;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+}
+
+.dash-main input::placeholder,
+.dash-main textarea::placeholder,
+.side-nav input::placeholder,
+.side-nav textarea::placeholder {
+  color: #8a92a3;
+  opacity: 1;
+}
+
+.dash-main input:focus,
+.dash-main select:focus,
+.dash-main textarea:focus,
+.side-nav input:focus,
+.side-nav select:focus,
+.side-nav textarea:focus {
+  outline: none;
+  border-color: #2f6be8;
+  box-shadow: 0 0 0 3px rgba(47, 107, 232, 0.16);
+}
+
 .workspace-shell {
   position: relative;
   display: grid;
