@@ -14,6 +14,10 @@ type CategoryRow = { category: string; total: string };
 
 const annualBreakColors = ["#2f6be8", "#24b26b", "#f39a3d", "#7d58ff", "#ec5f8e", "#2fb5c6", "#d86a45", "#6f8d3c"];
 
+function iconBadgeClassForCategory(category: string) {
+  return `icon-badge-${categoryIconKind(category)}`;
+}
+
 function TrendIndicator({
   direction
 }: {
@@ -327,14 +331,7 @@ export default async function AnnualOverviewPage({
                         <li key={row.category}>
                           <div className="break-label-row">
                             <span className="break-name">
-                              <span
-                                className="icon-badge break-badge"
-                                style={{
-                                  backgroundColor: `${barColor}20`,
-                                  color: barColor
-                                }}
-                                aria-hidden="true"
-                              >
+                              <span className={`icon-badge break-badge ${iconBadgeClassForCategory(row.category)}`} aria-hidden="true">
                                 <CategoryIcon kind={categoryIconKind(row.category)} />
                               </span>
                               <span>{translateExpenseCategory(row.category, lang)}</span>

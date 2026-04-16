@@ -191,6 +191,10 @@ function getSubscriptionVisual(service: string): SubscriptionVisual {
 
 const accent = ["#46d369", "#f0a474", "#5f89ff", "#f15eaa", "#b07cff", "#ff6b6b", "#45b4ff", "#9bd664"];
 
+function iconBadgeClassForCategory(category: string) {
+  return `icon-badge-${categoryIconKind(category)}`;
+}
+
 async function safeQueryRows<T>(db: ReturnType<typeof getDb>, sql: string, params: unknown[]): Promise<T[]> {
   try {
     const [rows] = await db.query(sql, params);
@@ -760,10 +764,7 @@ export default async function DashboardPage({
                 {overSpending.length ? (
                   overSpending.map((item, i) => (
                     <li key={`${item.category}-${i}`}>
-                      <span
-                        className="icon-badge"
-                        style={{ backgroundColor: `${accent[i % accent.length]}20`, color: accent[i % accent.length] }}
-                      >
+                      <span className={`icon-badge ${iconBadgeClassForCategory(item.category)}`}>
                         <CategoryIcon kind={categoryIconKind(item.category)} />
                       </span>
                       <div>
@@ -836,13 +837,7 @@ export default async function DashboardPage({
                 {mergedBudgetAlerts.length ? (
                   mergedBudgetAlerts.map((alert, i) => (
                     <li key={`${alert.category}-${i}`}>
-                      <span
-                        className="icon-badge"
-                        style={{
-                          backgroundColor: `${accent[(i + 3) % accent.length]}20`,
-                          color: accent[(i + 3) % accent.length]
-                        }}
-                      >
+                      <span className={`icon-badge ${iconBadgeClassForCategory(alert.category)}`}>
                         <CategoryIcon kind={categoryIconKind(alert.category)} />
                       </span>
                       <div>
@@ -952,14 +947,7 @@ export default async function DashboardPage({
                       <li key={row.category}>
                         <div className="break-label-row">
                           <span className="break-name">
-                            <span
-                              className="icon-badge break-badge"
-                              style={{
-                                backgroundColor: `${color}20`,
-                                color
-                              }}
-                              aria-hidden="true"
-                            >
+                            <span className={`icon-badge break-badge ${iconBadgeClassForCategory(row.category)}`} aria-hidden="true">
                               <CategoryIcon kind={categoryIconKind(row.category)} />
                             </span>
                             <span>{translateExpenseCategory(row.category, lang)}</span>
