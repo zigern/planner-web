@@ -191,6 +191,10 @@ function getSubscriptionVisual(service: string): SubscriptionVisual {
 
 const accent = ["#46d369", "#f0a474", "#5f89ff", "#f15eaa", "#b07cff", "#ff6b6b", "#45b4ff", "#9bd664"];
 
+function categoryKey(name: string) {
+  return name.trim().toLowerCase();
+}
+
 function iconBadgeClassForCategory(category: string) {
   return `icon-badge-${categoryIconKind(category)}`;
 }
