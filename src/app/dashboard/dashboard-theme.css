@@ -1802,6 +1802,11 @@
   display: grid;
   grid-template-columns: minmax(300px, 0.9fr) minmax(0, 1.8fr);
   gap: 12px;
+  align-items: start;
+}
+
+.budgets-grid > .panel {
+  height: auto;
 }
 
 .budgets-insights-panel {
@@ -1942,6 +1947,13 @@
 
 .budgets-table td {
   vertical-align: middle;
+}
+
+.budget-cat-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .budget-usage-cell {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatMoneyConverted } from "@/lib/currency-conversion";
 import { translateExpenseCategory } from "../utils/category-translation";
+import { CategoryIcon, categoryIconKind } from "../utils/category-icons";
 
 type BudgetRow = {
   id: number;
@@ -156,6 +157,10 @@ function formatMoney(value: number, lang: string, currency: string) {
   return formatMoneyConverted(value, lang, currency, 2);
 }
 
+function iconBadgeClassForCategory(category: string) {
+  return `icon-badge-${categoryIconKind(category)}`;
+}
+
 export function BudgetsManager({
   lang,
   currency,
@@ -278,15 +283,28 @@ export function BudgetsManager({
         </div>
         <form className="recurring-form" onSubmit={onSave}>
           <div className="q-grid">
-            <label className="q-field">
+            <label className="q-field q-field-category">
               <span>{t.category}</span>
-              <select value={category} onChange={(e) => setCategory(e.target.value)}>
-                {categories.map((item) => (
-                  <option key={item} value={item}>
-                    {translateExpenseCategory(item, lang)}
-                  </option>
-                ))}
-              </select>
+              <div className="category-tile-grid">
+                {categories.map((item) => {
+                  const iconKind = categoryIconKind(item);
+                  const active = category === item;
+                  return (
+                    <button
+                      key={item}
+                      type="button"
+                      className={`category-tile ${active ? "active" : ""}`}
+                      aria-pressed={active}
+                      onClick={() => setCategory(item)}
+                    >
+                      <span className={`category-tile-icon category-tile-icon-${iconKind}`}>
+                        <CategoryIcon kind={iconKind} />
+                      </span>
+                      <span className="category-tile-label">{translateExpenseCategory(item, lang)}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </label>
             <label className="q-field">
               <span>{t.amount}</span>
@@ -334,10 +352,18 @@ export function BudgetsManager({
                   const left = row.budgetAmount - row.spent;
                   const statusClass = usage >= 100 ? "out" : usage >= 80 ? "warn" : "in";
                   const statusText = usage >= 100 ? t.exceeded : usage >= 80 ? t.warning : t.ok;
+                  const iconKind = categoryIconKind(row.category);
 
                   return (
                     <tr key={row.id}>
-                      <td>{translateExpenseCategory(row.category, lang)}</td>
+                      <td>
+                        <span className="budget-cat-cell">
+                          <span className={`icon-badge ${iconBadgeClassForCategory(row.category)}`} aria-hidden="true">
+                            <CategoryIcon kind={iconKind} />
+                          </span>
+                          <span>{translateExpenseCategory(row.category, lang)}</span>
+                        </span>
+                      </td>
                       <td>{formatMoney(row.budgetAmount, lang, currency)}</td>
                       <td className="money-out">{formatMoney(row.spent, lang, currency)}</td>
                       <td className={left >= 0 ? "money-in" : "money-out"}>
