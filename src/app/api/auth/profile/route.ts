@@ -81,8 +81,7 @@ export async function PATCH(request: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
     }
-    const message = error instanceof Error ? error.message : "Erro desconhecido";
-    return NextResponse.json({ error: `Falha ao atualizar perfil. Detalhe: ${message}` }, { status: 500 });
+    console.error("auth.profile.error", error);
+    return NextResponse.json({ error: "Falha ao atualizar perfil." }, { status: 500 });
   }
 }
-

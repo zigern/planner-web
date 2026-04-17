@@ -13,9 +13,10 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { email, password } = schema.parse(body);
+    const safeEmail = email.trim().toLowerCase();
 
     const db = getDb();
-    const [exists] = await db.query("SELECT id FROM users WHERE email = ? LIMIT 1", [email]);
+    const [exists] = await db.query("SELECT id FROM users WHERE email = ? LIMIT 1", [safeEmail]);
 
     if (Array.isArray(exists) && exists.length > 0) {
       return NextResponse.json({ error: "Email já existe." }, { status: 400 });
@@ -24,11 +25,11 @@ export async function POST(request: Request) {
     const passwordHash = await bcrypt.hash(password, 10);
     const [result] = await db.query(
       "INSERT INTO users (email, password_hash) VALUES (?, ?)",
-      [email, passwordHash]
+      [safeEmail, passwordHash]
     );
 
     const userId = Number((result as { insertId: number }).insertId);
-    await setSessionCookie({ userId, email });
+    await setSessionCookie({ userId, email: safeEmail });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
@@ -36,10 +37,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
     }
 
-    const message = error instanceof Error ? error.message : "Erro desconhecido";
-    return NextResponse.json(
-      { error: `Falha ao registar utilizador. Detalhe: ${message}` },
-      { status: 500 }
-    );
+    console.error("auth.register.error", error);
+    return NextResponse.json({ error: "Falha ao registar utilizador." }, { status: 500 });
   }
 }

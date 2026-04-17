@@ -28,7 +28,7 @@ export async function setSessionCookie(user: SessionUser) {
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "strict",
     secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: ONE_DAY
@@ -39,7 +39,7 @@ export async function clearSessionCookie() {
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, "", {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "strict",
     secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: 0

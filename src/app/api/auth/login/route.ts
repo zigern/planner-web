@@ -20,13 +20,14 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { email, password } = schema.parse(body);
+    const safeEmail = email.trim().toLowerCase();
 
     const db = getDb();
     let rows;
     try {
       const [withDisplayName] = await db.query(
         "SELECT id, email, password_hash, display_name FROM users WHERE email = ? LIMIT 1",
-        [email]
+        [safeEmail]
       );
       rows = withDisplayName;
     } catch (error) {
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
       ) {
         const [withoutDisplayName] = await db.query(
           "SELECT id, email, password_hash FROM users WHERE email = ? LIMIT 1",
-          [email]
+          [safeEmail]
         );
         rows = withoutDisplayName;
       } else {
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
     }
 
-    const message = error instanceof Error ? error.message : "Erro desconhecido";
-    return NextResponse.json({ error: `Falha no login. Detalhe: ${message}` }, { status: 500 });
+    console.error("auth.login.error", error);
+    return NextResponse.json({ error: "Falha no login." }, { status: 500 });
   }
 }

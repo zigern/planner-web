@@ -21,6 +21,11 @@ function clamp2(value: number) {
 }
 
 export async function POST(request: Request) {
+  const demoEnabled = process.env.ENABLE_DEMO_DATA === "true" || process.env.NODE_ENV !== "production";
+  if (!demoEnabled) {
+    return NextResponse.json({ error: "Demo endpoint disabled." }, { status: 403 });
+  }
+
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
 

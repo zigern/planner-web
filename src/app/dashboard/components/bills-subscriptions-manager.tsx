@@ -25,6 +25,9 @@ type SubscriptionItem = {
 };
 
 type Dict = {
+  summaryTitle: string;
+  addItemsTitle: string;
+  recordsTitle: string;
   billsTitle: string;
   billsSubtitle: string;
   subTitle: string;
@@ -73,6 +76,9 @@ type Dict = {
 
 const textByLang: Record<string, Dict> = {
   "pt-PT": {
+    summaryTitle: "Resumo de contas e subscrições",
+    addItemsTitle: "Adicionar novos registos",
+    recordsTitle: "Registos do período",
     billsTitle: "Contas fixas",
     billsSubtitle: "Rendas, luz, água, internet e outras contas recorrentes",
     subTitle: "Subscrições",
@@ -119,6 +125,9 @@ const textByLang: Record<string, Dict> = {
     noAlerts: "Sem alertas de vencimento neste momento."
   },
   "en-US": {
+    summaryTitle: "Bills and subscriptions overview",
+    addItemsTitle: "Add new entries",
+    recordsTitle: "Period records",
     billsTitle: "Bills",
     billsSubtitle: "Rent, utilities, internet, and fixed commitments",
     subTitle: "Subscriptions",
@@ -371,17 +380,20 @@ export function BillsSubscriptionsManager({
 
   return (
     <section className="bills-grid">
-      <article className="panel bills-panel">
+      <article className="panel bills-overview-panel">
         <div className="panel-head">
-          <h3>{t.billsTitle}</h3>
+          <h3>{t.summaryTitle}</h3>
         </div>
-        <p className="sub-copy">{t.billsSubtitle}</p>
         {periodLabel ? <p className="budgets-period-label">{periodLabel}</p> : null}
-        <p className="delta up">
-          {t.totalMonthlyBills}: {formatMoney(monthlyBillsTotal, lang, currency)}
-        </p>
-
-        <div className="bill-alerts">
+        <div className="bill-alerts bill-alerts--overview">
+          <div className="bill-alert-card total">
+            <span>{t.totalMonthlyBills}</span>
+            <strong>{formatMoney(monthlyBillsTotal, lang, currency)}</strong>
+          </div>
+          <div className="bill-alert-card total">
+            <span>{t.totalMonthlySubs}</span>
+            <strong>{formatMoney(monthlySubsTotal, lang, currency)}</strong>
+          </div>
           <div className="bill-alert-card overdue">
             <span>{t.overdueCount}</span>
             <strong>{overdueBills.length}</strong>
@@ -395,151 +407,172 @@ export function BillsSubscriptionsManager({
             <strong>{upcomingBills.length}</strong>
           </div>
         </div>
-
-        <form className="quick-form" onSubmit={createBill}>
-          <div className="q-grid">
-            <label className="q-field">
-              <span>{t.name}</span>
-              <input value={billName} onChange={(e) => setBillName(e.target.value)} required />
-            </label>
-            <label className="q-field">
-              <span>{t.amount}</span>
-              <input type="number" min="0.01" step="0.01" value={billAmount} onChange={(e) => setBillAmount(e.target.value)} required />
-            </label>
-          </div>
-          <div className="q-grid">
-            <label className="q-field">
-              <span>{t.dueDay}</span>
-              <input type="number" min="1" max="31" value={billDueDay} onChange={(e) => setBillDueDay(e.target.value)} required />
-            </label>
-            <label className="q-field">
-              <span>{t.frequency}</span>
-              <select value={billFrequency} onChange={(e) => setBillFrequency(e.target.value as "monthly" | "quarterly" | "yearly")}>
-                <option value="monthly">{t.monthly}</option>
-                <option value="quarterly">{t.quarterly}</option>
-                <option value="yearly">{t.yearly}</option>
-              </select>
-            </label>
-          </div>
-          <label className="q-check-inline">
-            <input type="checkbox" checked={billAutoPay} onChange={(e) => setBillAutoPay(e.target.checked)} /> {t.autoPay}
-          </label>
-          <button type="submit" disabled={billLoading}>{billLoading ? t.saving : t.addBill}</button>
-        </form>
-
-        <ul className="bills-list">
-          {initialBills.length ? (
-            initialBills.map((bill) => (
-              <li key={bill.id} className={bill.status === "pending" && bill.dueDay < anchorDay ? "bill-overdue" : ""}>
-                <div>
-                  <b>{bill.name}</b>
-                  <p>{t.dueDay} {bill.dueDay} • {bill.frequency}</p>
-                </div>
-                <strong>{formatMoney(bill.amount, lang, currency)}</strong>
-                <div className="bills-actions">
-                  <select
-                    aria-label={t.status}
-                    value={bill.status}
-                    disabled={updatingBillId === bill.id}
-                    onChange={(e) => updateBillStatus(bill.id, e.target.value as "pending" | "paid")}
-                  >
-                    <option value="pending">{t.pending}</option>
-                    <option value="paid">{t.paid}</option>
-                  </select>
-                  {bill.status === "pending" ? (
-                    <button type="button" onClick={() => updateBillStatus(bill.id, "paid")}>
-                      {t.quickPay}
-                    </button>
-                  ) : null}
-                  <button type="button" onClick={() => removeBill(bill.id)}>{t.remove}</button>
-                </div>
-              </li>
-            ))
-          ) : (
-            <li className="recurring-empty">{t.noBills}</li>
-          )}
-        </ul>
         {!overdueBills.length && !upcomingBills.length ? <p className="sub-copy">{t.noAlerts}</p> : null}
       </article>
 
-      <article className="panel bills-panel">
+      <article className="panel bills-entry-panel">
         <div className="panel-head">
-          <h3>{t.subTitle}</h3>
+          <h3>{t.addItemsTitle}</h3>
         </div>
-        <p className="sub-copy">{t.subSubtitle}</p>
-        {periodLabel ? <p className="budgets-period-label">{periodLabel}</p> : null}
-        <p className="delta up">
-          {t.totalMonthlySubs}: {formatMoney(monthlySubsTotal, lang, currency)}
-        </p>
-        <p className="delta">{t.renewalsNext7d}: {renewalsInPeriod.length}</p>
-
-        <form className="quick-form" onSubmit={createSubscription}>
-          <div className="q-grid">
-            <label className="q-field">
-              <span>{t.service}</span>
-              <input value={subService} onChange={(e) => setSubService(e.target.value)} required />
-            </label>
-            <label className="q-field">
-              <span>{t.cost}</span>
-              <input type="number" min="0.01" step="0.01" value={subCost} onChange={(e) => setSubCost(e.target.value)} required />
-            </label>
-          </div>
-          <div className="q-grid">
-            <label className="q-field">
-              <span>{t.billingCycle}</span>
-              <select value={subCycle} onChange={(e) => setSubCycle(e.target.value as "monthly" | "yearly") }>
-                <option value="monthly">{t.monthly}</option>
-                <option value="yearly">{t.yearly}</option>
-              </select>
-            </label>
-            <label className="q-field">
-              <span>{t.category}</span>
-              <input value={subCategory} onChange={(e) => setSubCategory(e.target.value)} required />
-            </label>
-          </div>
-          <label className="q-field">
-            <span>{t.renewalDate}</span>
-            <input type="date" value={subRenewalDate} onChange={(e) => setSubRenewalDate(e.target.value)} />
-          </label>
-          <button type="submit" disabled={subLoading}>{subLoading ? t.saving : t.addSub}</button>
-        </form>
-
-        <ul className="bills-list">
-          {initialSubscriptions.length ? (
-            initialSubscriptions.map((sub) => (
-              <li key={sub.id}>
-                <div>
-                  <b>{sub.service}</b>
-                  <p>
-                    {sub.category} • {sub.billingCycle}
-                    {sub.renewalDate ? ` • ${t.renewalDate}: ${formatOptionalDate(sub.renewalDate, lang)}` : ""}
-                  </p>
-                </div>
-                <strong>{formatMoney(sub.cost, lang, currency)}</strong>
-                <div className="bills-actions">
-                  <select
-                    aria-label={t.status}
-                    value={sub.status}
-                    disabled={updatingSubId === sub.id}
-                    onChange={(e) =>
-                      updateSubscriptionStatus(sub.id, e.target.value as "active" | "paused" | "cancelled")
-                    }
-                  >
-                    <option value="active">{t.active}</option>
-                    <option value="paused">{t.paused}</option>
-                    <option value="cancelled">{t.cancelled}</option>
+        <div className="bills-entry-grid">
+          <section className="bills-form-block">
+            <h4>{t.addBill}</h4>
+            <p className="sub-copy">{t.billsSubtitle}</p>
+            <form className="quick-form" onSubmit={createBill}>
+              <div className="q-grid">
+                <label className="q-field">
+                  <span>{t.name}</span>
+                  <input value={billName} onChange={(e) => setBillName(e.target.value)} required />
+                </label>
+                <label className="q-field">
+                  <span>{t.amount}</span>
+                  <input type="number" min="0.01" step="0.01" value={billAmount} onChange={(e) => setBillAmount(e.target.value)} required />
+                </label>
+              </div>
+              <div className="q-grid">
+                <label className="q-field">
+                  <span>{t.dueDay}</span>
+                  <input type="number" min="1" max="31" value={billDueDay} onChange={(e) => setBillDueDay(e.target.value)} required />
+                </label>
+                <label className="q-field">
+                  <span>{t.frequency}</span>
+                  <select value={billFrequency} onChange={(e) => setBillFrequency(e.target.value as "monthly" | "quarterly" | "yearly")}>
+                    <option value="monthly">{t.monthly}</option>
+                    <option value="quarterly">{t.quarterly}</option>
+                    <option value="yearly">{t.yearly}</option>
                   </select>
-                  <button type="button" onClick={() => removeSubscription(sub.id)}>{t.remove}</button>
-                </div>
-              </li>
-            ))
-          ) : (
-            <li className="recurring-empty">{t.noSubs}</li>
-          )}
-        </ul>
+                </label>
+              </div>
+              <label className="q-check-inline">
+                <input type="checkbox" checked={billAutoPay} onChange={(e) => setBillAutoPay(e.target.checked)} /> {t.autoPay}
+              </label>
+              <button type="submit" disabled={billLoading}>{billLoading ? t.saving : t.addBill}</button>
+            </form>
+          </section>
+
+          <section className="bills-form-block">
+            <h4>{t.addSub}</h4>
+            <p className="sub-copy">{t.subSubtitle}</p>
+            <form className="quick-form" onSubmit={createSubscription}>
+              <div className="q-grid">
+                <label className="q-field">
+                  <span>{t.service}</span>
+                  <input value={subService} onChange={(e) => setSubService(e.target.value)} required />
+                </label>
+                <label className="q-field">
+                  <span>{t.cost}</span>
+                  <input type="number" min="0.01" step="0.01" value={subCost} onChange={(e) => setSubCost(e.target.value)} required />
+                </label>
+              </div>
+              <div className="q-grid">
+                <label className="q-field">
+                  <span>{t.billingCycle}</span>
+                  <select value={subCycle} onChange={(e) => setSubCycle(e.target.value as "monthly" | "yearly") }>
+                    <option value="monthly">{t.monthly}</option>
+                    <option value="yearly">{t.yearly}</option>
+                  </select>
+                </label>
+                <label className="q-field">
+                  <span>{t.category}</span>
+                  <input value={subCategory} onChange={(e) => setSubCategory(e.target.value)} required />
+                </label>
+              </div>
+              <label className="q-field">
+                <span>{t.renewalDate}</span>
+                <input type="date" value={subRenewalDate} onChange={(e) => setSubRenewalDate(e.target.value)} />
+              </label>
+              <button type="submit" disabled={subLoading}>{subLoading ? t.saving : t.addSub}</button>
+            </form>
+          </section>
+        </div>
+        {message ? <p className="q-msg">{message}</p> : null}
       </article>
 
-      {message ? <p className="q-msg">{message}</p> : null}
+      <article className="panel bills-records-panel">
+        <div className="panel-head">
+          <h3>{t.recordsTitle}</h3>
+        </div>
+        <div className="bills-records-grid">
+          <section className="bills-list-block">
+            <div className="bills-list-head">
+              <h4>{t.billsTitle}</h4>
+              <p className="delta up">{formatMoney(monthlyBillsTotal, lang, currency)}</p>
+            </div>
+            <ul className="bills-list">
+              {initialBills.length ? (
+                initialBills.map((bill) => (
+                  <li key={bill.id} className={bill.status === "pending" && bill.dueDay < anchorDay ? "bill-overdue" : ""}>
+                    <div>
+                      <b>{bill.name}</b>
+                      <p>{t.dueDay} {bill.dueDay} • {bill.frequency}</p>
+                    </div>
+                    <strong>{formatMoney(bill.amount, lang, currency)}</strong>
+                    <div className="bills-actions">
+                      <select
+                        aria-label={t.status}
+                        value={bill.status}
+                        disabled={updatingBillId === bill.id}
+                        onChange={(e) => updateBillStatus(bill.id, e.target.value as "pending" | "paid")}
+                      >
+                        <option value="pending">{t.pending}</option>
+                        <option value="paid">{t.paid}</option>
+                      </select>
+                      {bill.status === "pending" ? (
+                        <button type="button" onClick={() => updateBillStatus(bill.id, "paid")}>
+                          {t.quickPay}
+                        </button>
+                      ) : null}
+                      <button type="button" onClick={() => removeBill(bill.id)}>{t.remove}</button>
+                    </div>
+                  </li>
+                ))
+              ) : (
+                <li className="recurring-empty">{t.noBills}</li>
+              )}
+            </ul>
+          </section>
+
+          <section className="bills-list-block">
+            <div className="bills-list-head">
+              <h4>{t.subTitle}</h4>
+              <p className="delta">{t.renewalsNext7d}: {renewalsInPeriod.length}</p>
+            </div>
+            <ul className="bills-list">
+              {initialSubscriptions.length ? (
+                initialSubscriptions.map((sub) => (
+                  <li key={sub.id}>
+                    <div>
+                      <b>{sub.service}</b>
+                      <p>
+                        {sub.category} • {sub.billingCycle}
+                        {sub.renewalDate ? ` • ${t.renewalDate}: ${formatOptionalDate(sub.renewalDate, lang)}` : ""}
+                      </p>
+                    </div>
+                    <strong>{formatMoney(sub.cost, lang, currency)}</strong>
+                    <div className="bills-actions">
+                      <select
+                        aria-label={t.status}
+                        value={sub.status}
+                        disabled={updatingSubId === sub.id}
+                        onChange={(e) =>
+                          updateSubscriptionStatus(sub.id, e.target.value as "active" | "paused" | "cancelled")
+                        }
+                      >
+                        <option value="active">{t.active}</option>
+                        <option value="paused">{t.paused}</option>
+                        <option value="cancelled">{t.cancelled}</option>
+                      </select>
+                      <button type="button" onClick={() => removeSubscription(sub.id)}>{t.remove}</button>
+                    </div>
+                  </li>
+                ))
+              ) : (
+                <li className="recurring-empty">{t.noSubs}</li>
+              )}
+            </ul>
+          </section>
+        </div>
+      </article>
     </section>
   );
 }
