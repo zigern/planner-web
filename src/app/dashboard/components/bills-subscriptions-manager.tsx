@@ -26,6 +26,8 @@ type SubscriptionItem = {
 
 type Dict = {
   summaryTitle: string;
+  insightTitle: string;
+  insightNoData: string;
   addItemsTitle: string;
   recordsTitle: string;
   billsTitle: string;
@@ -77,6 +79,8 @@ type Dict = {
 const textByLang: Record<string, Dict> = {
   "pt-PT": {
     summaryTitle: "Resumo de contas e subscrições",
+    insightTitle: "Observação automática",
+    insightNoData: "Ainda não há dados suficientes para análise de gastos.",
     addItemsTitle: "Adicionar novos registos",
     recordsTitle: "Registos do período",
     billsTitle: "Contas fixas",
@@ -126,6 +130,8 @@ const textByLang: Record<string, Dict> = {
   },
   "en-US": {
     summaryTitle: "Bills and subscriptions overview",
+    insightTitle: "Automatic insight",
+    insightNoData: "Not enough spending data yet to generate insights.",
     addItemsTitle: "Add new entries",
     recordsTitle: "Period records",
     billsTitle: "Bills",
@@ -266,6 +272,84 @@ export function BillsSubscriptionsManager({
     [overdueBills]
   );
 
+  const spendingObservation = useMemo(() => {
+    const monthlyBillRows = initialBills.map((bill) => {
+      const base = Number(bill.amount || 0);
+      const monthlyEquivalent =
+        bill.frequency === "monthly" ? base : bill.frequency === "quarterly" ? base / 3 : base / 12;
+      return {
+        name: bill.name,
+        monthlyEquivalent
+      };
+    });
+
+    const topBill = monthlyBillRows.sort((a, b) => b.monthlyEquivalent - a.monthlyEquivalent)[0] || null;
+    const topSub =
+      initialSubscriptions
+        .map((sub) => ({
+          name: sub.service,
+          monthlyEquivalent: sub.billingCycle === "monthly" ? Number(sub.cost || 0) : Number(sub.cost || 0) / 12
+        }))
+        .sort((a, b) => b.monthlyEquivalent - a.monthlyEquivalent)[0] || null;
+
+    const top = [topBill, topSub]
+      .filter(Boolean)
+      .sort((a, b) => Number(b?.monthlyEquivalent || 0) - Number(a?.monthlyEquivalent || 0))[0];
+
+    const monthlyTotal = monthlyBillsTotal + monthlySubsTotal;
+    if (!top || monthlyTotal <= 0) return t.insightNoData;
+
+    const share = Math.round((Number(top.monthlyEquivalent) / monthlyTotal) * 100);
+    const topCost = formatMoney(Number(top.monthlyEquivalent), lang, currency);
+    const quickSave = formatMoney(Number(top.monthlyEquivalent) * 0.1, lang, currency);
+
+    if (lang === "pt-PT") {
+      if (overdueBills.length > 0) {
+        return `Maior peso atual: ${top.name} (${topCost}/mês, ${share}% do total). Tens ${overdueBills.length} conta(s) em atraso (${formatMoney(
+          overdueTotal,
+          lang,
+          currency
+        )}); prioriza regularização e ativa auto-pay nas contas estáveis para evitar juros.`;
+      }
+      if (share >= 40) {
+        return `Maior gasto: ${top.name} (${topCost}/mês, ${share}% do total). Esta categoria está a concentrar demasiado orçamento; tenta renegociar/baixar o plano e podes poupar cerca de ${quickSave}/mês.`;
+      }
+      if (monthlySubsTotal > monthlyBillsTotal && monthlySubsTotal > 0) {
+        return `As subscrições estão acima das contas fixas (${formatMoney(
+          monthlySubsTotal,
+          lang,
+          currency
+        )}/mês). Revê serviços pouco usados e corta 1-2 planos para libertar margem mensal.`;
+      }
+      return `Distribuição equilibrada. Mantém teto mensal para contas + subscrições em ${formatMoney(
+        monthlyTotal,
+        lang,
+        currency
+      )} e faz revisão no fim do mês para continuar a reduzir despesa.`;
+    }
+
+    if (overdueBills.length > 0) {
+      return `Largest current driver: ${top.name} (${topCost}/month, ${share}% of total). You have ${
+        overdueBills.length
+      } overdue bill(s) (${formatMoney(overdueTotal, lang, currency)}); clear these first and enable auto-pay on stable bills to avoid penalties.`;
+    }
+    if (share >= 40) {
+      return `Top expense: ${top.name} (${topCost}/month, ${share}% of total). This is highly concentrated; renegotiate or downgrade this plan and you can likely save around ${quickSave}/month.`;
+    }
+    if (monthlySubsTotal > monthlyBillsTotal && monthlySubsTotal > 0) {
+      return `Subscriptions are higher than fixed bills (${formatMoney(
+        monthlySubsTotal,
+        lang,
+        currency
+      )}/month). Review low-usage services and remove 1-2 plans to recover monthly cash flow.`;
+    }
+    return `Spending mix is balanced. Keep a monthly cap for bills + subscriptions at ${formatMoney(
+      monthlyTotal,
+      lang,
+      currency
+    )} and run a month-end review to keep improving savings.`;
+  }, [initialBills, initialSubscriptions, monthlyBillsTotal, monthlySubsTotal, overdueBills.length, overdueTotal, t, lang, currency]);
+
   async function createBill(e: React.FormEvent) {
     e.preventDefault();
     if (billLoading) return;
@@ -385,6 +469,10 @@ export function BillsSubscriptionsManager({
           <h3>{t.summaryTitle}</h3>
         </div>
         {periodLabel ? <p className="budgets-period-label">{periodLabel}</p> : null}
+        <div className="bills-observation">
+          <p className="bills-observation-title">{t.insightTitle}</p>
+          <p className="sub-copy">{spendingObservation}</p>
+        </div>
         <div className="bill-alerts bill-alerts--overview">
           <div className="bill-alert-card total">
             <span>{t.totalMonthlyBills}</span>

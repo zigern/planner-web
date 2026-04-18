@@ -300,6 +300,11 @@
   color: #df7a37;
 }
 
+.side-nav-icon-banks {
+  background: #e8f4ff;
+  color: #2a7ed6;
+}
+
 .side-nav-icon-recurring {
   background: #ffeef4;
   color: #d54f81;
@@ -2134,6 +2139,30 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
+.bills-observation {
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.bills-observation-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #2f6be8;
+}
+
+.bills-observation .sub-copy {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .bill-alert-card {
   border-radius: 10px;
   border: 1px solid var(--line);
@@ -2284,6 +2313,65 @@
   color: #2e2e36;
   font-size: 12px;
   padding: 0 8px;
+}
+
+.banking-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.banking-security-panel,
+.banking-connect-panel,
+.banking-records-panel,
+.banking-log-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.banking-records-panel,
+.banking-log-panel {
+  grid-column: 1 / -1;
+}
+
+.banking-kicker {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.banking-security-panel h3 {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.15;
+}
+
+.banking-checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.banking-checks li {
+  position: relative;
+  padding-left: 22px;
+  color: #30303a;
+  font-size: 14px;
+}
+
+.banking-checks li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #1b8f56;
+  font-weight: 800;
 }
 
 .goals-top-row {
@@ -3127,6 +3215,15 @@
 
   .bill-alerts--overview {
     grid-template-columns: 1fr;
+  }
+
+  .banking-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .banking-records-panel,
+  .banking-log-panel {
+    grid-column: 1;
   }
 
   .wealth-grid,
