@@ -854,7 +854,7 @@ export default async function DashboardPage({
                         <p>{alert.message}</p>
                         <div className="alert-actions">
                           <Link
-                            href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=${presetFilter}&type=expense&category=${encodeURIComponent(alert.category)}&from=${effectiveFrom}&to=${effectiveTo}`}
+                            href={`/dashboard/spreadsheet?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=${presetFilter}&type=expense&category=${encodeURIComponent(alert.category)}&from=${effectiveFrom}&to=${effectiveTo}`}
                           >
                             {text.viewActivity}
                           </Link>
@@ -930,7 +930,7 @@ export default async function DashboardPage({
                 </Link>
                 <Link
                   className="panel-manage-link"
-                  href={`/dashboard/activity?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=${presetFilter}&from=${effectiveFrom}&to=${effectiveTo}`}
+                  href={`/dashboard/spreadsheet?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=${presetFilter}&from=${effectiveFrom}&to=${effectiveTo}`}
                 >
                   {text.viewActivity}
                 </Link>

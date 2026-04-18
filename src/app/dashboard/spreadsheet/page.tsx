@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth/session";
 import { getDb, hasDatabaseConfig } from "@/lib/db";
-import { convertFromBaseEur, formatMoneyConverted } from "@/lib/currency-conversion";
+import { formatMoneyConverted } from "@/lib/currency-conversion";
 import { DashboardSidebar } from "../components/sidebar-nav";
 import { DashboardTopBar } from "../components/top-bar";
 import { translateExpenseCategory } from "../utils/category-translation";
@@ -329,25 +329,19 @@ export default async function SpreadsheetPage({
     q: queryFilter
   });
 
-  const csvHeader = ["Month", "Main Type", "Category", "Sub-category", "Amount", "Bill Due Date", "Status"];
-  const csvEscape = (value: string) => `"${value.replace(/"/g, '""')}"`;
-  const csvLines = [
-    csvHeader.map(csvEscape).join(","),
-    ...filteredByStatus.map((tx) =>
-      [
-        monthFromDate(tx.transaction_date, lang),
-        tx.type === "income" ? "Income" : "Expenses",
-        translateExpenseCategory(tx.category, lang),
-        tx.description || "-",
-        convertFromBaseEur(Math.abs(Number(tx.amount || 0)), currency).toFixed(2),
-        dayMonthYear(tx.transaction_date, lang),
-        tx.uiStatus === "late" ? "Late" : "Paid"
-      ]
-        .map((v) => csvEscape(String(v)))
-        .join(",")
-    )
-  ];
-  const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(csvLines.join("\n"))}`;
+  const exportQuery = new URLSearchParams({
+    month: selectedMonth,
+    lang,
+    currency,
+    preset,
+    type: typeFilter,
+    category: categoryFilter,
+    status: statusFilter,
+    from: effectiveFrom,
+    to: effectiveTo,
+    q: queryFilter
+  });
+  const exportHref = `/api/spreadsheet/export?${exportQuery.toString()}`;
   const text = lang === "pt-PT"
     ? {
         title: "Spreadsheet",
@@ -358,7 +352,7 @@ export default async function SpreadsheetPage({
         last90d: "Últimos 90 dias",
         apply: "Aplicar",
         clear: "Limpar",
-        export: "Exportar CSV",
+        export: "Exportar Excel",
         allTypes: "Todos os tipos",
         allCategories: "Todas as categorias",
         allStatus: "Todos os estados",
@@ -395,7 +389,7 @@ export default async function SpreadsheetPage({
         last90d: "Last 90 days",
         apply: "Apply",
         clear: "Clear",
-        export: "Export CSV",
+        export: "Export Excel",
         allTypes: "All Types",
         allCategories: "All Categories",
         allStatus: "All Status",
@@ -450,7 +444,7 @@ export default async function SpreadsheetPage({
                     {text.last90d}
                   </Link>
                 </div>
-                <Link className="btn" href={csvHref} download={`spreadsheet-${selectedMonth}.csv`}>
+                <Link className="btn" href={exportHref}>
                   {text.export}
                 </Link>
               </div>
@@ -514,7 +508,7 @@ export default async function SpreadsheetPage({
                   <div className="sheet-filter-actions">
                     <button type="submit">{text.apply}</button>
                     <Link href={`?month=${selectedMonth}&lang=${lang}&currency=${currency}&preset=month&from=${monthBounds.from}&to=${monthBounds.to}`}>{text.clear}</Link>
-                    <a href={csvHref} download={`spreadsheet-${selectedMonth}.csv`}>
+                    <a href={exportHref}>
                       {text.export}
                     </a>
                   </div>

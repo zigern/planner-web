@@ -7,10 +7,10 @@ type NavKey =
   | "annual"
   | "movements"
   | "bills"
+  | "banks"
   | "budgets"
   | "goals"
   | "networth"
-  | "activity"
   | "spreadsheet";
 
 function Icon({ kind }: { kind: NavKey }) {
@@ -48,6 +48,15 @@ function Icon({ kind }: { kind: NavKey }) {
       </svg>
     );
   }
+  if (kind === "banks") {
+    return (
+      <svg viewBox="0 0 20 20" aria-hidden="true">
+        <path d="M10 2 2.5 6v2h15V6L10 2z" fill="none" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M4.5 9v6M8 9v6M12 9v6M15.5 9v6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        <path d="M2.5 16.5h15" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      </svg>
+    );
+  }
   if (kind === "budgets") {
     return (
       <svg viewBox="0 0 20 20" aria-hidden="true">
@@ -70,13 +79,6 @@ function Icon({ kind }: { kind: NavKey }) {
     return (
       <svg viewBox="0 0 20 20" aria-hidden="true">
         <path d="M3 14.5 7 10l3 2.5L15.5 7l1.5 1.5-7 7-3-2.5-2.5 2z" fill="currentColor" />
-      </svg>
-    );
-  }
-  if (kind === "activity") {
-    return (
-      <svg viewBox="0 0 20 20" aria-hidden="true">
-        <path d="M2.5 10h3L7 6l3 8 2-4h5.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
       </svg>
     );
   }
@@ -114,10 +116,10 @@ export function DashboardSidebar({
     { key: "annual", label: isPt ? "Resumo anual" : "Annual Overview", href: `/dashboard/anual?${q}` },
     { key: "movements", label: isPt ? "Movimentos" : "Movements", href: `/dashboard/movimentos?${q}` },
     { key: "bills", label: isPt ? "Contas" : "Bills", href: `/dashboard/bills?${q}` },
+    { key: "banks", label: isPt ? "Bancos" : "Banks", href: `/dashboard/bancos?${q}` },
     { key: "budgets", label: isPt ? "Orçamentos" : "Budgets", href: `/dashboard/orcamentos?${q}` },
     { key: "goals", label: isPt ? "Objetivos" : "Goals", href: `/dashboard/objetivos?${q}` },
     { key: "networth", label: isPt ? "Património" : "Net Worth", href: `/dashboard/patrimonio?${q}` },
-    { key: "activity", label: isPt ? "Atividade" : "Activity", href: `/dashboard/activity?${q}` },
     { key: "spreadsheet", label: "Spreadsheet", href: `/dashboard/spreadsheet?${q}` }
   ];
 

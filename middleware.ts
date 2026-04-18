@@ -45,10 +45,24 @@ export function middleware(request: NextRequest) {
     if (limited) return limited;
   }
 
+  if (pathname === "/api/bank/connect" && request.method === "POST") {
+    const limited = enforceRateLimit(request, "bank-connect", 8, 10 * 60 * 1000);
+    if (limited) return limited;
+  }
+
+  if (pathname === "/api/bank/sync" && request.method === "POST") {
+    const limited = enforceRateLimit(request, "bank-sync", 30, 10 * 60 * 1000);
+    if (limited) return limited;
+  }
+
+  if (pathname === "/api/bank/disconnect" && request.method === "POST") {
+    const limited = enforceRateLimit(request, "bank-disconnect", 20, 10 * 60 * 1000);
+    if (limited) return limited;
+  }
+
   return withSecurity(NextResponse.next());
 }
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"]
 };
-

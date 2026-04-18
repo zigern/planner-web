@@ -21,11 +21,18 @@ MYSQL_PASSWORD=
 AUTH_SECRET=
 APP_ALLOWED_ORIGINS=http://localhost:3000
 ENABLE_DEMO_DATA=false
+BANK_TOKEN_ENCRYPTION_KEY=
+GOCARDLESS_SECRET_ID=
+GOCARDLESS_SECRET_KEY=
+GOCARDLESS_BASE_URL=https://bankaccountdata.gocardless.com/api/v2
+GOCARDLESS_REDIRECT_URI=
 ```
 
 `AUTH_SECRET` pode ser uma string longa aleatória.
 `APP_ALLOWED_ORIGINS` aceita uma ou mais origins separadas por vírgula (ex.: domínio final + localhost).
 `ENABLE_DEMO_DATA` deve ficar `false` em produção.
+`BANK_TOKEN_ENCRYPTION_KEY` deve ser uma chave secreta forte e exclusiva para cifrar payloads bancários em repouso (AES-256-GCM).
+`GOCARDLESS_REDIRECT_URI` deve apontar para `https://TEU_DOMINIO/api/bank/callback`.
 
 ## 3) Criar tabelas no MySQL da Hostinger
 Executa `db/schema.mysql.sql` no phpMyAdmin ou SQL console.
@@ -39,3 +46,4 @@ npm run dev
 - `/` landing
 - `/login` login/registo
 - `/dashboard` protegido
+- `/dashboard/bancos` ligações bancárias PSD2
