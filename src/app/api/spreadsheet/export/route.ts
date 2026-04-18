@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { Pool } from "mysql2/promise";
-import * as XLSX from "xlsx";
 import { getSessionUser } from "@/lib/auth/session";
 import { convertFromBaseEur } from "@/lib/currency-conversion";
 import { getDb } from "@/lib/db";
@@ -186,19 +185,43 @@ async function safeQueryRows<T>(db: Pool, sql: string, params: unknown[]): Promi
   }
 }
 
-function sheetFromRows(rows: Array<Record<string, unknown>>, columns: string[]) {
-  const aoa: unknown[][] = [columns];
-  for (const row of rows) {
-    aoa.push(columns.map((column) => row[column] ?? ""));
-  }
-  const sheet = XLSX.utils.aoa_to_sheet(aoa);
-  sheet["!autofilter"] = { ref: `A1:${String.fromCharCode(64 + columns.length)}1` };
-  sheet["!freeze"] = { xSplit: 0, ySplit: 1 } as unknown as XLSX.SheetProperties;
-  return sheet;
+function escapeXml(value: unknown) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
 
-function setColumns(sheet: XLSX.WorkSheet, widths: number[]) {
-  sheet["!cols"] = widths.map((wch) => ({ wch }));
+function isNumericLike(value: unknown) {
+  return typeof value === "number" || (typeof value === "string" && value.trim() !== "" && !Number.isNaN(Number(value)));
+}
+
+function xmlCell(value: unknown, header = false) {
+  const style = header ? ` ss:StyleID="Header"` : "";
+  if (isNumericLike(value)) {
+    return `<Cell${style}><Data ss:Type="Number">${Number(value)}</Data></Cell>`;
+  }
+  return `<Cell${style}><Data ss:Type="String">${escapeXml(value)}</Data></Cell>`;
+}
+
+function xmlRow(cells: unknown[], header = false) {
+  return `<Row>${cells.map((cell) => xmlCell(cell, header)).join("")}</Row>`;
+}
+
+function xmlWorksheet(name: string, rows: unknown[][]) {
+  return `<Worksheet ss:Name="${escapeXml(name).slice(0, 31)}"><Table>${rows
+    .map((row, idx) => xmlRow(row, idx === 0))
+    .join("")}</Table></Worksheet>`;
+}
+
+function rowsFromObjects(rows: Array<Record<string, unknown>>, columns: string[]) {
+  const out: unknown[][] = [columns];
+  for (const row of rows) {
+    out.push(columns.map((column) => row[column] ?? ""));
+  }
+  return out;
 }
 
 function barText(value: number, max: number) {
@@ -419,133 +442,145 @@ export async function GET(request: Request) {
     summarySheetRows.push([row.category, moneyValue(total, currency), pct, barText(total, maxCategory)]);
   }
 
-  const workbook = XLSX.utils.book_new();
+  const sheets = [
+    xmlWorksheet(lang === "pt-PT" ? "Resumo" : "Summary", summarySheetRows),
+    xmlWorksheet(
+      lang === "pt-PT" ? "Movimentos" : "Movements",
+      rowsFromObjects(txExportRows, ["Month", "Type", "Category", "Detail", "Amount", "Date", "Status"])
+    ),
+    xmlWorksheet(
+      lang === "pt-PT" ? "TodosMovimentos" : "AllTransactions",
+      rowsFromObjects(
+        allTxRows.map((tx) => ({
+          ID: tx.id,
+          Date: normalizeDate(tx.transaction_date),
+          Type: tx.type,
+          Category: tx.category,
+          Detail: tx.description || "",
+          Amount: moneyValue(Math.abs(Number(tx.amount || 0)), currency)
+        })),
+        ["ID", "Date", "Type", "Category", "Detail", "Amount"]
+      )
+    ),
+    xmlWorksheet(
+      lang === "pt-PT" ? "Contas" : "Bills",
+      rowsFromObjects(
+        bills.map((row) => ({
+          ID: row.id,
+          Name: row.name,
+          Amount: moneyValue(Number(row.amount || 0), currency),
+          Frequency: formatFrequency(row.frequency, lang),
+          DueDay: Number(row.due_day),
+          AutoPay: row.auto_pay ? "Yes" : "No",
+          Status: row.status
+        })),
+        ["ID", "Name", "Amount", "Frequency", "DueDay", "AutoPay", "Status"]
+      )
+    ),
+    xmlWorksheet(
+      lang === "pt-PT" ? "Subscricoes" : "Subscriptions",
+      rowsFromObjects(
+        subscriptions.map((row) => ({
+          ID: row.id,
+          Service: row.service,
+          Cost: moneyValue(Number(row.cost || 0), currency),
+          Cycle: row.billing_cycle,
+          Category: row.category,
+          RenewalDate: normalizeDate(row.renewal_date),
+          Status: row.status
+        })),
+        ["ID", "Service", "Cost", "Cycle", "Category", "RenewalDate", "Status"]
+      )
+    ),
+    xmlWorksheet(
+      lang === "pt-PT" ? "Ativos" : "Assets",
+      rowsFromObjects(
+        assets.map((row) => ({
+          ID: row.id,
+          Name: row.name,
+          Type: row.asset_type,
+          Value: moneyValue(Number(row.value || 0), currency),
+          AsOfDate: normalizeDate(row.as_of_date)
+        })),
+        ["ID", "Name", "Type", "Value", "AsOfDate"]
+      )
+    ),
+    xmlWorksheet(
+      lang === "pt-PT" ? "Dividas" : "Debts",
+      rowsFromObjects(
+        debts.map((row) => {
+          const total = Number(row.total_owed || 0);
+          const paid = Number(row.amount_paid || 0);
+          return {
+            ID: row.id,
+            Name: row.name,
+            TotalOwed: moneyValue(total, currency),
+            AmountPaid: moneyValue(paid, currency),
+            Remaining: moneyValue(Math.max(0, total - paid), currency),
+            InterestRate: Number(row.interest_rate || 0),
+            DueDate: normalizeDate(row.due_date)
+          };
+        }),
+        ["ID", "Name", "TotalOwed", "AmountPaid", "Remaining", "InterestRate", "DueDate"]
+      )
+    ),
+    xmlWorksheet(
+      lang === "pt-PT" ? "Orcamentos" : "Budgets",
+      rowsFromObjects(
+        budgets.map((row) => ({
+          ID: row.id,
+          Month: row.budget_month,
+          Category: row.category,
+          Budget: moneyValue(Number(row.budget_amount || 0), currency)
+        })),
+        ["ID", "Month", "Category", "Budget"]
+      )
+    ),
+    xmlWorksheet(
+      lang === "pt-PT" ? "Objetivos" : "Goals",
+      rowsFromObjects(
+        goals.map((row) => ({
+          ID: row.id,
+          Name: row.name,
+          Target: moneyValue(Number(row.target_amount || 0), currency),
+          Saved: moneyValue(Number(row.saved_amount || 0), currency),
+          CompletionPct:
+            Number(row.target_amount || 0) > 0
+              ? Math.round((Number(row.saved_amount || 0) / Number(row.target_amount || 0)) * 100)
+              : 0,
+          Deadline: normalizeDate(row.deadline),
+          Status: row.status
+        })),
+        ["ID", "Name", "Target", "Saved", "CompletionPct", "Deadline", "Status"]
+      )
+    )
+  ];
 
-  const wsSummary = XLSX.utils.aoa_to_sheet(summarySheetRows);
-  setColumns(wsSummary, [22, 18, 18, 18, 28, 28]);
-  XLSX.utils.book_append_sheet(workbook, wsSummary, lang === "pt-PT" ? "Resumo" : "Summary");
+  const workbookXml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Styles>
+    <Style ss:ID="Default" ss:Name="Normal">
+      <Alignment ss:Vertical="Bottom"/>
+      <Font ss:FontName="Calibri" ss:Size="11"/>
+    </Style>
+    <Style ss:ID="Header">
+      <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1"/>
+      <Interior ss:Color="#EAF0FF" ss:Pattern="Solid"/>
+    </Style>
+  </Styles>
+  ${sheets.join("")}
+</Workbook>`;
 
-  const wsMov = sheetFromRows(txExportRows, ["Month", "Type", "Category", "Detail", "Amount", "Date", "Status"]);
-  setColumns(wsMov, [10, 10, 18, 34, 14, 14, 12]);
-  XLSX.utils.book_append_sheet(workbook, wsMov, lang === "pt-PT" ? "Movimentos" : "Movements");
+  const fileName = `planqly-export-${selectedMonth}.xls`;
 
-  const wsAllTx = sheetFromRows(
-    allTxRows.map((tx) => ({
-      ID: tx.id,
-      Date: normalizeDate(tx.transaction_date),
-      Type: tx.type,
-      Category: tx.category,
-      Detail: tx.description || "",
-      Amount: moneyValue(Math.abs(Number(tx.amount || 0)), currency)
-    })),
-    ["ID", "Date", "Type", "Category", "Detail", "Amount"]
-  );
-  setColumns(wsAllTx, [8, 14, 12, 18, 36, 14]);
-  XLSX.utils.book_append_sheet(workbook, wsAllTx, lang === "pt-PT" ? "TodosMovimentos" : "AllTransactions");
-
-  const wsBills = sheetFromRows(
-    bills.map((row) => ({
-      ID: row.id,
-      Name: row.name,
-      Amount: moneyValue(Number(row.amount || 0), currency),
-      Frequency: formatFrequency(row.frequency, lang),
-      DueDay: Number(row.due_day),
-      AutoPay: row.auto_pay ? "Yes" : "No",
-      Status: row.status
-    })),
-    ["ID", "Name", "Amount", "Frequency", "DueDay", "AutoPay", "Status"]
-  );
-  setColumns(wsBills, [8, 28, 14, 14, 10, 10, 12]);
-  XLSX.utils.book_append_sheet(workbook, wsBills, lang === "pt-PT" ? "Contas" : "Bills");
-
-  const wsSubs = sheetFromRows(
-    subscriptions.map((row) => ({
-      ID: row.id,
-      Service: row.service,
-      Cost: moneyValue(Number(row.cost || 0), currency),
-      Cycle: row.billing_cycle,
-      Category: row.category,
-      RenewalDate: normalizeDate(row.renewal_date),
-      Status: row.status
-    })),
-    ["ID", "Service", "Cost", "Cycle", "Category", "RenewalDate", "Status"]
-  );
-  setColumns(wsSubs, [8, 28, 14, 12, 18, 14, 12]);
-  XLSX.utils.book_append_sheet(workbook, wsSubs, lang === "pt-PT" ? "Subscricoes" : "Subscriptions");
-
-  const wsAssets = sheetFromRows(
-    assets.map((row) => ({
-      ID: row.id,
-      Name: row.name,
-      Type: row.asset_type,
-      Value: moneyValue(Number(row.value || 0), currency),
-      AsOfDate: normalizeDate(row.as_of_date)
-    })),
-    ["ID", "Name", "Type", "Value", "AsOfDate"]
-  );
-  setColumns(wsAssets, [8, 22, 18, 14, 14]);
-  XLSX.utils.book_append_sheet(workbook, wsAssets, lang === "pt-PT" ? "Ativos" : "Assets");
-
-  const wsDebts = sheetFromRows(
-    debts.map((row) => {
-      const total = Number(row.total_owed || 0);
-      const paid = Number(row.amount_paid || 0);
-      return {
-        ID: row.id,
-        Name: row.name,
-        TotalOwed: moneyValue(total, currency),
-        AmountPaid: moneyValue(paid, currency),
-        Remaining: moneyValue(Math.max(0, total - paid), currency),
-        InterestRate: Number(row.interest_rate || 0),
-        DueDate: normalizeDate(row.due_date)
-      };
-    }),
-    ["ID", "Name", "TotalOwed", "AmountPaid", "Remaining", "InterestRate", "DueDate"]
-  );
-  setColumns(wsDebts, [8, 22, 14, 14, 14, 12, 14]);
-  XLSX.utils.book_append_sheet(workbook, wsDebts, lang === "pt-PT" ? "Dividas" : "Debts");
-
-  const wsBudgets = sheetFromRows(
-    budgets.map((row) => ({
-      ID: row.id,
-      Month: row.budget_month,
-      Category: row.category,
-      Budget: moneyValue(Number(row.budget_amount || 0), currency)
-    })),
-    ["ID", "Month", "Category", "Budget"]
-  );
-  setColumns(wsBudgets, [8, 12, 18, 14]);
-  XLSX.utils.book_append_sheet(workbook, wsBudgets, lang === "pt-PT" ? "Orcamentos" : "Budgets");
-
-  const wsGoals = sheetFromRows(
-    goals.map((row) => ({
-      ID: row.id,
-      Name: row.name,
-      Target: moneyValue(Number(row.target_amount || 0), currency),
-      Saved: moneyValue(Number(row.saved_amount || 0), currency),
-      CompletionPct: Number(row.target_amount || 0) > 0
-        ? Math.round((Number(row.saved_amount || 0) / Number(row.target_amount || 0)) * 100)
-        : 0,
-      Deadline: normalizeDate(row.deadline),
-      Status: row.status
-    })),
-    ["ID", "Name", "Target", "Saved", "CompletionPct", "Deadline", "Status"]
-  );
-  setColumns(wsGoals, [8, 28, 14, 14, 14, 14, 14]);
-  XLSX.utils.book_append_sheet(workbook, wsGoals, lang === "pt-PT" ? "Objetivos" : "Goals");
-
-  const buffer = XLSX.write(workbook, {
-    type: "buffer",
-    bookType: "xlsx",
-    compression: true
-  }) as Buffer;
-
-  const fileName = `planqly-export-${selectedMonth}.xlsx`;
-
-  return new NextResponse(buffer, {
+  return new NextResponse(workbookXml, {
     status: 200,
     headers: {
-      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Type": "application/vnd.ms-excel; charset=utf-8",
       "Content-Disposition": `attachment; filename="${fileName}"`,
       "Cache-Control": "no-store"
     }
