@@ -66,15 +66,42 @@ type GoalRow = {
   status: "not_started" | "in_progress" | "completed";
 };
 
-type MonthSummaryRow = {
-  month: string;
-  income: string;
-  expense: string;
-};
-
 type CategorySummaryRow = {
   category: string;
   total: string;
+};
+
+type ExportText = {
+  filePrefix: string;
+  generatedAt: string;
+  period: string;
+  currency: string;
+  kpi: string;
+  value: string;
+  incomePeriod: string;
+  expensePeriod: string;
+  savingsPeriod: string;
+  assetsTotal: string;
+  openDebtTotal: string;
+  netWorth: string;
+  income: string;
+  expense: string;
+  savings: string;
+  month: string;
+  category: string;
+  amount: string;
+  detail: string;
+  date: string;
+  status: string;
+  type: string;
+  paid: string;
+  late: string;
+  overview: string;
+  monthlyEvolution: string;
+  categoryBreakdown: string;
+  annualSummary: string;
+  trend: string;
+  periodPercent: string;
 };
 
 function parseMonthParam(value: string | null) {
@@ -119,6 +146,75 @@ function parsePresetParam(value: string | null) {
   return value === "month" || value === "30d" || value === "90d" ? value : "month";
 }
 
+function getExportText(lang: string): ExportText {
+  if (lang === "pt-PT") {
+    return {
+      filePrefix: "planqly-relatorio",
+      generatedAt: "Gerado em",
+      period: "Período",
+      currency: "Moeda",
+      kpi: "Indicador",
+      value: "Valor",
+      incomePeriod: "Receita (período)",
+      expensePeriod: "Despesa (período)",
+      savingsPeriod: "Poupança (período)",
+      assetsTotal: "Ativos totais",
+      openDebtTotal: "Dívida em aberto",
+      netWorth: "Património líquido",
+      income: "Receita",
+      expense: "Despesa",
+      savings: "Poupança",
+      month: "Mês",
+      category: "Categoria",
+      amount: "Montante",
+      detail: "Detalhe",
+      date: "Data",
+      status: "Estado",
+      type: "Tipo",
+      paid: "Pago",
+      late: "Em atraso",
+      overview: "Resumo Executivo",
+      monthlyEvolution: "Evolução Mensal (Jan-Dez)",
+      categoryBreakdown: "Distribuição por Categoria (Período)",
+      annualSummary: "Resumo Anual",
+      trend: "Tendência",
+      periodPercent: "% no período"
+    };
+  }
+  return {
+    filePrefix: "planqly-report",
+    generatedAt: "Generated at",
+    period: "Period",
+    currency: "Currency",
+    kpi: "KPI",
+    value: "Value",
+    incomePeriod: "Income (period)",
+    expensePeriod: "Expense (period)",
+    savingsPeriod: "Savings (period)",
+    assetsTotal: "Assets total",
+    openDebtTotal: "Open debt total",
+    netWorth: "Net worth",
+    income: "Income",
+    expense: "Expense",
+    savings: "Savings",
+    month: "Month",
+    category: "Category",
+    amount: "Amount",
+    detail: "Detail",
+    date: "Date",
+    status: "Status",
+    type: "Type",
+    paid: "Paid",
+    late: "Late",
+    overview: "Executive Overview",
+    monthlyEvolution: "Monthly Evolution (Jan-Dec)",
+    categoryBreakdown: "Category Breakdown (Period)",
+    annualSummary: "Annual Summary",
+    trend: "Trend",
+    periodPercent: "% in period"
+  };
+}
+
 function isoDate(value: Date) {
   return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
 }
@@ -145,10 +241,9 @@ function monthShort(value: string | Date, lang: string) {
   return date.toLocaleDateString(lang, { month: "short" });
 }
 
-function monthLabel(monthIso: string, lang: string) {
-  const [year, month] = monthIso.split("-");
-  const date = new Date(Number(year), Number(month) - 1, 1);
-  return date.toLocaleDateString(lang, { month: "short", year: "numeric" });
+function monthNameByIndex(monthIndex: number, lang: string) {
+  const date = new Date(2000, monthIndex, 1);
+  return date.toLocaleDateString(lang, { month: "short" });
 }
 
 function moneyValue(value: number, currency: string) {
@@ -230,14 +325,28 @@ function barText(value: number, max: number) {
   return "█".repeat(count);
 }
 
+function sparkline(values: number[]) {
+  const chars = "▁▂▃▄▅▆▇█";
+  const max = Math.max(...values, 0);
+  if (max <= 0) return "";
+  return values
+    .map((v) => {
+      const idx = Math.max(0, Math.min(chars.length - 1, Math.round((v / max) * (chars.length - 1))));
+      return chars[idx];
+    })
+    .join("");
+}
+
 export async function GET(request: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
 
   const url = new URL(request.url);
   const selectedMonth = parseMonthParam(url.searchParams.get("month"));
+  const selectedYear = Number(selectedMonth.slice(0, 4)) || new Date().getFullYear();
   const lang = parseLangParam(url.searchParams.get("lang"));
   const currency = parseCurrencyParam(url.searchParams.get("currency"));
+  const t = getExportText(lang);
   const typeFilter = parseTypeParam(url.searchParams.get("type"));
   const categoryFilter = parseTextParam(url.searchParams.get("category")) || "all";
   const statusFilter = parseStatusParam(url.searchParams.get("status"));
@@ -271,7 +380,7 @@ export async function GET(request: Request) {
     values.push(q, q);
   }
 
-  const txRows = await safeQueryRows<TxRow>(
+  const txRowsRaw = await safeQueryRows<TxRow>(
     db,
     `SELECT id, type, amount, category, description, transaction_date
      FROM transactions
@@ -345,19 +454,6 @@ export async function GET(request: Request) {
     [user.userId]
   );
 
-  const monthSummary = await safeQueryRows<MonthSummaryRow>(
-    db,
-    `SELECT DATE_FORMAT(transaction_date, '%Y-%m') AS month,
-            SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) AS income,
-            SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) AS expense
-     FROM transactions
-     WHERE user_id = ?
-     GROUP BY DATE_FORMAT(transaction_date, '%Y-%m')
-     ORDER BY month ASC
-     LIMIT 24`,
-    [user.userId]
-  );
-
   const categorySummary = await safeQueryRows<CategorySummaryRow>(
     db,
     `SELECT category, SUM(amount) AS total
@@ -375,21 +471,28 @@ export async function GET(request: Request) {
     bills.filter((b) => b.status === "pending" && Number(b.due_day) < new Date().getDate()).map((b) => b.name.toLowerCase())
   );
 
-  const txExportRows = txRows.map((tx) => {
-    const lower = `${tx.category} ${tx.description || ""}`.toLowerCase();
-    const isLate = Array.from(lateBillSet).some((b) => lower.includes(b));
-    const amountAbs = Math.abs(Number(tx.amount || 0));
-    const converted = moneyValue(amountAbs, currency);
-    return {
-      Month: monthShort(tx.transaction_date, lang),
-      Type: tx.type === "income" ? "Income" : "Expense",
-      Category: tx.category,
-      Detail: tx.description || "",
-      Amount: converted,
-      Date: normalizeDate(tx.transaction_date),
-      Status: isLate ? "Late" : "Paid"
-    };
-  });
+  const txRows = txRowsRaw
+    .map((tx) => {
+      const lower = `${tx.category} ${tx.description || ""}`.toLowerCase();
+      const isLate = Array.from(lateBillSet).some((b) => lower.includes(b));
+      const amountAbs = Math.abs(Number(tx.amount || 0));
+      return {
+        ...tx,
+        uiStatus: isLate ? "late" : "paid",
+        amountConverted: moneyValue(amountAbs, currency)
+      };
+    })
+    .filter((tx) => (statusFilter === "all" ? true : tx.uiStatus === statusFilter));
+
+  const txExportRows = txRows.map((tx) => ({
+    [t.month]: monthShort(tx.transaction_date, lang),
+    [t.type]: tx.type === "income" ? t.income : t.expense,
+    [t.category]: tx.category,
+    [t.detail]: tx.description || "",
+    [t.amount]: tx.amountConverted,
+    [t.date]: normalizeDate(tx.transaction_date),
+    [t.status]: tx.uiStatus === "late" ? t.late : t.paid
+  }));
 
   const incomePeriod = txRows.reduce((sum, tx) => sum + (tx.type === "income" ? Number(tx.amount || 0) : 0), 0);
   const expensePeriod = txRows.reduce((sum, tx) => sum + (tx.type === "expense" ? Number(tx.amount || 0) : 0), 0);
@@ -399,33 +502,56 @@ export async function GET(request: Request) {
   const debtsOpenTotal = debts.reduce((sum, row) => sum + Math.max(0, Number(row.total_owed || 0) - Number(row.amount_paid || 0)), 0);
   const netWorth = assetsTotal - debtsOpenTotal + savingsPeriod;
 
-  const maxIncome = Math.max(1, ...monthSummary.map((row) => Number(row.income || 0)));
-  const maxExpense = Math.max(1, ...monthSummary.map((row) => Number(row.expense || 0)));
+  const annualIncomeByMonth = new Array<number>(12).fill(0);
+  const annualExpenseByMonth = new Array<number>(12).fill(0);
+  for (const row of allTxRows) {
+    const rawDate = normalizeDate(row.transaction_date);
+    if (!rawDate) continue;
+    const year = Number(rawDate.slice(0, 4));
+    const monthIdx = Number(rawDate.slice(5, 7)) - 1;
+    if (year !== selectedYear || monthIdx < 0 || monthIdx > 11) continue;
+    const amount = Number(row.amount || 0);
+    if (row.type === "income") annualIncomeByMonth[monthIdx] += amount;
+    else annualExpenseByMonth[monthIdx] += amount;
+  }
+  const annualSavingsByMonth = annualIncomeByMonth.map((inc, i) => inc - annualExpenseByMonth[i]);
+  const annualIncomeTotal = annualIncomeByMonth.reduce((a, b) => a + b, 0);
+  const annualExpenseTotal = annualExpenseByMonth.reduce((a, b) => a + b, 0);
+  const annualSavingsTotal = annualSavingsByMonth.reduce((a, b) => a + b, 0);
+
+  const maxIncome = Math.max(1, ...annualIncomeByMonth);
+  const maxExpense = Math.max(1, ...annualExpenseByMonth);
   const maxCategory = Math.max(1, ...categorySummary.map((row) => Number(row.total || 0)));
+  const categoryTotal = categorySummary.reduce((sum, row) => sum + Number(row.total || 0), 0) || 1;
 
   const summarySheetRows: unknown[][] = [
-    ["Planqly Assets - Export"],
-    ["Generated at", new Date().toISOString()],
-    ["Period", `${effectiveFrom} to ${effectiveTo}`],
-    ["Currency", currency],
+    ["Planqly Assets - Excel Premium Export"],
+    [t.generatedAt, new Date().toISOString()],
+    [t.period, `${effectiveFrom} to ${effectiveTo}`],
+    [t.currency, currency],
     [],
-    ["KPI", "Value"],
-    ["Income (period)", moneyValue(incomePeriod, currency)],
-    ["Expense (period)", moneyValue(expensePeriod, currency)],
-    ["Savings (period)", moneyValue(savingsPeriod, currency)],
-    ["Assets total", moneyValue(assetsTotal, currency)],
-    ["Open debt total", moneyValue(debtsOpenTotal, currency)],
-    ["Net worth (snapshot)", moneyValue(netWorth, currency)],
+    [t.kpi, t.value],
+    [t.incomePeriod, moneyValue(incomePeriod, currency)],
+    [t.expensePeriod, moneyValue(expensePeriod, currency)],
+    [t.savingsPeriod, moneyValue(savingsPeriod, currency)],
+    [t.assetsTotal, moneyValue(assetsTotal, currency)],
+    [t.openDebtTotal, moneyValue(debtsOpenTotal, currency)],
+    [t.netWorth, moneyValue(netWorth, currency)],
     [],
-    ["Monthly trend"],
-    ["Month", "Income", "Expense", "Savings", "Income graph", "Expense graph"]
+    [t.annualSummary],
+    [t.income, moneyValue(annualIncomeTotal, currency), sparkline(annualIncomeByMonth)],
+    [t.expense, moneyValue(annualExpenseTotal, currency), sparkline(annualExpenseByMonth)],
+    [t.savings, moneyValue(annualSavingsTotal, currency), sparkline(annualSavingsByMonth.map((v) => Math.max(v, 0)))],
+    [],
+    [t.monthlyEvolution],
+    [t.month, t.income, t.expense, t.savings, `${t.income} ${t.trend}`, `${t.expense} ${t.trend}`]
   ];
 
-  for (const row of monthSummary) {
-    const income = Number(row.income || 0);
-    const expense = Number(row.expense || 0);
+  for (let i = 0; i < 12; i += 1) {
+    const income = annualIncomeByMonth[i];
+    const expense = annualExpenseByMonth[i];
     summarySheetRows.push([
-      monthLabel(row.month, lang),
+      `${monthNameByIndex(i, lang)} ${selectedYear}`,
       moneyValue(income, currency),
       moneyValue(expense, currency),
       moneyValue(income - expense, currency),
@@ -434,32 +560,47 @@ export async function GET(request: Request) {
     ]);
   }
 
-  summarySheetRows.push([], ["Expense categories (period)"], ["Category", "Amount", "%", "Graph"]);
-  const categoryTotal = categorySummary.reduce((sum, row) => sum + Number(row.total || 0), 0) || 1;
+  summarySheetRows.push([], [t.categoryBreakdown], [t.category, t.amount, t.periodPercent, t.trend]);
   for (const row of categorySummary) {
     const total = Number(row.total || 0);
     const pct = Math.round((total / categoryTotal) * 100);
     summarySheetRows.push([row.category, moneyValue(total, currency), pct, barText(total, maxCategory)]);
   }
 
+  const monthlyChartRows: unknown[][] = [[t.month, t.income, t.expense, t.savings]];
+  for (let i = 0; i < 12; i += 1) {
+    monthlyChartRows.push([
+      `${monthNameByIndex(i, lang)} ${selectedYear}`,
+      moneyValue(annualIncomeByMonth[i], currency),
+      moneyValue(annualExpenseByMonth[i], currency),
+      moneyValue(annualSavingsByMonth[i], currency)
+    ]);
+  }
+
+  const categoryChartRows: unknown[][] = [[t.category, t.amount, t.periodPercent]];
+  for (const row of categorySummary) {
+    const total = Number(row.total || 0);
+    const pct = Math.round((total / categoryTotal) * 100);
+    categoryChartRows.push([row.category, moneyValue(total, currency), pct]);
+  }
+
   const sheets = [
-    xmlWorksheet(lang === "pt-PT" ? "Resumo" : "Summary", summarySheetRows),
-    xmlWorksheet(
-      lang === "pt-PT" ? "Movimentos" : "Movements",
-      rowsFromObjects(txExportRows, ["Month", "Type", "Category", "Detail", "Amount", "Date", "Status"])
-    ),
+    xmlWorksheet(t.overview, summarySheetRows),
+    xmlWorksheet(lang === "pt-PT" ? "DadosGraficoMensal" : "ChartDataMonthly", monthlyChartRows),
+    xmlWorksheet(lang === "pt-PT" ? "DadosGraficoCategoria" : "ChartDataCategory", categoryChartRows),
+    xmlWorksheet(lang === "pt-PT" ? "Movimentos" : "Movements", rowsFromObjects(txExportRows, [t.month, t.type, t.category, t.detail, t.amount, t.date, t.status])),
     xmlWorksheet(
       lang === "pt-PT" ? "TodosMovimentos" : "AllTransactions",
       rowsFromObjects(
         allTxRows.map((tx) => ({
           ID: tx.id,
-          Date: normalizeDate(tx.transaction_date),
-          Type: tx.type,
-          Category: tx.category,
-          Detail: tx.description || "",
-          Amount: moneyValue(Math.abs(Number(tx.amount || 0)), currency)
+          [t.date]: normalizeDate(tx.transaction_date),
+          [t.type]: tx.type === "income" ? t.income : t.expense,
+          [t.category]: tx.category,
+          [t.detail]: tx.description || "",
+          [t.amount]: moneyValue(Math.abs(Number(tx.amount || 0)), currency)
         })),
-        ["ID", "Date", "Type", "Category", "Detail", "Amount"]
+        ["ID", t.date, t.type, t.category, t.detail, t.amount]
       )
     ),
     xmlWorksheet(
@@ -468,13 +609,13 @@ export async function GET(request: Request) {
         bills.map((row) => ({
           ID: row.id,
           Name: row.name,
-          Amount: moneyValue(Number(row.amount || 0), currency),
+          [t.amount]: moneyValue(Number(row.amount || 0), currency),
           Frequency: formatFrequency(row.frequency, lang),
           DueDay: Number(row.due_day),
           AutoPay: row.auto_pay ? "Yes" : "No",
-          Status: row.status
+          [t.status]: row.status
         })),
-        ["ID", "Name", "Amount", "Frequency", "DueDay", "AutoPay", "Status"]
+        ["ID", "Name", t.amount, "Frequency", "DueDay", "AutoPay", t.status]
       )
     ),
     xmlWorksheet(
@@ -485,11 +626,11 @@ export async function GET(request: Request) {
           Service: row.service,
           Cost: moneyValue(Number(row.cost || 0), currency),
           Cycle: row.billing_cycle,
-          Category: row.category,
+          [t.category]: row.category,
           RenewalDate: normalizeDate(row.renewal_date),
-          Status: row.status
+          [t.status]: row.status
         })),
-        ["ID", "Service", "Cost", "Cycle", "Category", "RenewalDate", "Status"]
+        ["ID", "Service", "Cost", "Cycle", t.category, "RenewalDate", t.status]
       )
     ),
     xmlWorksheet(
@@ -498,11 +639,11 @@ export async function GET(request: Request) {
         assets.map((row) => ({
           ID: row.id,
           Name: row.name,
-          Type: row.asset_type,
-          Value: moneyValue(Number(row.value || 0), currency),
+          [t.type]: row.asset_type,
+          [t.value]: moneyValue(Number(row.value || 0), currency),
           AsOfDate: normalizeDate(row.as_of_date)
         })),
-        ["ID", "Name", "Type", "Value", "AsOfDate"]
+        ["ID", "Name", t.type, t.value, "AsOfDate"]
       )
     ),
     xmlWorksheet(
@@ -529,11 +670,11 @@ export async function GET(request: Request) {
       rowsFromObjects(
         budgets.map((row) => ({
           ID: row.id,
-          Month: row.budget_month,
-          Category: row.category,
+          [t.month]: row.budget_month,
+          [t.category]: row.category,
           Budget: moneyValue(Number(row.budget_amount || 0), currency)
         })),
-        ["ID", "Month", "Category", "Budget"]
+        ["ID", t.month, t.category, "Budget"]
       )
     ),
     xmlWorksheet(
@@ -549,9 +690,9 @@ export async function GET(request: Request) {
               ? Math.round((Number(row.saved_amount || 0) / Number(row.target_amount || 0)) * 100)
               : 0,
           Deadline: normalizeDate(row.deadline),
-          Status: row.status
+          [t.status]: row.status
         })),
-        ["ID", "Name", "Target", "Saved", "CompletionPct", "Deadline", "Status"]
+        ["ID", "Name", "Target", "Saved", "CompletionPct", "Deadline", t.status]
       )
     )
   ];
@@ -564,7 +705,7 @@ export async function GET(request: Request) {
  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
   <Styles>
     <Style ss:ID="Default" ss:Name="Normal">
-      <Alignment ss:Vertical="Bottom"/>
+      <Alignment ss:Vertical="Bottom" ss:WrapText="1"/>
       <Font ss:FontName="Calibri" ss:Size="11"/>
     </Style>
     <Style ss:ID="Header">
@@ -575,8 +716,7 @@ export async function GET(request: Request) {
   ${sheets.join("")}
 </Workbook>`;
 
-  const fileName = `planqly-export-${selectedMonth}.xls`;
-
+  const fileName = `${t.filePrefix}-${selectedMonth}.xls`;
   return new NextResponse(workbookXml, {
     status: 200,
     headers: {
