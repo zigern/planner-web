@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { Pool } from "mysql2/promise";
-import ExcelJS from "exceljs";
 import { getSessionUser } from "@/lib/auth/session";
 import { convertFromBaseEur } from "@/lib/currency-conversion";
 import { getDb } from "@/lib/db";
@@ -103,6 +102,27 @@ type ExportText = {
   annualSummary: string;
   trend: string;
   periodPercent: string;
+};
+
+type CellType = "String" | "Number" | "DateTime";
+
+type CellModel = {
+  value: unknown;
+  styleId?: string;
+  type?: CellType;
+  mergeAcross?: number;
+};
+
+type RowModel = CellModel[];
+
+type WorksheetModel = {
+  name: string;
+  rows: RowModel[];
+  columnWidths?: number[];
+  freezeHeaderRow?: boolean;
+  hideGridlines?: boolean;
+  hideHeadings?: boolean;
+  zoom?: number;
 };
 
 function parseMonthParam(value: string | null) {
@@ -281,6 +301,144 @@ async function safeQueryRows<T>(db: Pool, sql: string, params: unknown[]): Promi
   }
 }
 
+function escapeXml(value: unknown) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function isNumericLike(value: unknown) {
+  return typeof value === "number" || (typeof value === "string" && value.trim() !== "" && !Number.isNaN(Number(value)));
+}
+
+function inferCellType(value: unknown): CellType {
+  return isNumericLike(value) ? "Number" : "String";
+}
+
+function toCellModel(value: unknown, styleId?: string, type?: CellType, mergeAcross?: number): CellModel {
+  return { value, styleId, type, mergeAcross };
+}
+
+function xmlCell(cell: CellModel) {
+  const style = cell.styleId ? ` ss:StyleID="${cell.styleId}"` : "";
+  const mergeAcross = Number.isInteger(cell.mergeAcross) && (cell.mergeAcross || 0) > 0 ? ` ss:MergeAcross="${cell.mergeAcross}"` : "";
+  const type = cell.type || inferCellType(cell.value);
+  const value = type === "Number" ? Number(cell.value || 0) : escapeXml(cell.value);
+  return `<Cell${style}${mergeAcross}><Data ss:Type="${type}">${value}</Data></Cell>`;
+}
+
+function xmlRow(cells: RowModel) {
+  return `<Row>${cells.map((cell) => xmlCell(cell)).join("")}</Row>`;
+}
+
+function worksheetOptionsXml(options: {
+  freezeHeaderRow?: boolean;
+  hideGridlines?: boolean;
+  hideHeadings?: boolean;
+  zoom?: number;
+}) {
+  const hasOptions = Boolean(options.freezeHeaderRow || options.hideGridlines || options.hideHeadings || options.zoom);
+  if (!hasOptions) return "";
+
+  const freezeXml = options.freezeHeaderRow
+    ? `
+    <FreezePanes/>
+    <FrozenNoSplit/>
+    <SplitHorizontal>1</SplitHorizontal>
+    <TopRowBottomPane>1</TopRowBottomPane>
+    <ActivePane>2</ActivePane>`
+    : "";
+
+  const gridXml = options.hideGridlines ? "\n    <DoNotDisplayGridlines/>" : "";
+  const headingsXml = options.hideHeadings ? "\n    <DoNotDisplayHeadings/>" : "";
+  const zoomXml = options.zoom ? `\n    <Zoom>${Math.max(60, Math.min(200, Math.round(options.zoom)))}</Zoom>` : "";
+
+  return `
+  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">${freezeXml}${gridXml}${headingsXml}${zoomXml}
+  </WorksheetOptions>`;
+}
+
+function xmlWorksheet(sheet: WorksheetModel) {
+  const columnsXml = (sheet.columnWidths || []).map((width) => `<Column ss:AutoFitWidth="0" ss:Width="${Math.max(40, width)}"/>`).join("");
+  const rowsXml = sheet.rows.map((row) => xmlRow(row)).join("");
+  const worksheetOptions = worksheetOptionsXml({
+    freezeHeaderRow: sheet.freezeHeaderRow,
+    hideGridlines: sheet.hideGridlines,
+    hideHeadings: sheet.hideHeadings,
+    zoom: sheet.zoom
+  });
+  return `<Worksheet ss:Name="${escapeXml(sheet.name).slice(0, 31)}"><Table>${columnsXml}${rowsXml}</Table>${worksheetOptions}</Worksheet>`;
+}
+
+function tableRows(
+  headers: Array<{ label: string; styleId?: string }>,
+  rows: Array<Array<{ value: unknown; kind?: "text" | "number" | "currency" | "percent" | "date" }>>,
+  variant: "light" | "dark" = "light"
+) {
+  const headerStyle = variant === "dark" ? "DarkTableHeader" : "TableHeader";
+  const textPrefix = variant === "dark" ? "DarkCellText" : "CellText";
+  const numberPrefix = variant === "dark" ? "DarkCellNumber" : "CellNumber";
+  const currencyPrefix = variant === "dark" ? "DarkCellCurrency" : "CellCurrency";
+  const percentPrefix = variant === "dark" ? "DarkCellPercent" : "CellPercent";
+  const datePrefix = variant === "dark" ? "DarkCellDate" : "CellDate";
+
+  const out: RowModel[] = [
+    headers.map((h) => toCellModel(h.label, h.styleId || headerStyle, "String"))
+  ];
+  for (let i = 0; i < rows.length; i += 1) {
+    const isEven = i % 2 === 0;
+    const suffix = isEven ? "Even" : "Odd";
+    out.push(
+      rows[i].map((cell) => {
+        if (cell.kind === "number") return toCellModel(cell.value, `${numberPrefix}${suffix}`, "Number");
+        if (cell.kind === "currency") return toCellModel(cell.value, `${currencyPrefix}${suffix}`, "Number");
+        if (cell.kind === "percent") return toCellModel(cell.value, `${percentPrefix}${suffix}`, "Number");
+        if (cell.kind === "date") return toCellModel(cell.value, `${datePrefix}${suffix}`, "String");
+        return toCellModel(cell.value, `${textPrefix}${suffix}`, "String");
+      })
+    );
+  }
+  return out;
+}
+
+function barText(value: number, max: number) {
+  if (max <= 0 || value <= 0) return "";
+  const count = Math.max(1, Math.round((value / max) * 20));
+  return "█".repeat(count);
+}
+
+function sparkline(values: number[]) {
+  const chars = "▁▂▃▄▅▆▇█";
+  const max = Math.max(...values, 0);
+  if (max <= 0) return "";
+  return values
+    .map((v) => {
+      const idx = Math.max(0, Math.min(chars.length - 1, Math.round((v / max) * (chars.length - 1))));
+      return chars[idx];
+    })
+    .join("");
+}
+
+function clamp01(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(1, value));
+}
+
+function circleGauge(ratio: number) {
+  const pct = clamp01(ratio);
+  const filled = Math.round(pct * 10);
+  return `${"●".repeat(filled)}${"○".repeat(Math.max(0, 10 - filled))} ${Math.round(pct * 100)}%`;
+}
+
+function barGauge(ratio: number, width = 24) {
+  const pct = clamp01(ratio);
+  const filled = Math.round(pct * width);
+  return `${"█".repeat(filled)}${"░".repeat(Math.max(0, width - filled))} ${Math.round(pct * 100)}%`;
+}
+
 export async function GET(request: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
@@ -451,277 +609,677 @@ export async function GET(request: Request) {
   const annualSavingsByMonth = annualIncomeByMonth.map((inc, i) => inc - annualExpenseByMonth[i]);
   const annualIncomeTotal = annualIncomeByMonth.reduce((a, b) => a + b, 0);
   const annualExpenseTotal = annualExpenseByMonth.reduce((a, b) => a + b, 0);
+  const annualSavingsTotal = annualSavingsByMonth.reduce((a, b) => a + b, 0);
 
+  const maxIncome = Math.max(1, ...annualIncomeByMonth);
+  const maxExpense = Math.max(1, ...annualExpenseByMonth);
+  const maxCategory = Math.max(1, ...categorySummary.map((row) => Number(row.total || 0)));
   const categoryTotal = categorySummary.reduce((sum, row) => sum + Number(row.total || 0), 0) || 1;
-  const topCategories = categorySummary
-    .slice(0, 5)
-    .map((row) => ({ category: row.category, total: Number(row.total || 0) }))
-    .filter((row) => row.total > 0);
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Planqly";
-  workbook.created = new Date();
-
-  const headerFill = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FF1E3A8A" } };
-  const darkFill = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FF0F172A" } };
-  const subDarkFill = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FF1F2937" } };
-  const whiteFont = { color: { argb: "FFFFFFFF" }, bold: true };
-
-  const overview = workbook.addWorksheet(t.overview, {
-    views: [{ showGridLines: false, showRowColHeaders: false, zoomScale: 125 }]
-  });
-  overview.columns = new Array(12).fill(null).map(() => ({ width: 14 }));
-
-  overview.mergeCells("A1:L1");
-  overview.getCell("A1").value = "Planqly Assets - Financial Dashboard";
-  overview.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
-  overview.getCell("A1").font = { size: 18, bold: true, color: { argb: "FFE2E8F0" } };
-  overview.getCell("A1").fill = darkFill;
-
-  overview.getRow(3).values = [t.generatedAt, new Date().toISOString().slice(0, 19).replace("T", " "), t.period, `${effectiveFrom} to ${effectiveTo}`, t.currency, currency, "Filters", `${typeFilter}/${statusFilter}`];
-  for (const addr of ["A3", "C3", "E3", "G3"]) {
-    overview.getCell(addr).fill = subDarkFill;
-    overview.getCell(addr).font = { color: { argb: "FFCBD5E1" }, bold: true };
-  }
-  for (const addr of ["B3", "D3", "F3", "H3"]) {
-    overview.getCell(addr).fill = darkFill;
-    overview.getCell(addr).font = { color: { argb: "FFF8FAFC" } };
-  }
-
-  overview.mergeCells("A5:L5");
-  overview.getCell("A5").value = "Performance Snapshot";
-  overview.getCell("A5").fill = subDarkFill;
-  overview.getCell("A5").font = { color: { argb: "FFFFFFFF" }, bold: true, size: 12 };
-
-  const cards = [
-    { label: t.incomePeriod, value: moneyValue(incomePeriod, currency), range: "A6:C7", color: "FF0EA5E9" },
-    { label: t.expensePeriod, value: moneyValue(expensePeriod, currency), range: "D6:F7", color: "FFEF4444" },
-    { label: t.savingsPeriod, value: moneyValue(savingsPeriod, currency), range: "G6:I7", color: "FF22C55E" },
-    { label: t.netWorth, value: moneyValue(netWorth, currency), range: "J6:L7", color: "FF8B5CF6" }
-  ];
-  for (const card of cards) {
-    overview.mergeCells(card.range);
-    const [start] = card.range.split(":");
-    overview.getCell(start).value = `${card.label}\n${card.value.toLocaleString()}`;
-    overview.getCell(start).alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-    overview.getCell(start).font = { color: { argb: "FFFFFFFF" }, bold: true, size: 13 };
-    overview.getCell(start).fill = { type: "pattern", pattern: "solid", fgColor: { argb: card.color } };
-  }
-
-  overview.mergeCells("A9:L9");
-  overview.getCell("A9").value = "Visual Analytics (Excel formulas)";
-  overview.getCell("A9").fill = subDarkFill;
-  overview.getCell("A9").font = { color: { argb: "FFFFFFFF" }, bold: true };
-
-  overview.getRow(10).values = ["Income Share", "Savings Rate", "Debt Load", "Expense Intensity"];
-  for (const c of ["A10", "B10", "C10", "D10"]) {
-    overview.getCell(c).fill = darkFill;
-    overview.getCell(c).font = whiteFont;
-  }
-
-  overview.getCell("J40").value = moneyValue(incomePeriod, currency);
-  overview.getCell("K40").value = moneyValue(expensePeriod, currency);
-  overview.getCell("L40").value = moneyValue(savingsPeriod, currency);
-  overview.getCell("M40").value = moneyValue(netWorth, currency);
-  overview.getCell("J41").value = moneyValue(assetsTotal, currency);
-  overview.getCell("K41").value = moneyValue(debtsOpenTotal, currency);
-  overview.getCell("L41").value = moneyValue(annualIncomeTotal, currency);
-  overview.getCell("M41").value = moneyValue(annualExpenseTotal, currency);
-
-  overview.getCell("A11").value = { formula: "IFERROR(J40/(J40+K40),0)" };
-  overview.getCell("B11").value = { formula: "IFERROR(L40/J40,0)" };
-  overview.getCell("C11").value = { formula: "IFERROR(K41/J41,0)" };
-  overview.getCell("D11").value = { formula: "IFERROR(M41/(L41+M41),0)" };
-  for (const c of ["A11", "B11", "C11", "D11"]) {
-    overview.getCell(c).numFmt = "0.00%";
-    overview.getCell(c).fill = subDarkFill;
-    overview.getCell(c).font = { color: { argb: "FFF8FAFC" }, bold: true };
-  }
-
-  overview.getCell("A12").value = { formula: 'REPT("█",ROUND(A11*20,0))' };
-  overview.getCell("B12").value = { formula: 'REPT("█",ROUND(B11*20,0))' };
-  overview.getCell("C12").value = { formula: 'REPT("█",ROUND(C11*20,0))' };
-  overview.getCell("D12").value = { formula: 'REPT("█",ROUND(D11*20,0))' };
-  for (const c of ["A12", "B12", "C12", "D12"]) {
-    overview.getCell(c).fill = darkFill;
-    overview.getCell(c).font = { color: { argb: "FF93C5FD" }, bold: true };
-  }
-
-  overview.mergeCells("F9:L9");
-  overview.getCell("F9").value = t.categoryBreakdown;
-  overview.getCell("F9").fill = subDarkFill;
-  overview.getCell("F9").font = { color: { argb: "FFFFFFFF" }, bold: true };
-
-  overview.getRow(10).getCell(6).value = t.category;
-  overview.getRow(10).getCell(7).value = t.amount;
-  overview.getRow(10).getCell(8).value = t.periodPercent;
-  overview.getRow(10).getCell(9).value = t.trend;
-  for (const c of ["F10", "G10", "H10", "I10"]) {
-    overview.getCell(c).fill = darkFill;
-    overview.getCell(c).font = whiteFont;
-  }
-
-  topCategories.forEach((row, idx) => {
-    const excelRow = 11 + idx;
-    overview.getCell(`F${excelRow}`).value = row.category;
-    overview.getCell(`G${excelRow}`).value = moneyValue(row.total, currency);
-    overview.getCell(`H${excelRow}`).value = categoryTotal > 0 ? row.total / categoryTotal : 0;
-    overview.getCell(`I${excelRow}`).value = {
-      formula: `REPT("█",ROUND(H${excelRow}*30,0))`
-    };
-    overview.getCell(`G${excelRow}`).numFmt = "#,##0.00";
-    overview.getCell(`H${excelRow}`).numFmt = "0.00%";
-    for (const c of [`F${excelRow}`, `G${excelRow}`, `H${excelRow}`, `I${excelRow}`]) {
-      overview.getCell(c).fill = darkFill;
-      overview.getCell(c).font = { color: { argb: "FFF8FAFC" } };
-    }
-  });
-
-  overview.getRow(13).values = [t.assetsTotal, moneyValue(assetsTotal, currency), t.openDebtTotal, moneyValue(debtsOpenTotal, currency)];
-  overview.getRow(15).values = [t.income, moneyValue(annualIncomeTotal, currency), t.expense, moneyValue(annualExpenseTotal, currency)];
-  for (const r of [13, 15]) {
-    for (const c of [1, 2, 3, 4]) {
-      const cell = overview.getRow(r).getCell(c);
-      cell.fill = darkFill;
-      cell.font = { color: { argb: "FFE2E8F0" }, bold: c % 2 === 1 };
-      if (c % 2 === 0) cell.numFmt = "#,##0.00";
-    }
-  }
-
-  overview.mergeCells("A17:L17");
-  overview.getCell("A17").value = "Monthly Evolution";
-  overview.getCell("A17").fill = subDarkFill;
-  overview.getCell("A17").font = { color: { argb: "FFFFFFFF" }, bold: true };
-  overview.getRow(18).values = [t.month, t.income, t.expense, t.savings, `${t.income} ${t.trend}`, `${t.expense} ${t.trend}`];
-  for (const c of ["A18", "B18", "C18", "D18", "E18", "F18"]) {
-    overview.getCell(c).fill = headerFill;
-    overview.getCell(c).font = whiteFont;
-  }
-  for (let i = 0; i < 12; i += 1) {
-    const r = 19 + i;
-    overview.getRow(r).values = [
-      `${monthNameByIndex(i, lang)} ${selectedYear}`,
-      moneyValue(annualIncomeByMonth[i], currency),
-      moneyValue(annualExpenseByMonth[i], currency),
-      moneyValue(annualSavingsByMonth[i], currency)
-    ];
-    overview.getCell(`E${r}`).value = { formula: `REPT("█",ROUND(B${r}/MAX($B$19:$B$30)*24,0))` };
-    overview.getCell(`F${r}`).value = { formula: `REPT("█",ROUND(C${r}/MAX($C$19:$C$30)*24,0))` };
-    for (const col of [2, 3, 4]) overview.getRow(r).getCell(col).numFmt = "#,##0.00";
-    overview.getCell(`E${r}`).font = { color: { argb: "FF60A5FA" }, bold: true };
-    overview.getCell(`F${r}`).font = { color: { argb: "FFF472B6" }, bold: true };
-  }
-
-  const chartMonthly = workbook.addWorksheet(lang === "pt-PT" ? "DadosGraficoMensal" : "ChartDataMonthly");
-  chartMonthly.columns = [{ width: 16 }, { width: 14 }, { width: 14 }, { width: 14 }];
-  chartMonthly.addRow([t.month, t.income, t.expense, t.savings]);
-  for (let i = 0; i < 12; i += 1) {
-    chartMonthly.addRow([
-      `${monthNameByIndex(i, lang)} ${selectedYear}`,
-      moneyValue(annualIncomeByMonth[i], currency),
-      moneyValue(annualExpenseByMonth[i], currency),
-      moneyValue(annualSavingsByMonth[i], currency)
-    ]);
-  }
-
-  const chartCategory = workbook.addWorksheet(lang === "pt-PT" ? "DadosGraficoCategoria" : "ChartDataCategory");
-  chartCategory.columns = [{ width: 28 }, { width: 14 }, { width: 12 }];
-  chartCategory.addRow([t.category, t.amount, t.periodPercent]);
-  for (const row of categorySummary) {
+  const incomeShare = incomePeriod + expensePeriod > 0 ? incomePeriod / (incomePeriod + expensePeriod) : 0;
+  const savingsRate = incomePeriod > 0 ? savingsPeriod / incomePeriod : 0;
+  const debtLoad = assetsTotal > 0 ? debtsOpenTotal / assetsTotal : 0;
+  const expenseLoad = annualIncomeTotal + annualExpenseTotal > 0 ? annualExpenseTotal / (annualIncomeTotal + annualExpenseTotal) : 0;
+  const topCategoryRows = categorySummary.slice(0, 5).map((row) => {
     const total = Number(row.total || 0);
-    chartCategory.addRow([row.category, moneyValue(total, currency), categoryTotal > 0 ? total / categoryTotal : 0]);
-  }
+    const ratio = categoryTotal > 0 ? total / categoryTotal : 0;
+    return { category: row.category, total, ratio };
+  });
 
-  const addSimpleSheet = (name: string, headers: string[], rows: unknown[][]) => {
-    const ws = workbook.addWorksheet(name, { views: [{ state: "frozen", ySplit: 1, showGridLines: false }] });
-    ws.columns = headers.map((h) => ({ header: h, key: h, width: Math.max(12, Math.min(36, h.length + 6)) }));
-    ws.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
-    ws.getRow(1).fill = headerFill;
-    for (const row of rows) ws.addRow(row);
-    return ws;
-  };
+  const overviewRows: RowModel[] = [
+    [toCellModel("Planqly Assets - Financial Dashboard", "DashTitle", "String", 11)],
+    [],
+    [
+      toCellModel(t.generatedAt, "DashMetaLabel"),
+      toCellModel(new Date().toISOString().slice(0, 19).replace("T", " "), "DashMetaValue", "String", 1),
+      toCellModel(t.period, "DashMetaLabel"),
+      toCellModel(`${effectiveFrom} to ${effectiveTo}`, "DashMetaValue", "String", 1),
+      toCellModel(t.currency, "DashMetaLabel"),
+      toCellModel(currency, "DashMetaValue", "String", 1),
+      toCellModel("Filters", "DashMetaLabel"),
+      toCellModel(`${typeFilter}/${statusFilter}`, "DashMetaValue", "String", 1)
+    ],
+    [],
+    [toCellModel("Performance Snapshot", "DashSection", "String", 11)],
+    [
+      toCellModel(t.incomePeriod, "CardIncomeLabel", "String", 2),
+      toCellModel(t.expensePeriod, "CardExpenseLabel", "String", 2),
+      toCellModel(t.savingsPeriod, "CardSavingsLabel", "String", 2),
+      toCellModel(t.netWorth, "CardNetLabel", "String", 2)
+    ],
+    [
+      toCellModel(moneyValue(incomePeriod, currency), "CardIncomeValue", "Number", 2),
+      toCellModel(moneyValue(expensePeriod, currency), "CardExpenseValue", "Number", 2),
+      toCellModel(moneyValue(savingsPeriod, currency), "CardSavingsValue", "Number", 2),
+      toCellModel(moneyValue(netWorth, currency), "CardNetValue", "Number", 2)
+    ],
+    [
+      toCellModel(t.assetsTotal, "CardAltLabel", "String", 2),
+      toCellModel(t.openDebtTotal, "CardAltLabel", "String", 2),
+      toCellModel(`${t.income} (${selectedYear})`, "CardAltLabel", "String", 2),
+      toCellModel(`${t.expense} (${selectedYear})`, "CardAltLabel", "String", 2)
+    ],
+    [
+      toCellModel(moneyValue(assetsTotal, currency), "CardAltValue", "Number", 2),
+      toCellModel(moneyValue(debtsOpenTotal, currency), "CardAltValue", "Number", 2),
+      toCellModel(moneyValue(annualIncomeTotal, currency), "CardAltValue", "Number", 2),
+      toCellModel(moneyValue(annualExpenseTotal, currency), "CardAltValue", "Number", 2)
+    ],
+    [],
+    [toCellModel("Visual Analytics", "DashSection", "String", 11)],
+    [
+      toCellModel("Income vs Expense", "VisualHeader", "String", 2),
+      toCellModel("Savings Rate", "VisualHeader", "String", 2),
+      toCellModel("Debt Load", "VisualHeader", "String", 2),
+      toCellModel("Expense Intensity", "VisualHeader", "String", 2)
+    ],
+    [
+      toCellModel(circleGauge(incomeShare), "VisualCell", "String", 2),
+      toCellModel(circleGauge(savingsRate), "VisualCell", "String", 2),
+      toCellModel(circleGauge(debtLoad), "VisualCell", "String", 2),
+      toCellModel(circleGauge(expenseLoad), "VisualCell", "String", 2)
+    ],
+    [],
+    [toCellModel("Top Categories", "DashSection", "String", 11)],
+    [
+      toCellModel(t.category, "VisualHeader"),
+      toCellModel(t.amount, "VisualHeader", "String", 1),
+      toCellModel(t.periodPercent, "VisualHeader"),
+      toCellModel("Bar", "VisualHeader", "String", 7)
+    ],
+    ...topCategoryRows.map((row) => [
+      toCellModel(row.category, "VisualCell"),
+      toCellModel(moneyValue(row.total, currency), "VisualCellNumber", "Number", 1),
+      toCellModel(row.ratio, "VisualCellPct", "Number"),
+      toCellModel(barGauge(row.ratio), "VisualCell", "String", 7)
+    ]),
+    [],
+    [toCellModel("KPI Table", "DashSection", "String", 11)],
+    ...tableRows(
+      [{ label: t.kpi }, { label: t.value }],
+      [
+        [{ value: t.incomePeriod }, { value: moneyValue(incomePeriod, currency), kind: "currency" }],
+        [{ value: t.expensePeriod }, { value: moneyValue(expensePeriod, currency), kind: "currency" }],
+        [{ value: t.savingsPeriod }, { value: moneyValue(savingsPeriod, currency), kind: "currency" }],
+        [{ value: t.assetsTotal }, { value: moneyValue(assetsTotal, currency), kind: "currency" }],
+        [{ value: t.openDebtTotal }, { value: moneyValue(debtsOpenTotal, currency), kind: "currency" }],
+        [{ value: t.netWorth }, { value: moneyValue(netWorth, currency), kind: "currency" }]
+      ],
+      "dark"
+    ),
+    [],
+    [toCellModel(t.annualSummary, "DashSection", "String", 11)],
+    ...tableRows(
+      [{ label: t.kpi }, { label: t.value }, { label: t.trend }],
+      [
+        [
+          { value: t.income },
+          { value: moneyValue(annualIncomeTotal, currency), kind: "currency" },
+          { value: sparkline(annualIncomeByMonth), kind: "text" }
+        ],
+        [
+          { value: t.expense },
+          { value: moneyValue(annualExpenseTotal, currency), kind: "currency" },
+          { value: sparkline(annualExpenseByMonth), kind: "text" }
+        ],
+        [
+          { value: t.savings },
+          { value: moneyValue(annualSavingsTotal, currency), kind: "currency" },
+          { value: sparkline(annualSavingsByMonth.map((v) => Math.max(v, 0))), kind: "text" }
+        ]
+      ],
+      "dark"
+    ),
+    [],
+    [toCellModel(t.monthlyEvolution, "DashSection", "String", 11)],
+    ...tableRows(
+      [
+        { label: t.month },
+        { label: t.income },
+        { label: t.expense },
+        { label: t.savings },
+        { label: `${t.income} ${t.trend}` },
+        { label: `${t.expense} ${t.trend}` }
+      ],
+      new Array(12).fill(null).map((_, i) => {
+        const income = annualIncomeByMonth[i];
+        const expense = annualExpenseByMonth[i];
+        const savings = income - expense;
+        return [
+          { value: `${monthNameByIndex(i, lang)} ${selectedYear}` },
+          { value: moneyValue(income, currency), kind: "currency" },
+          { value: moneyValue(expense, currency), kind: "currency" },
+          { value: moneyValue(savings, currency), kind: "currency" },
+          { value: barText(income, maxIncome) },
+          { value: barText(expense, maxExpense) }
+        ];
+      }),
+      "dark"
+    ),
+    [],
+    [toCellModel(t.categoryBreakdown, "DashSection", "String", 11)],
+    ...tableRows(
+      [
+        { label: t.category },
+        { label: t.amount },
+        { label: t.periodPercent },
+        { label: t.trend }
+      ],
+      categorySummary.map((row) => {
+        const total = Number(row.total || 0);
+        const ratio = total / categoryTotal;
+        return [
+          { value: row.category },
+          { value: moneyValue(total, currency), kind: "currency" },
+          { value: ratio, kind: "percent" },
+          { value: barText(total, maxCategory) }
+        ];
+      }),
+      "dark"
+    )
+  ];
 
-  addSimpleSheet(
-    lang === "pt-PT" ? "Movimentos" : "Movements",
-    [t.month, t.type, t.category, t.detail, t.amount, t.date, t.status],
-    txRows.map((tx) => [
-      monthShort(tx.transaction_date, lang),
-      tx.type === "income" ? t.income : t.expense,
-      tx.category,
-      tx.description || "",
-      moneyValue(Math.abs(Number(tx.amount || 0)), currency),
-      normalizeDate(tx.transaction_date),
-      tx.uiStatus === "late" ? t.late : t.paid
+  const monthlyChartRows = tableRows(
+    [
+      { label: t.month },
+      { label: t.income },
+      { label: t.expense },
+      { label: t.savings }
+    ],
+    new Array(12).fill(null).map((_, i) => [
+      { value: `${monthNameByIndex(i, lang)} ${selectedYear}` },
+      { value: moneyValue(annualIncomeByMonth[i], currency), kind: "currency" },
+      { value: moneyValue(annualExpenseByMonth[i], currency), kind: "currency" },
+      { value: moneyValue(annualSavingsByMonth[i], currency), kind: "currency" }
     ])
   );
 
-  addSimpleSheet(
-    lang === "pt-PT" ? "TodosMovimentos" : "AllTransactions",
-    ["ID", t.date, t.type, t.category, t.detail, t.amount],
-    allTxRows.map((tx) => [
-      tx.id,
-      normalizeDate(tx.transaction_date),
-      tx.type === "income" ? t.income : t.expense,
-      tx.category,
-      tx.description || "",
-      moneyValue(Math.abs(Number(tx.amount || 0)), currency)
-    ])
-  );
-
-  addSimpleSheet(
-    lang === "pt-PT" ? "Contas" : "Bills",
-    ["ID", "Name", t.amount, "Frequency", "DueDay", "AutoPay", t.status],
-    bills.map((row) => [row.id, row.name, moneyValue(Number(row.amount || 0), currency), formatFrequency(row.frequency, lang), row.due_day, row.auto_pay ? "Yes" : "No", row.status])
-  );
-
-  addSimpleSheet(
-    lang === "pt-PT" ? "Subscricoes" : "Subscriptions",
-    ["ID", "Service", "Cost", "Cycle", t.category, "RenewalDate", t.status],
-    subscriptions.map((row) => [row.id, row.service, moneyValue(Number(row.cost || 0), currency), row.billing_cycle, row.category, normalizeDate(row.renewal_date), row.status])
-  );
-
-  addSimpleSheet(
-    lang === "pt-PT" ? "Ativos" : "Assets",
-    ["ID", "Name", t.type, t.value, "AsOfDate"],
-    assets.map((row) => [row.id, row.name, row.asset_type, moneyValue(Number(row.value || 0), currency), normalizeDate(row.as_of_date)])
-  );
-
-  addSimpleSheet(
-    lang === "pt-PT" ? "Dividas" : "Debts",
-    ["ID", "Name", "TotalOwed", "AmountPaid", "Remaining", "InterestRate", "DueDate"],
-    debts.map((row) => {
-      const total = Number(row.total_owed || 0);
-      const paid = Number(row.amount_paid || 0);
-      return [row.id, row.name, moneyValue(total, currency), moneyValue(paid, currency), moneyValue(Math.max(0, total - paid), currency), Number(row.interest_rate || 0), normalizeDate(row.due_date)];
+  const categoryChartRows = tableRows(
+    [
+      { label: t.category },
+      { label: t.amount },
+      { label: t.periodPercent }
+    ],
+    categorySummary.map((row) => {
+      const total = Number(row.total || 0);
+      return [
+        { value: row.category },
+        { value: moneyValue(total, currency), kind: "currency" },
+        { value: total / categoryTotal, kind: "percent" }
+      ];
     })
   );
 
-  addSimpleSheet(
-    lang === "pt-PT" ? "Orcamentos" : "Budgets",
-    ["ID", t.month, t.category, "Budget"],
-    budgets.map((row) => [row.id, row.budget_month, row.category, moneyValue(Number(row.budget_amount || 0), currency)])
-  );
-
-  addSimpleSheet(
-    lang === "pt-PT" ? "Objetivos" : "Goals",
-    ["ID", "Name", "Target", "Saved", "CompletionPct", "Deadline", t.status],
-    goals.map((row) => [
-      row.id,
-      row.name,
-      moneyValue(Number(row.target_amount || 0), currency),
-      moneyValue(Number(row.saved_amount || 0), currency),
-      Number(row.target_amount || 0) > 0 ? Number(row.saved_amount || 0) / Number(row.target_amount || 0) : 0,
-      normalizeDate(row.deadline),
-      row.status
+  const movementsRows = tableRows(
+    [
+      { label: t.month },
+      { label: t.type },
+      { label: t.category },
+      { label: t.detail },
+      { label: t.amount },
+      { label: t.date },
+      { label: t.status }
+    ],
+    txRows.map((tx) => [
+      { value: monthShort(tx.transaction_date, lang) },
+      { value: tx.type === "income" ? t.income : t.expense },
+      { value: tx.category },
+      { value: tx.description || "" },
+      { value: tx.amountConverted, kind: "currency" },
+      { value: normalizeDate(tx.transaction_date), kind: "date" },
+      { value: tx.uiStatus === "late" ? t.late : t.paid }
     ])
   );
 
-  const buffer = await workbook.xlsx.writeBuffer();
-  const output = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
-  const fileName = `${t.filePrefix}-${selectedMonth}.xlsx`;
-  return new NextResponse(output, {
+  const allTransactionsRows = tableRows(
+    [
+      { label: "ID" },
+      { label: t.date },
+      { label: t.type },
+      { label: t.category },
+      { label: t.detail },
+      { label: t.amount }
+    ],
+    allTxRows.map((tx) => [
+      { value: tx.id, kind: "number" },
+      { value: normalizeDate(tx.transaction_date), kind: "date" },
+      { value: tx.type === "income" ? t.income : t.expense },
+      { value: tx.category },
+      { value: tx.description || "" },
+      { value: moneyValue(Math.abs(Number(tx.amount || 0)), currency), kind: "currency" }
+    ])
+  );
+
+  const billsRows = tableRows(
+    [
+      { label: "ID" },
+      { label: "Name" },
+      { label: t.amount },
+      { label: "Frequency" },
+      { label: "DueDay" },
+      { label: "AutoPay" },
+      { label: t.status }
+    ],
+    bills.map((row) => [
+      { value: row.id, kind: "number" },
+      { value: row.name },
+      { value: moneyValue(Number(row.amount || 0), currency), kind: "currency" },
+      { value: formatFrequency(row.frequency, lang) },
+      { value: Number(row.due_day), kind: "number" },
+      { value: row.auto_pay ? "Yes" : "No" },
+      { value: row.status }
+    ])
+  );
+
+  const subscriptionsRows = tableRows(
+    [
+      { label: "ID" },
+      { label: "Service" },
+      { label: "Cost" },
+      { label: "Cycle" },
+      { label: t.category },
+      { label: "RenewalDate" },
+      { label: t.status }
+    ],
+    subscriptions.map((row) => [
+      { value: row.id, kind: "number" },
+      { value: row.service },
+      { value: moneyValue(Number(row.cost || 0), currency), kind: "currency" },
+      { value: row.billing_cycle },
+      { value: row.category },
+      { value: normalizeDate(row.renewal_date), kind: "date" },
+      { value: row.status }
+    ])
+  );
+
+  const assetsRows = tableRows(
+    [
+      { label: "ID" },
+      { label: "Name" },
+      { label: t.type },
+      { label: t.value },
+      { label: "AsOfDate" }
+    ],
+    assets.map((row) => [
+      { value: row.id, kind: "number" },
+      { value: row.name },
+      { value: row.asset_type },
+      { value: moneyValue(Number(row.value || 0), currency), kind: "currency" },
+      { value: normalizeDate(row.as_of_date), kind: "date" }
+    ])
+  );
+
+  const debtsRows = tableRows(
+    [
+      { label: "ID" },
+      { label: "Name" },
+      { label: "TotalOwed" },
+      { label: "AmountPaid" },
+      { label: "Remaining" },
+      { label: "InterestRate" },
+      { label: "DueDate" }
+    ],
+    debts.map((row) => {
+      const total = Number(row.total_owed || 0);
+      const paid = Number(row.amount_paid || 0);
+      return [
+        { value: row.id, kind: "number" },
+        { value: row.name },
+        { value: moneyValue(total, currency), kind: "currency" },
+        { value: moneyValue(paid, currency), kind: "currency" },
+        { value: moneyValue(Math.max(0, total - paid), currency), kind: "currency" },
+        { value: Number(row.interest_rate || 0), kind: "number" },
+        { value: normalizeDate(row.due_date), kind: "date" }
+      ];
+    })
+  );
+
+  const budgetsRows = tableRows(
+    [
+      { label: "ID" },
+      { label: t.month },
+      { label: t.category },
+      { label: "Budget" }
+    ],
+    budgets.map((row) => [
+      { value: row.id, kind: "number" },
+      { value: row.budget_month },
+      { value: row.category },
+      { value: moneyValue(Number(row.budget_amount || 0), currency), kind: "currency" }
+    ])
+  );
+
+  const goalsRows = tableRows(
+    [
+      { label: "ID" },
+      { label: "Name" },
+      { label: "Target" },
+      { label: "Saved" },
+      { label: "CompletionPct" },
+      { label: "Deadline" },
+      { label: t.status }
+    ],
+    goals.map((row) => {
+      const completion =
+        Number(row.target_amount || 0) > 0 ? Number(row.saved_amount || 0) / Number(row.target_amount || 0) : 0;
+      return [
+        { value: row.id, kind: "number" },
+        { value: row.name },
+        { value: moneyValue(Number(row.target_amount || 0), currency), kind: "currency" },
+        { value: moneyValue(Number(row.saved_amount || 0), currency), kind: "currency" },
+        { value: completion, kind: "percent" },
+        { value: normalizeDate(row.deadline), kind: "date" },
+        { value: row.status }
+      ];
+    })
+  );
+
+  const sheets: WorksheetModel[] = [
+    {
+      name: t.overview,
+      rows: overviewRows,
+      columnWidths: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90],
+      hideGridlines: true,
+      hideHeadings: true,
+      zoom: 130
+    },
+    {
+      name: lang === "pt-PT" ? "DadosGraficoMensal" : "ChartDataMonthly",
+      rows: monthlyChartRows,
+      columnWidths: [160, 130, 130, 130],
+      freezeHeaderRow: true,
+      hideGridlines: true
+    },
+    {
+      name: lang === "pt-PT" ? "DadosGraficoCategoria" : "ChartDataCategory",
+      rows: categoryChartRows,
+      columnWidths: [220, 130, 130],
+      freezeHeaderRow: true,
+      hideGridlines: true
+    },
+    {
+      name: lang === "pt-PT" ? "Movimentos" : "Movements",
+      rows: movementsRows,
+      columnWidths: [90, 100, 170, 260, 120, 120, 110],
+      freezeHeaderRow: true,
+      hideGridlines: true
+    },
+    {
+      name: lang === "pt-PT" ? "TodosMovimentos" : "AllTransactions",
+      rows: allTransactionsRows,
+      columnWidths: [70, 120, 100, 170, 260, 120],
+      freezeHeaderRow: true,
+      hideGridlines: true
+    },
+    {
+      name: lang === "pt-PT" ? "Contas" : "Bills",
+      rows: billsRows,
+      columnWidths: [70, 190, 120, 120, 90, 90, 100],
+      freezeHeaderRow: true,
+      hideGridlines: true
+    },
+    {
+      name: lang === "pt-PT" ? "Subscricoes" : "Subscriptions",
+      rows: subscriptionsRows,
+      columnWidths: [70, 190, 120, 100, 160, 120, 110],
+      freezeHeaderRow: true,
+      hideGridlines: true
+    },
+    {
+      name: lang === "pt-PT" ? "Ativos" : "Assets",
+      rows: assetsRows,
+      columnWidths: [70, 220, 140, 120, 120],
+      freezeHeaderRow: true,
+      hideGridlines: true
+    },
+    {
+      name: lang === "pt-PT" ? "Dividas" : "Debts",
+      rows: debtsRows,
+      columnWidths: [70, 210, 120, 120, 120, 110, 120],
+      freezeHeaderRow: true,
+      hideGridlines: true
+    },
+    {
+      name: lang === "pt-PT" ? "Orcamentos" : "Budgets",
+      rows: budgetsRows,
+      columnWidths: [70, 110, 180, 120],
+      freezeHeaderRow: true,
+      hideGridlines: true
+    },
+    {
+      name: lang === "pt-PT" ? "Objetivos" : "Goals",
+      rows: goalsRows,
+      columnWidths: [70, 220, 120, 120, 120, 120, 110],
+      freezeHeaderRow: true,
+      hideGridlines: true
+    }
+  ];
+
+  const workbookXml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Styles>
+    <Style ss:ID="Default" ss:Name="Normal">
+      <Alignment ss:Vertical="Center" ss:WrapText="1"/>
+      <Font ss:FontName="Calibri" ss:Size="11"/>
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+      <Borders>
+        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/>
+        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/>
+      </Borders>
+    </Style>
+    <Style ss:ID="DashTitle">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="16" ss:Bold="1" ss:Color="#E2E8F0"/>
+      <Interior ss:Color="#111827" ss:Pattern="Solid"/>
+      <Borders>
+        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1F2937"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1F2937"/>
+        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1F2937"/>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1F2937"/>
+      </Borders>
+    </Style>
+    <Style ss:ID="DashMetaLabel">
+      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#CBD5E1"/>
+      <Interior ss:Color="#1F2937" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="DashMetaValue">
+      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="10" ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#111827" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="DashSection">
+      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="12" ss:Bold="1" ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#374151" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CardIncomeLabel">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#E0F2FE"/>
+      <Interior ss:Color="#0369A1" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CardIncomeValue">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="14" ss:Bold="1" ss:Color="#F0F9FF"/>
+      <Interior ss:Color="#075985" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="CardExpenseLabel">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#FEE2E2"/>
+      <Interior ss:Color="#B91C1C" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CardExpenseValue">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="14" ss:Bold="1" ss:Color="#FEF2F2"/>
+      <Interior ss:Color="#991B1B" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="CardSavingsLabel">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#DCFCE7"/>
+      <Interior ss:Color="#15803D" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CardSavingsValue">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="14" ss:Bold="1" ss:Color="#F0FDF4"/>
+      <Interior ss:Color="#166534" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="CardNetLabel">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#EDE9FE"/>
+      <Interior ss:Color="#6D28D9" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CardNetValue">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="14" ss:Bold="1" ss:Color="#F5F3FF"/>
+      <Interior ss:Color="#5B21B6" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="CardAltLabel">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#D1D5DB"/>
+      <Interior ss:Color="#1F2937" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CardAltValue">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="12" ss:Bold="1" ss:Color="#F9FAFB"/>
+      <Interior ss:Color="#111827" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="VisualHeader">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#E2E8F0"/>
+      <Interior ss:Color="#334155" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="VisualCell">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#0F172A" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="VisualCellNumber">
+      <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#0F172A" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="VisualCellPct">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#0F172A" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="0.00%"/>
+    </Style>
+    <Style ss:ID="DarkTableHeader">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#F9FAFB"/>
+      <Interior ss:Color="#334155" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="DarkCellTextEven">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#1F2937" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="DarkCellTextOdd">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#111827" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="DarkCellNumberEven">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#1F2937" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="DarkCellNumberOdd">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#111827" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="DarkCellCurrencyEven">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#1F2937" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="DarkCellCurrencyOdd">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#111827" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="DarkCellPercentEven">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#1F2937" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="0.00%"/>
+    </Style>
+    <Style ss:ID="DarkCellPercentOdd">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#111827" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="0.00%"/>
+    </Style>
+    <Style ss:ID="DarkCellDateEven">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#1F2937" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="yyyy-mm-dd"/>
+    </Style>
+    <Style ss:ID="DarkCellDateOdd">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#111827" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="yyyy-mm-dd"/>
+    </Style>
+    <Style ss:ID="TableHeader">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#FFFFFF"/>
+      <Interior ss:Color="#2563EB" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CellTextEven">
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CellTextOdd">
+      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CellNumberEven">
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="CellNumberOdd">
+      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="CellCurrencyEven">
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="CellCurrencyOdd">
+      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="CellPercentEven">
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="0.00%"/>
+    </Style>
+    <Style ss:ID="CellPercentOdd">
+      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="0.00%"/>
+    </Style>
+    <Style ss:ID="CellDateEven">
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="yyyy-mm-dd"/>
+    </Style>
+    <Style ss:ID="CellDateOdd">
+      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="yyyy-mm-dd"/>
+    </Style>
+  </Styles>
+  ${sheets.map((sheet) => xmlWorksheet(sheet)).join("")}
+</Workbook>`;
+
+  const fileName = `${t.filePrefix}-${selectedMonth}.xml`;
+  return new NextResponse(workbookXml, {
     status: 200,
     headers: {
-      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Type": "application/xml; charset=utf-8",
       "Content-Disposition": `attachment; filename="${fileName}"`,
       "Cache-Control": "no-store"
     }
