@@ -120,6 +120,7 @@ type WorksheetModel = {
   rows: RowModel[];
   columnWidths?: number[];
   freezeHeaderRow?: boolean;
+  hideGridlines?: boolean;
 };
 
 function parseMonthParam(value: string | null) {
@@ -331,41 +332,61 @@ function xmlRow(cells: RowModel) {
   return `<Row>${cells.map((cell) => xmlCell(cell)).join("")}</Row>`;
 }
 
-function freezeHeaderXml() {
-  return `
-  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+function worksheetOptionsXml(options: { freezeHeaderRow?: boolean; hideGridlines?: boolean }) {
+  const hasOptions = Boolean(options.freezeHeaderRow || options.hideGridlines);
+  if (!hasOptions) return "";
+
+  const freezeXml = options.freezeHeaderRow
+    ? `
     <FreezePanes/>
     <FrozenNoSplit/>
     <SplitHorizontal>1</SplitHorizontal>
     <TopRowBottomPane>1</TopRowBottomPane>
-    <ActivePane>2</ActivePane>
+    <ActivePane>2</ActivePane>`
+    : "";
+
+  const gridXml = options.hideGridlines ? "\n    <DoNotDisplayGridlines/>" : "";
+
+  return `
+  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">${freezeXml}${gridXml}
   </WorksheetOptions>`;
 }
 
 function xmlWorksheet(sheet: WorksheetModel) {
   const columnsXml = (sheet.columnWidths || []).map((width) => `<Column ss:AutoFitWidth="0" ss:Width="${Math.max(40, width)}"/>`).join("");
   const rowsXml = sheet.rows.map((row) => xmlRow(row)).join("");
-  const worksheetOptions = sheet.freezeHeaderRow ? freezeHeaderXml() : "";
+  const worksheetOptions = worksheetOptionsXml({
+    freezeHeaderRow: sheet.freezeHeaderRow,
+    hideGridlines: sheet.hideGridlines
+  });
   return `<Worksheet ss:Name="${escapeXml(sheet.name).slice(0, 31)}"><Table>${columnsXml}${rowsXml}</Table>${worksheetOptions}</Worksheet>`;
 }
 
 function tableRows(
   headers: Array<{ label: string; styleId?: string }>,
-  rows: Array<Array<{ value: unknown; kind?: "text" | "number" | "currency" | "percent" | "date" }>>
+  rows: Array<Array<{ value: unknown; kind?: "text" | "number" | "currency" | "percent" | "date" }>>,
+  variant: "light" | "dark" = "light"
 ) {
+  const headerStyle = variant === "dark" ? "DarkTableHeader" : "TableHeader";
+  const textPrefix = variant === "dark" ? "DarkCellText" : "CellText";
+  const numberPrefix = variant === "dark" ? "DarkCellNumber" : "CellNumber";
+  const currencyPrefix = variant === "dark" ? "DarkCellCurrency" : "CellCurrency";
+  const percentPrefix = variant === "dark" ? "DarkCellPercent" : "CellPercent";
+  const datePrefix = variant === "dark" ? "DarkCellDate" : "CellDate";
+
   const out: RowModel[] = [
-    headers.map((h) => toCellModel(h.label, h.styleId || "TableHeader", "String"))
+    headers.map((h) => toCellModel(h.label, h.styleId || headerStyle, "String"))
   ];
   for (let i = 0; i < rows.length; i += 1) {
     const isEven = i % 2 === 0;
     const suffix = isEven ? "Even" : "Odd";
     out.push(
       rows[i].map((cell) => {
-        if (cell.kind === "number") return toCellModel(cell.value, `CellNumber${suffix}`, "Number");
-        if (cell.kind === "currency") return toCellModel(cell.value, `CellCurrency${suffix}`, "Number");
-        if (cell.kind === "percent") return toCellModel(cell.value, `CellPercent${suffix}`, "Number");
-        if (cell.kind === "date") return toCellModel(cell.value, `CellDate${suffix}`, "String");
-        return toCellModel(cell.value, `CellText${suffix}`, "String");
+        if (cell.kind === "number") return toCellModel(cell.value, `${numberPrefix}${suffix}`, "Number");
+        if (cell.kind === "currency") return toCellModel(cell.value, `${currencyPrefix}${suffix}`, "Number");
+        if (cell.kind === "percent") return toCellModel(cell.value, `${percentPrefix}${suffix}`, "Number");
+        if (cell.kind === "date") return toCellModel(cell.value, `${datePrefix}${suffix}`, "String");
+        return toCellModel(cell.value, `${textPrefix}${suffix}`, "String");
       })
     );
   }
@@ -568,18 +589,46 @@ export async function GET(request: Request) {
   const categoryTotal = categorySummary.reduce((sum, row) => sum + Number(row.total || 0), 0) || 1;
 
   const overviewRows: RowModel[] = [
-    [toCellModel("Planqly Assets - Financial Export", "Title", "String", 5)],
+    [toCellModel("Planqly Assets - Financial Dashboard", "DashTitle", "String", 7)],
     [],
     [
-      toCellModel(t.generatedAt, "MetaLabel"),
-      toCellModel(new Date().toISOString().slice(0, 19).replace("T", " "), "MetaValue"),
-      toCellModel(t.period, "MetaLabel"),
-      toCellModel(`${effectiveFrom} to ${effectiveTo}`, "MetaValue"),
-      toCellModel(t.currency, "MetaLabel"),
-      toCellModel(currency, "MetaValue")
+      toCellModel(t.generatedAt, "DashMetaLabel"),
+      toCellModel(new Date().toISOString().slice(0, 19).replace("T", " "), "DashMetaValue"),
+      toCellModel(t.period, "DashMetaLabel"),
+      toCellModel(`${effectiveFrom} to ${effectiveTo}`, "DashMetaValue"),
+      toCellModel(t.currency, "DashMetaLabel"),
+      toCellModel(currency, "DashMetaValue"),
+      toCellModel("Filters", "DashMetaLabel"),
+      toCellModel(`${typeFilter}/${statusFilter}`, "DashMetaValue")
     ],
     [],
-    [toCellModel("KPIs", "Section", "String", 5)],
+    [toCellModel("Performance Snapshot", "DashSection", "String", 7)],
+    [
+      toCellModel(t.incomePeriod, "CardIncomeLabel", "String", 1),
+      toCellModel(t.expensePeriod, "CardExpenseLabel", "String", 1),
+      toCellModel(t.savingsPeriod, "CardSavingsLabel", "String", 1),
+      toCellModel(t.netWorth, "CardNetLabel", "String", 1)
+    ],
+    [
+      toCellModel(moneyValue(incomePeriod, currency), "CardIncomeValue", "Number", 1),
+      toCellModel(moneyValue(expensePeriod, currency), "CardExpenseValue", "Number", 1),
+      toCellModel(moneyValue(savingsPeriod, currency), "CardSavingsValue", "Number", 1),
+      toCellModel(moneyValue(netWorth, currency), "CardNetValue", "Number", 1)
+    ],
+    [
+      toCellModel(t.assetsTotal, "CardAltLabel", "String", 1),
+      toCellModel(t.openDebtTotal, "CardAltLabel", "String", 1),
+      toCellModel(`${t.income} (${selectedYear})`, "CardAltLabel", "String", 1),
+      toCellModel(`${t.expense} (${selectedYear})`, "CardAltLabel", "String", 1)
+    ],
+    [
+      toCellModel(moneyValue(assetsTotal, currency), "CardAltValue", "Number", 1),
+      toCellModel(moneyValue(debtsOpenTotal, currency), "CardAltValue", "Number", 1),
+      toCellModel(moneyValue(annualIncomeTotal, currency), "CardAltValue", "Number", 1),
+      toCellModel(moneyValue(annualExpenseTotal, currency), "CardAltValue", "Number", 1)
+    ],
+    [],
+    [toCellModel("KPI Table", "DashSection", "String", 7)],
     ...tableRows(
       [{ label: t.kpi }, { label: t.value }],
       [
@@ -589,10 +638,11 @@ export async function GET(request: Request) {
         [{ value: t.assetsTotal }, { value: moneyValue(assetsTotal, currency), kind: "currency" }],
         [{ value: t.openDebtTotal }, { value: moneyValue(debtsOpenTotal, currency), kind: "currency" }],
         [{ value: t.netWorth }, { value: moneyValue(netWorth, currency), kind: "currency" }]
-      ]
+      ],
+      "dark"
     ),
     [],
-    [toCellModel(t.annualSummary, "Section", "String", 5)],
+    [toCellModel(t.annualSummary, "DashSection", "String", 7)],
     ...tableRows(
       [{ label: t.kpi }, { label: t.value }, { label: t.trend }],
       [
@@ -611,10 +661,11 @@ export async function GET(request: Request) {
           { value: moneyValue(annualSavingsTotal, currency), kind: "currency" },
           { value: sparkline(annualSavingsByMonth.map((v) => Math.max(v, 0))), kind: "text" }
         ]
-      ]
+      ],
+      "dark"
     ),
     [],
-    [toCellModel(t.monthlyEvolution, "Section", "String", 5)],
+    [toCellModel(t.monthlyEvolution, "DashSection", "String", 7)],
     ...tableRows(
       [
         { label: t.month },
@@ -636,10 +687,11 @@ export async function GET(request: Request) {
           { value: barText(income, maxIncome) },
           { value: barText(expense, maxExpense) }
         ];
-      })
+      }),
+      "dark"
     ),
     [],
-    [toCellModel(t.categoryBreakdown, "Section", "String", 5)],
+    [toCellModel(t.categoryBreakdown, "DashSection", "String", 7)],
     ...tableRows(
       [
         { label: t.category },
@@ -656,7 +708,8 @@ export async function GET(request: Request) {
           { value: ratio, kind: "percent" },
           { value: barText(total, maxCategory) }
         ];
-      })
+      }),
+      "dark"
     )
   ];
 
@@ -859,67 +912,78 @@ export async function GET(request: Request) {
     {
       name: t.overview,
       rows: overviewRows,
-      columnWidths: [210, 150, 120, 170, 120, 170]
+      columnWidths: [170, 130, 170, 130, 170, 130, 170, 130],
+      hideGridlines: true
     },
     {
       name: lang === "pt-PT" ? "DadosGraficoMensal" : "ChartDataMonthly",
       rows: monthlyChartRows,
       columnWidths: [160, 130, 130, 130],
-      freezeHeaderRow: true
+      freezeHeaderRow: true,
+      hideGridlines: true
     },
     {
       name: lang === "pt-PT" ? "DadosGraficoCategoria" : "ChartDataCategory",
       rows: categoryChartRows,
       columnWidths: [220, 130, 130],
-      freezeHeaderRow: true
+      freezeHeaderRow: true,
+      hideGridlines: true
     },
     {
       name: lang === "pt-PT" ? "Movimentos" : "Movements",
       rows: movementsRows,
       columnWidths: [90, 100, 170, 260, 120, 120, 110],
-      freezeHeaderRow: true
+      freezeHeaderRow: true,
+      hideGridlines: true
     },
     {
       name: lang === "pt-PT" ? "TodosMovimentos" : "AllTransactions",
       rows: allTransactionsRows,
       columnWidths: [70, 120, 100, 170, 260, 120],
-      freezeHeaderRow: true
+      freezeHeaderRow: true,
+      hideGridlines: true
     },
     {
       name: lang === "pt-PT" ? "Contas" : "Bills",
       rows: billsRows,
       columnWidths: [70, 190, 120, 120, 90, 90, 100],
-      freezeHeaderRow: true
+      freezeHeaderRow: true,
+      hideGridlines: true
     },
     {
       name: lang === "pt-PT" ? "Subscricoes" : "Subscriptions",
       rows: subscriptionsRows,
       columnWidths: [70, 190, 120, 100, 160, 120, 110],
-      freezeHeaderRow: true
+      freezeHeaderRow: true,
+      hideGridlines: true
     },
     {
       name: lang === "pt-PT" ? "Ativos" : "Assets",
       rows: assetsRows,
       columnWidths: [70, 220, 140, 120, 120],
-      freezeHeaderRow: true
+      freezeHeaderRow: true,
+      hideGridlines: true
     },
     {
       name: lang === "pt-PT" ? "Dividas" : "Debts",
       rows: debtsRows,
       columnWidths: [70, 210, 120, 120, 120, 110, 120],
-      freezeHeaderRow: true
+      freezeHeaderRow: true,
+      hideGridlines: true
     },
     {
       name: lang === "pt-PT" ? "Orcamentos" : "Budgets",
       rows: budgetsRows,
       columnWidths: [70, 110, 180, 120],
-      freezeHeaderRow: true
+      freezeHeaderRow: true,
+      hideGridlines: true
     },
     {
       name: lang === "pt-PT" ? "Objetivos" : "Goals",
       rows: goalsRows,
       columnWidths: [70, 220, 120, 120, 120, 120, 110],
-      freezeHeaderRow: true
+      freezeHeaderRow: true,
+      hideGridlines: true
     }
   ];
 
@@ -941,34 +1005,139 @@ export async function GET(request: Request) {
         <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/>
       </Borders>
     </Style>
-    <Style ss:ID="Title">
+    <Style ss:ID="DashTitle">
       <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
-      <Font ss:FontName="Calibri" ss:Size="16" ss:Bold="1" ss:Color="#FFFFFF"/>
-      <Interior ss:Color="#1D4ED8" ss:Pattern="Solid"/>
+      <Font ss:FontName="Calibri" ss:Size="16" ss:Bold="1" ss:Color="#E2E8F0"/>
+      <Interior ss:Color="#111827" ss:Pattern="Solid"/>
       <Borders>
-        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1E40AF"/>
-        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1E40AF"/>
-        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1E40AF"/>
-        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1E40AF"/>
+        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1F2937"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1F2937"/>
+        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1F2937"/>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1F2937"/>
       </Borders>
     </Style>
-    <Style ss:ID="Section">
-      <Font ss:FontName="Calibri" ss:Size="12" ss:Bold="1" ss:Color="#0F172A"/>
-      <Interior ss:Color="#DBEAFE" ss:Pattern="Solid"/>
-      <Borders>
-        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#93C5FD"/>
-        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#93C5FD"/>
-        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#93C5FD"/>
-        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#93C5FD"/>
-      </Borders>
+    <Style ss:ID="DashMetaLabel">
+      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#CBD5E1"/>
+      <Interior ss:Color="#1F2937" ss:Pattern="Solid"/>
     </Style>
-    <Style ss:ID="MetaLabel">
-      <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1"/>
-      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
+    <Style ss:ID="DashMetaValue">
+      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="10" ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#111827" ss:Pattern="Solid"/>
     </Style>
-    <Style ss:ID="MetaValue">
-      <Font ss:FontName="Calibri" ss:Size="11"/>
-      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+    <Style ss:ID="DashSection">
+      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="12" ss:Bold="1" ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#374151" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CardIncomeLabel">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#E0F2FE"/>
+      <Interior ss:Color="#0369A1" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CardIncomeValue">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="14" ss:Bold="1" ss:Color="#F0F9FF"/>
+      <Interior ss:Color="#075985" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="CardExpenseLabel">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#FEE2E2"/>
+      <Interior ss:Color="#B91C1C" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CardExpenseValue">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="14" ss:Bold="1" ss:Color="#FEF2F2"/>
+      <Interior ss:Color="#991B1B" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="CardSavingsLabel">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#DCFCE7"/>
+      <Interior ss:Color="#15803D" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CardSavingsValue">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="14" ss:Bold="1" ss:Color="#F0FDF4"/>
+      <Interior ss:Color="#166534" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="CardNetLabel">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#EDE9FE"/>
+      <Interior ss:Color="#6D28D9" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CardNetValue">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="14" ss:Bold="1" ss:Color="#F5F3FF"/>
+      <Interior ss:Color="#5B21B6" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="CardAltLabel">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#D1D5DB"/>
+      <Interior ss:Color="#1F2937" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CardAltValue">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="12" ss:Bold="1" ss:Color="#F9FAFB"/>
+      <Interior ss:Color="#111827" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="DarkTableHeader">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#F9FAFB"/>
+      <Interior ss:Color="#334155" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="DarkCellTextEven">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#1F2937" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="DarkCellTextOdd">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#111827" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="DarkCellNumberEven">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#1F2937" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="DarkCellNumberOdd">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#111827" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="DarkCellCurrencyEven">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#1F2937" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="DarkCellCurrencyOdd">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#111827" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="DarkCellPercentEven">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#1F2937" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="0.00%"/>
+    </Style>
+    <Style ss:ID="DarkCellPercentOdd">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#111827" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="0.00%"/>
+    </Style>
+    <Style ss:ID="DarkCellDateEven">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#1F2937" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="yyyy-mm-dd"/>
+    </Style>
+    <Style ss:ID="DarkCellDateOdd">
+      <Font ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#111827" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="yyyy-mm-dd"/>
     </Style>
     <Style ss:ID="TableHeader">
       <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
