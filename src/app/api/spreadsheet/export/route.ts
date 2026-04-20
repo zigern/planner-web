@@ -121,6 +121,8 @@ type WorksheetModel = {
   columnWidths?: number[];
   freezeHeaderRow?: boolean;
   hideGridlines?: boolean;
+  hideHeadings?: boolean;
+  zoom?: number;
 };
 
 function parseMonthParam(value: string | null) {
@@ -332,8 +334,13 @@ function xmlRow(cells: RowModel) {
   return `<Row>${cells.map((cell) => xmlCell(cell)).join("")}</Row>`;
 }
 
-function worksheetOptionsXml(options: { freezeHeaderRow?: boolean; hideGridlines?: boolean }) {
-  const hasOptions = Boolean(options.freezeHeaderRow || options.hideGridlines);
+function worksheetOptionsXml(options: {
+  freezeHeaderRow?: boolean;
+  hideGridlines?: boolean;
+  hideHeadings?: boolean;
+  zoom?: number;
+}) {
+  const hasOptions = Boolean(options.freezeHeaderRow || options.hideGridlines || options.hideHeadings || options.zoom);
   if (!hasOptions) return "";
 
   const freezeXml = options.freezeHeaderRow
@@ -346,9 +353,11 @@ function worksheetOptionsXml(options: { freezeHeaderRow?: boolean; hideGridlines
     : "";
 
   const gridXml = options.hideGridlines ? "\n    <DoNotDisplayGridlines/>" : "";
+  const headingsXml = options.hideHeadings ? "\n    <DoNotDisplayHeadings/>" : "";
+  const zoomXml = options.zoom ? `\n    <Zoom>${Math.max(60, Math.min(200, Math.round(options.zoom)))}</Zoom>` : "";
 
   return `
-  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">${freezeXml}${gridXml}
+  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">${freezeXml}${gridXml}${headingsXml}${zoomXml}
   </WorksheetOptions>`;
 }
 
@@ -357,7 +366,9 @@ function xmlWorksheet(sheet: WorksheetModel) {
   const rowsXml = sheet.rows.map((row) => xmlRow(row)).join("");
   const worksheetOptions = worksheetOptionsXml({
     freezeHeaderRow: sheet.freezeHeaderRow,
-    hideGridlines: sheet.hideGridlines
+    hideGridlines: sheet.hideGridlines,
+    hideHeadings: sheet.hideHeadings,
+    zoom: sheet.zoom
   });
   return `<Worksheet ss:Name="${escapeXml(sheet.name).slice(0, 31)}"><Table>${columnsXml}${rowsXml}</Table>${worksheetOptions}</Worksheet>`;
 }
@@ -409,6 +420,23 @@ function sparkline(values: number[]) {
       return chars[idx];
     })
     .join("");
+}
+
+function clamp01(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(1, value));
+}
+
+function circleGauge(ratio: number) {
+  const pct = clamp01(ratio);
+  const filled = Math.round(pct * 10);
+  return `${"●".repeat(filled)}${"○".repeat(Math.max(0, 10 - filled))} ${Math.round(pct * 100)}%`;
+}
+
+function barGauge(ratio: number, width = 24) {
+  const pct = clamp01(ratio);
+  const filled = Math.round(pct * width);
+  return `${"█".repeat(filled)}${"░".repeat(Math.max(0, width - filled))} ${Math.round(pct * 100)}%`;
 }
 
 export async function GET(request: Request) {
@@ -587,48 +615,85 @@ export async function GET(request: Request) {
   const maxExpense = Math.max(1, ...annualExpenseByMonth);
   const maxCategory = Math.max(1, ...categorySummary.map((row) => Number(row.total || 0)));
   const categoryTotal = categorySummary.reduce((sum, row) => sum + Number(row.total || 0), 0) || 1;
+  const incomeShare = incomePeriod + expensePeriod > 0 ? incomePeriod / (incomePeriod + expensePeriod) : 0;
+  const savingsRate = incomePeriod > 0 ? savingsPeriod / incomePeriod : 0;
+  const debtLoad = assetsTotal > 0 ? debtsOpenTotal / assetsTotal : 0;
+  const expenseLoad = annualIncomeTotal + annualExpenseTotal > 0 ? annualExpenseTotal / (annualIncomeTotal + annualExpenseTotal) : 0;
+  const topCategoryRows = categorySummary.slice(0, 5).map((row) => {
+    const total = Number(row.total || 0);
+    const ratio = categoryTotal > 0 ? total / categoryTotal : 0;
+    return { category: row.category, total, ratio };
+  });
 
   const overviewRows: RowModel[] = [
-    [toCellModel("Planqly Assets - Financial Dashboard", "DashTitle", "String", 7)],
+    [toCellModel("Planqly Assets - Financial Dashboard", "DashTitle", "String", 11)],
     [],
     [
       toCellModel(t.generatedAt, "DashMetaLabel"),
-      toCellModel(new Date().toISOString().slice(0, 19).replace("T", " "), "DashMetaValue"),
+      toCellModel(new Date().toISOString().slice(0, 19).replace("T", " "), "DashMetaValue", "String", 1),
       toCellModel(t.period, "DashMetaLabel"),
-      toCellModel(`${effectiveFrom} to ${effectiveTo}`, "DashMetaValue"),
+      toCellModel(`${effectiveFrom} to ${effectiveTo}`, "DashMetaValue", "String", 1),
       toCellModel(t.currency, "DashMetaLabel"),
-      toCellModel(currency, "DashMetaValue"),
+      toCellModel(currency, "DashMetaValue", "String", 1),
       toCellModel("Filters", "DashMetaLabel"),
-      toCellModel(`${typeFilter}/${statusFilter}`, "DashMetaValue")
+      toCellModel(`${typeFilter}/${statusFilter}`, "DashMetaValue", "String", 1)
     ],
     [],
-    [toCellModel("Performance Snapshot", "DashSection", "String", 7)],
+    [toCellModel("Performance Snapshot", "DashSection", "String", 11)],
     [
-      toCellModel(t.incomePeriod, "CardIncomeLabel", "String", 1),
-      toCellModel(t.expensePeriod, "CardExpenseLabel", "String", 1),
-      toCellModel(t.savingsPeriod, "CardSavingsLabel", "String", 1),
-      toCellModel(t.netWorth, "CardNetLabel", "String", 1)
+      toCellModel(t.incomePeriod, "CardIncomeLabel", "String", 2),
+      toCellModel(t.expensePeriod, "CardExpenseLabel", "String", 2),
+      toCellModel(t.savingsPeriod, "CardSavingsLabel", "String", 2),
+      toCellModel(t.netWorth, "CardNetLabel", "String", 2)
     ],
     [
-      toCellModel(moneyValue(incomePeriod, currency), "CardIncomeValue", "Number", 1),
-      toCellModel(moneyValue(expensePeriod, currency), "CardExpenseValue", "Number", 1),
-      toCellModel(moneyValue(savingsPeriod, currency), "CardSavingsValue", "Number", 1),
-      toCellModel(moneyValue(netWorth, currency), "CardNetValue", "Number", 1)
+      toCellModel(moneyValue(incomePeriod, currency), "CardIncomeValue", "Number", 2),
+      toCellModel(moneyValue(expensePeriod, currency), "CardExpenseValue", "Number", 2),
+      toCellModel(moneyValue(savingsPeriod, currency), "CardSavingsValue", "Number", 2),
+      toCellModel(moneyValue(netWorth, currency), "CardNetValue", "Number", 2)
     ],
     [
-      toCellModel(t.assetsTotal, "CardAltLabel", "String", 1),
-      toCellModel(t.openDebtTotal, "CardAltLabel", "String", 1),
-      toCellModel(`${t.income} (${selectedYear})`, "CardAltLabel", "String", 1),
-      toCellModel(`${t.expense} (${selectedYear})`, "CardAltLabel", "String", 1)
+      toCellModel(t.assetsTotal, "CardAltLabel", "String", 2),
+      toCellModel(t.openDebtTotal, "CardAltLabel", "String", 2),
+      toCellModel(`${t.income} (${selectedYear})`, "CardAltLabel", "String", 2),
+      toCellModel(`${t.expense} (${selectedYear})`, "CardAltLabel", "String", 2)
     ],
     [
-      toCellModel(moneyValue(assetsTotal, currency), "CardAltValue", "Number", 1),
-      toCellModel(moneyValue(debtsOpenTotal, currency), "CardAltValue", "Number", 1),
-      toCellModel(moneyValue(annualIncomeTotal, currency), "CardAltValue", "Number", 1),
-      toCellModel(moneyValue(annualExpenseTotal, currency), "CardAltValue", "Number", 1)
+      toCellModel(moneyValue(assetsTotal, currency), "CardAltValue", "Number", 2),
+      toCellModel(moneyValue(debtsOpenTotal, currency), "CardAltValue", "Number", 2),
+      toCellModel(moneyValue(annualIncomeTotal, currency), "CardAltValue", "Number", 2),
+      toCellModel(moneyValue(annualExpenseTotal, currency), "CardAltValue", "Number", 2)
     ],
     [],
-    [toCellModel("KPI Table", "DashSection", "String", 7)],
+    [toCellModel("Visual Analytics", "DashSection", "String", 11)],
+    [
+      toCellModel("Income vs Expense", "VisualHeader", "String", 2),
+      toCellModel("Savings Rate", "VisualHeader", "String", 2),
+      toCellModel("Debt Load", "VisualHeader", "String", 2),
+      toCellModel("Expense Intensity", "VisualHeader", "String", 2)
+    ],
+    [
+      toCellModel(circleGauge(incomeShare), "VisualCell", "String", 2),
+      toCellModel(circleGauge(savingsRate), "VisualCell", "String", 2),
+      toCellModel(circleGauge(debtLoad), "VisualCell", "String", 2),
+      toCellModel(circleGauge(expenseLoad), "VisualCell", "String", 2)
+    ],
+    [],
+    [toCellModel("Top Categories", "DashSection", "String", 11)],
+    [
+      toCellModel(t.category, "VisualHeader"),
+      toCellModel(t.amount, "VisualHeader", "String", 1),
+      toCellModel(t.periodPercent, "VisualHeader"),
+      toCellModel("Bar", "VisualHeader", "String", 7)
+    ],
+    ...topCategoryRows.map((row) => [
+      toCellModel(row.category, "VisualCell"),
+      toCellModel(moneyValue(row.total, currency), "VisualCellNumber", "Number", 1),
+      toCellModel(row.ratio, "VisualCellPct", "Number"),
+      toCellModel(barGauge(row.ratio), "VisualCell", "String", 7)
+    ]),
+    [],
+    [toCellModel("KPI Table", "DashSection", "String", 11)],
     ...tableRows(
       [{ label: t.kpi }, { label: t.value }],
       [
@@ -642,7 +707,7 @@ export async function GET(request: Request) {
       "dark"
     ),
     [],
-    [toCellModel(t.annualSummary, "DashSection", "String", 7)],
+    [toCellModel(t.annualSummary, "DashSection", "String", 11)],
     ...tableRows(
       [{ label: t.kpi }, { label: t.value }, { label: t.trend }],
       [
@@ -665,7 +730,7 @@ export async function GET(request: Request) {
       "dark"
     ),
     [],
-    [toCellModel(t.monthlyEvolution, "DashSection", "String", 7)],
+    [toCellModel(t.monthlyEvolution, "DashSection", "String", 11)],
     ...tableRows(
       [
         { label: t.month },
@@ -691,7 +756,7 @@ export async function GET(request: Request) {
       "dark"
     ),
     [],
-    [toCellModel(t.categoryBreakdown, "DashSection", "String", 7)],
+    [toCellModel(t.categoryBreakdown, "DashSection", "String", 11)],
     ...tableRows(
       [
         { label: t.category },
@@ -912,8 +977,10 @@ export async function GET(request: Request) {
     {
       name: t.overview,
       rows: overviewRows,
-      columnWidths: [170, 130, 170, 130, 170, 130, 170, 130],
-      hideGridlines: true
+      columnWidths: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90],
+      hideGridlines: true,
+      hideHeadings: true,
+      zoom: 130
     },
     {
       name: lang === "pt-PT" ? "DadosGraficoMensal" : "ChartDataMonthly",
@@ -1085,6 +1152,28 @@ export async function GET(request: Request) {
       <Font ss:FontName="Calibri" ss:Size="12" ss:Bold="1" ss:Color="#F9FAFB"/>
       <Interior ss:Color="#111827" ss:Pattern="Solid"/>
       <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="VisualHeader">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#E2E8F0"/>
+      <Interior ss:Color="#334155" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="VisualCell">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#0F172A" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="VisualCellNumber">
+      <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#0F172A" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="VisualCellPct">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#F8FAFC"/>
+      <Interior ss:Color="#0F172A" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="0.00%"/>
     </Style>
     <Style ss:ID="DarkTableHeader">
       <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
