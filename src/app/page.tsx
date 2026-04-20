@@ -75,11 +75,8 @@ export default function HomePage() {
       <section className="mx-auto max-w-7xl px-6 py-10 md:py-14">
         <header className="mb-10 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/images/site-logo.png" alt="Planqly logo" className="h-10 w-10 rounded-xl object-cover" />
-            <div>
-              <p className="text-base font-bold tracking-wide text-slate-900">PLANQLY ASSETS</p>
-              <p className="text-xs text-slate-600">Financial planning app</p>
-            </div>
+            <img src="/images/site-logo.png" alt="Planqly Assets" className="h-11 w-auto object-contain" />
+            <p className="hidden text-xs text-slate-600 md:block">Financial planning app</p>
           </div>
           <div className="hidden items-center gap-3 md:flex">
             <Link href="/login" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-white">
