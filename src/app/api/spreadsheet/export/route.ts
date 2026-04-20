@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import type { Pool } from "mysql2/promise";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { getSessionUser } from "@/lib/auth/session";
 import { convertFromBaseEur } from "@/lib/currency-conversion";
 import { getDb } from "@/lib/db";
@@ -456,6 +458,22 @@ export async function GET(request: Request) {
   const fromFilter = parseDateParam(url.searchParams.get("from"));
   const toFilter = parseDateParam(url.searchParams.get("to"));
   const queryFilter = parseTextParam(url.searchParams.get("q"));
+
+  const premiumTemplatePath = path.join(process.cwd(), "templates", "PLANQLY_PREMIUM_TEMPLATE.xlsx");
+  try {
+    const premiumFile = await readFile(premiumTemplatePath);
+    const fileName = `${t.filePrefix}-${selectedMonth}-premium.xlsx`;
+    return new NextResponse(premiumFile, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="${fileName}"`,
+        "Cache-Control": "no-store"
+      }
+    });
+  } catch {
+    // Fallback para o gerador interno caso o template não exista no servidor.
+  }
 
   const monthBounds = getMonthBounds(selectedMonth);
   const todayIso = isoDate(new Date());
