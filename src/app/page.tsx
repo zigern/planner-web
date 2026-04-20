@@ -125,7 +125,7 @@ export default function HomePage() {
           </div>
 
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-            <img src="/images/landing/real/dashboard-preview.png" alt="Screenshot real do dashboard Planqly" className="h-full w-full object-cover" />
+            <img src="/images/landing/real/live-capture-1.png" alt="Screenshot real do dashboard Planqly" className="h-full w-full object-cover" />
           </div>
         </div>
 
@@ -148,21 +148,21 @@ export default function HomePage() {
           </div>
           <div className="grid gap-4 lg:grid-cols-3">
             <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <img src="/images/landing/real/app-spreadsheet.png" alt="Screenshot real da pagina Spreadsheet na app" className="h-52 w-full object-cover" />
+              <img src="/images/landing/real/live-capture-1.png" alt="Screenshot real da pagina Spreadsheet na app" className="h-52 w-full object-cover" />
               <div className="p-5">
                 <h3 className="font-semibold text-slate-900">Pagina Spreadsheet (app real)</h3>
                 <p className="mt-2 text-sm text-slate-600">Demonstracao real da area onde o utilizador exporta e analisa dados.</p>
               </div>
             </article>
             <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <img src="/images/landing/real/excel-premium.png" alt="Screenshot real do Excel premium exportado" className="h-52 w-full object-cover" />
+              <img src="/images/landing/real/live-capture-2.png" alt="Screenshot real do Excel premium exportado" className="h-52 w-full object-cover" />
               <div className="p-5">
                 <h3 className="font-semibold text-slate-900">Excel premium exportado</h3>
                 <p className="mt-2 text-sm text-slate-600">Preview real do ficheiro de relatorio gerado pela aplicacao.</p>
               </div>
             </article>
             <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <img src="/images/landing/real/dashboard-preview.png" alt="Screenshot real da experiencia do dashboard" className="h-52 w-full object-cover" />
+              <img src="/images/landing/real/live-capture-3.png" alt="Screenshot real da experiencia do dashboard" className="h-52 w-full object-cover" />
               <div className="p-5">
                 <h3 className="font-semibold text-slate-900">Dashboard real da plataforma</h3>
                 <p className="mt-2 text-sm text-slate-600">Visual verdadeiro da interface que o utilizador final encontra no produto.</p>
