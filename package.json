@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "exceljs": "^4.4.0",
     "jose": "^5.9.6",
     "mysql2": "^3.11.3",
     "next": "^15.0.0",
