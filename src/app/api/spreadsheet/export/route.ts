@@ -1275,11 +1275,11 @@ export async function GET(request: Request) {
   ${sheets.map((sheet) => xmlWorksheet(sheet)).join("")}
 </Workbook>`;
 
-  const fileName = `${t.filePrefix}-${selectedMonth}.xls`;
+  const fileName = `${t.filePrefix}-${selectedMonth}.xml`;
   return new NextResponse(workbookXml, {
     status: 200,
     headers: {
-      "Content-Type": "application/vnd.ms-excel; charset=utf-8",
+      "Content-Type": "application/xml; charset=utf-8",
       "Content-Disposition": `attachment; filename="${fileName}"`,
       "Cache-Control": "no-store"
     }
