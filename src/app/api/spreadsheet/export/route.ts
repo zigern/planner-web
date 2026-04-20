@@ -453,6 +453,10 @@ export async function GET(request: Request) {
   const annualExpenseTotal = annualExpenseByMonth.reduce((a, b) => a + b, 0);
 
   const categoryTotal = categorySummary.reduce((sum, row) => sum + Number(row.total || 0), 0) || 1;
+  const topCategories = categorySummary
+    .slice(0, 5)
+    .map((row) => ({ category: row.category, total: Number(row.total || 0) }))
+    .filter((row) => row.total > 0);
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "Planqly";
   workbook.created = new Date();
@@ -542,6 +546,36 @@ export async function GET(request: Request) {
     overview.getCell(c).font = { color: { argb: "FF93C5FD" }, bold: true };
   }
 
+  overview.mergeCells("F9:L9");
+  overview.getCell("F9").value = t.categoryBreakdown;
+  overview.getCell("F9").fill = subDarkFill;
+  overview.getCell("F9").font = { color: { argb: "FFFFFFFF" }, bold: true };
+
+  overview.getRow(10).getCell(6).value = t.category;
+  overview.getRow(10).getCell(7).value = t.amount;
+  overview.getRow(10).getCell(8).value = t.periodPercent;
+  overview.getRow(10).getCell(9).value = t.trend;
+  for (const c of ["F10", "G10", "H10", "I10"]) {
+    overview.getCell(c).fill = darkFill;
+    overview.getCell(c).font = whiteFont;
+  }
+
+  topCategories.forEach((row, idx) => {
+    const excelRow = 11 + idx;
+    overview.getCell(`F${excelRow}`).value = row.category;
+    overview.getCell(`G${excelRow}`).value = moneyValue(row.total, currency);
+    overview.getCell(`H${excelRow}`).value = categoryTotal > 0 ? row.total / categoryTotal : 0;
+    overview.getCell(`I${excelRow}`).value = {
+      formula: `REPT("█",ROUND(H${excelRow}*30,0))`
+    };
+    overview.getCell(`G${excelRow}`).numFmt = "#,##0.00";
+    overview.getCell(`H${excelRow}`).numFmt = "0.00%";
+    for (const c of [`F${excelRow}`, `G${excelRow}`, `H${excelRow}`, `I${excelRow}`]) {
+      overview.getCell(c).fill = darkFill;
+      overview.getCell(c).font = { color: { argb: "FFF8FAFC" } };
+    }
+  });
+
   overview.getRow(13).values = [t.assetsTotal, moneyValue(assetsTotal, currency), t.openDebtTotal, moneyValue(debtsOpenTotal, currency)];
   overview.getRow(15).values = [t.income, moneyValue(annualIncomeTotal, currency), t.expense, moneyValue(annualExpenseTotal, currency)];
   for (const r of [13, 15]) {
@@ -557,8 +591,8 @@ export async function GET(request: Request) {
   overview.getCell("A17").value = "Monthly Evolution";
   overview.getCell("A17").fill = subDarkFill;
   overview.getCell("A17").font = { color: { argb: "FFFFFFFF" }, bold: true };
-  overview.getRow(18).values = [t.month, t.income, t.expense, t.savings];
-  for (const c of ["A18", "B18", "C18", "D18"]) {
+  overview.getRow(18).values = [t.month, t.income, t.expense, t.savings, `${t.income} ${t.trend}`, `${t.expense} ${t.trend}`];
+  for (const c of ["A18", "B18", "C18", "D18", "E18", "F18"]) {
     overview.getCell(c).fill = headerFill;
     overview.getCell(c).font = whiteFont;
   }
@@ -570,7 +604,11 @@ export async function GET(request: Request) {
       moneyValue(annualExpenseByMonth[i], currency),
       moneyValue(annualSavingsByMonth[i], currency)
     ];
+    overview.getCell(`E${r}`).value = { formula: `REPT("█",ROUND(B${r}/MAX($B$19:$B$30)*24,0))` };
+    overview.getCell(`F${r}`).value = { formula: `REPT("█",ROUND(C${r}/MAX($C$19:$C$30)*24,0))` };
     for (const col of [2, 3, 4]) overview.getRow(r).getCell(col).numFmt = "#,##0.00";
+    overview.getCell(`E${r}`).font = { color: { argb: "FF60A5FA" }, bold: true };
+    overview.getCell(`F${r}`).font = { color: { argb: "FFF472B6" }, bold: true };
   }
 
   const chartMonthly = workbook.addWorksheet(lang === "pt-PT" ? "DadosGraficoMensal" : "ChartDataMonthly");
