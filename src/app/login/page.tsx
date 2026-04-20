@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,9 +13,9 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const requestedMode = searchParams.get("mode");
+    const requestedMode = new URLSearchParams(window.location.search).get("mode");
     if (requestedMode === "register") setMode("register");
-  }, [searchParams]);
+  }, []);
 
   async function submit() {
     setLoading(true);
