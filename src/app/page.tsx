@@ -125,7 +125,7 @@ export default function HomePage() {
           </div>
 
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-            <img src="/images/landing/hero-dashboard.svg" alt="Preview dashboard Planqly" className="h-full w-full object-cover" />
+            <img src="/images/landing/real/dashboard-preview.png" alt="Screenshot real do dashboard Planqly" className="h-full w-full object-cover" />
           </div>
         </div>
 
@@ -148,24 +148,24 @@ export default function HomePage() {
           </div>
           <div className="grid gap-4 lg:grid-cols-3">
             <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <img src="/images/landing/mobile-sync.svg" alt="Gestao em mobile e sincronizacao" className="h-52 w-full object-cover" />
+              <img src="/images/landing/real/app-spreadsheet.png" alt="Screenshot real da pagina Spreadsheet na app" className="h-52 w-full object-cover" />
               <div className="p-5">
-                <h3 className="font-semibold text-slate-900">Onboarding claro para novos utilizadores</h3>
-                <p className="mt-2 text-sm text-slate-600">Landing pensada para explicar valor e levar ao registo com CTA direto.</p>
+                <h3 className="font-semibold text-slate-900">Pagina Spreadsheet (app real)</h3>
+                <p className="mt-2 text-sm text-slate-600">Demonstracao real da area onde o utilizador exporta e analisa dados.</p>
               </div>
             </article>
             <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <img src="/images/landing/excel-report.svg" alt="Relatorio e exportacao de dados" className="h-52 w-full object-cover" />
+              <img src="/images/landing/real/excel-premium.png" alt="Screenshot real do Excel premium exportado" className="h-52 w-full object-cover" />
               <div className="p-5">
-                <h3 className="font-semibold text-slate-900">Relatorios e export para analise</h3>
-                <p className="mt-2 text-sm text-slate-600">Utilizadores podem documentar resultados e acompanhar evolucao financeira.</p>
+                <h3 className="font-semibold text-slate-900">Excel premium exportado</h3>
+                <p className="mt-2 text-sm text-slate-600">Preview real do ficheiro de relatorio gerado pela aplicacao.</p>
               </div>
             </article>
             <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <img src="/images/landing/hero-dashboard.svg" alt="Visao geral do dashboard financeiro" className="h-52 w-full object-cover" />
+              <img src="/images/landing/real/dashboard-preview.png" alt="Screenshot real da experiencia do dashboard" className="h-52 w-full object-cover" />
               <div className="p-5">
-                <h3 className="font-semibold text-slate-900">Interface premium e intuitiva</h3>
-                <p className="mt-2 text-sm text-slate-600">Layout com hierarquia visual para facilitar a decisao financeira diaria.</p>
+                <h3 className="font-semibold text-slate-900">Dashboard real da plataforma</h3>
+                <p className="mt-2 text-sm text-slate-600">Visual verdadeiro da interface que o utilizador final encontra no produto.</p>
               </div>
             </article>
           </div>
