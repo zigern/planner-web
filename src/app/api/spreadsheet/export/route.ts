@@ -104,6 +104,24 @@ type ExportText = {
   periodPercent: string;
 };
 
+type CellType = "String" | "Number" | "DateTime";
+
+type CellModel = {
+  value: unknown;
+  styleId?: string;
+  type?: CellType;
+  mergeAcross?: number;
+};
+
+type RowModel = CellModel[];
+
+type WorksheetModel = {
+  name: string;
+  rows: RowModel[];
+  columnWidths?: number[];
+  freezeHeaderRow?: boolean;
+};
+
 function parseMonthParam(value: string | null) {
   if (!value) return new Date().toISOString().slice(0, 7);
   return /^\d{4}-\d{2}$/.test(value) ? value : new Date().toISOString().slice(0, 7);
@@ -293,28 +311,63 @@ function isNumericLike(value: unknown) {
   return typeof value === "number" || (typeof value === "string" && value.trim() !== "" && !Number.isNaN(Number(value)));
 }
 
-function xmlCell(value: unknown, header = false) {
-  const style = header ? ` ss:StyleID="Header"` : "";
-  if (isNumericLike(value)) {
-    return `<Cell${style}><Data ss:Type="Number">${Number(value)}</Data></Cell>`;
-  }
-  return `<Cell${style}><Data ss:Type="String">${escapeXml(value)}</Data></Cell>`;
+function inferCellType(value: unknown): CellType {
+  return isNumericLike(value) ? "Number" : "String";
 }
 
-function xmlRow(cells: unknown[], header = false) {
-  return `<Row>${cells.map((cell) => xmlCell(cell, header)).join("")}</Row>`;
+function toCellModel(value: unknown, styleId?: string, type?: CellType, mergeAcross?: number): CellModel {
+  return { value, styleId, type, mergeAcross };
 }
 
-function xmlWorksheet(name: string, rows: unknown[][]) {
-  return `<Worksheet ss:Name="${escapeXml(name).slice(0, 31)}"><Table>${rows
-    .map((row, idx) => xmlRow(row, idx === 0))
-    .join("")}</Table></Worksheet>`;
+function xmlCell(cell: CellModel) {
+  const style = cell.styleId ? ` ss:StyleID="${cell.styleId}"` : "";
+  const mergeAcross = Number.isInteger(cell.mergeAcross) && (cell.mergeAcross || 0) > 0 ? ` ss:MergeAcross="${cell.mergeAcross}"` : "";
+  const type = cell.type || inferCellType(cell.value);
+  const value = type === "Number" ? Number(cell.value || 0) : escapeXml(cell.value);
+  return `<Cell${style}${mergeAcross}><Data ss:Type="${type}">${value}</Data></Cell>`;
 }
 
-function rowsFromObjects(rows: Array<Record<string, unknown>>, columns: string[]) {
-  const out: unknown[][] = [columns];
-  for (const row of rows) {
-    out.push(columns.map((column) => row[column] ?? ""));
+function xmlRow(cells: RowModel) {
+  return `<Row>${cells.map((cell) => xmlCell(cell)).join("")}</Row>`;
+}
+
+function freezeHeaderXml() {
+  return `
+  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+    <FreezePanes/>
+    <FrozenNoSplit/>
+    <SplitHorizontal>1</SplitHorizontal>
+    <TopRowBottomPane>1</TopRowBottomPane>
+    <ActivePane>2</ActivePane>
+  </WorksheetOptions>`;
+}
+
+function xmlWorksheet(sheet: WorksheetModel) {
+  const columnsXml = (sheet.columnWidths || []).map((width) => `<Column ss:AutoFitWidth="0" ss:Width="${Math.max(40, width)}"/>`).join("");
+  const rowsXml = sheet.rows.map((row) => xmlRow(row)).join("");
+  const worksheetOptions = sheet.freezeHeaderRow ? freezeHeaderXml() : "";
+  return `<Worksheet ss:Name="${escapeXml(sheet.name).slice(0, 31)}"><Table>${columnsXml}${rowsXml}</Table>${worksheetOptions}</Worksheet>`;
+}
+
+function tableRows(
+  headers: Array<{ label: string; styleId?: string }>,
+  rows: Array<Array<{ value: unknown; kind?: "text" | "number" | "currency" | "percent" | "date" }>>
+) {
+  const out: RowModel[] = [
+    headers.map((h) => toCellModel(h.label, h.styleId || "TableHeader", "String"))
+  ];
+  for (let i = 0; i < rows.length; i += 1) {
+    const isEven = i % 2 === 0;
+    const suffix = isEven ? "Even" : "Odd";
+    out.push(
+      rows[i].map((cell) => {
+        if (cell.kind === "number") return toCellModel(cell.value, `CellNumber${suffix}`, "Number");
+        if (cell.kind === "currency") return toCellModel(cell.value, `CellCurrency${suffix}`, "Number");
+        if (cell.kind === "percent") return toCellModel(cell.value, `CellPercent${suffix}`, "Number");
+        if (cell.kind === "date") return toCellModel(cell.value, `CellDate${suffix}`, "String");
+        return toCellModel(cell.value, `CellText${suffix}`, "String");
+      })
+    );
   }
   return out;
 }
@@ -484,16 +537,6 @@ export async function GET(request: Request) {
     })
     .filter((tx) => (statusFilter === "all" ? true : tx.uiStatus === statusFilter));
 
-  const txExportRows = txRows.map((tx) => ({
-    [t.month]: monthShort(tx.transaction_date, lang),
-    [t.type]: tx.type === "income" ? t.income : t.expense,
-    [t.category]: tx.category,
-    [t.detail]: tx.description || "",
-    [t.amount]: tx.amountConverted,
-    [t.date]: normalizeDate(tx.transaction_date),
-    [t.status]: tx.uiStatus === "late" ? t.late : t.paid
-  }));
-
   const incomePeriod = txRows.reduce((sum, tx) => sum + (tx.type === "income" ? Number(tx.amount || 0) : 0), 0);
   const expensePeriod = txRows.reduce((sum, tx) => sum + (tx.type === "expense" ? Number(tx.amount || 0) : 0), 0);
   const savingsPeriod = incomePeriod - expensePeriod;
@@ -524,177 +567,360 @@ export async function GET(request: Request) {
   const maxCategory = Math.max(1, ...categorySummary.map((row) => Number(row.total || 0)));
   const categoryTotal = categorySummary.reduce((sum, row) => sum + Number(row.total || 0), 0) || 1;
 
-  const summarySheetRows: unknown[][] = [
-    ["Planqly Assets - Excel Premium Export"],
-    [t.generatedAt, new Date().toISOString()],
-    [t.period, `${effectiveFrom} to ${effectiveTo}`],
-    [t.currency, currency],
+  const overviewRows: RowModel[] = [
+    [toCellModel("Planqly Assets - Financial Export", "Title", "String", 5)],
     [],
-    [t.kpi, t.value],
-    [t.incomePeriod, moneyValue(incomePeriod, currency)],
-    [t.expensePeriod, moneyValue(expensePeriod, currency)],
-    [t.savingsPeriod, moneyValue(savingsPeriod, currency)],
-    [t.assetsTotal, moneyValue(assetsTotal, currency)],
-    [t.openDebtTotal, moneyValue(debtsOpenTotal, currency)],
-    [t.netWorth, moneyValue(netWorth, currency)],
+    [
+      toCellModel(t.generatedAt, "MetaLabel"),
+      toCellModel(new Date().toISOString().slice(0, 19).replace("T", " "), "MetaValue"),
+      toCellModel(t.period, "MetaLabel"),
+      toCellModel(`${effectiveFrom} to ${effectiveTo}`, "MetaValue"),
+      toCellModel(t.currency, "MetaLabel"),
+      toCellModel(currency, "MetaValue")
+    ],
     [],
-    [t.annualSummary],
-    [t.income, moneyValue(annualIncomeTotal, currency), sparkline(annualIncomeByMonth)],
-    [t.expense, moneyValue(annualExpenseTotal, currency), sparkline(annualExpenseByMonth)],
-    [t.savings, moneyValue(annualSavingsTotal, currency), sparkline(annualSavingsByMonth.map((v) => Math.max(v, 0)))],
+    [toCellModel("KPIs", "Section", "String", 5)],
+    ...tableRows(
+      [{ label: t.kpi }, { label: t.value }],
+      [
+        [{ value: t.incomePeriod }, { value: moneyValue(incomePeriod, currency), kind: "currency" }],
+        [{ value: t.expensePeriod }, { value: moneyValue(expensePeriod, currency), kind: "currency" }],
+        [{ value: t.savingsPeriod }, { value: moneyValue(savingsPeriod, currency), kind: "currency" }],
+        [{ value: t.assetsTotal }, { value: moneyValue(assetsTotal, currency), kind: "currency" }],
+        [{ value: t.openDebtTotal }, { value: moneyValue(debtsOpenTotal, currency), kind: "currency" }],
+        [{ value: t.netWorth }, { value: moneyValue(netWorth, currency), kind: "currency" }]
+      ]
+    ),
     [],
-    [t.monthlyEvolution],
-    [t.month, t.income, t.expense, t.savings, `${t.income} ${t.trend}`, `${t.expense} ${t.trend}`]
+    [toCellModel(t.annualSummary, "Section", "String", 5)],
+    ...tableRows(
+      [{ label: t.kpi }, { label: t.value }, { label: t.trend }],
+      [
+        [
+          { value: t.income },
+          { value: moneyValue(annualIncomeTotal, currency), kind: "currency" },
+          { value: sparkline(annualIncomeByMonth), kind: "text" }
+        ],
+        [
+          { value: t.expense },
+          { value: moneyValue(annualExpenseTotal, currency), kind: "currency" },
+          { value: sparkline(annualExpenseByMonth), kind: "text" }
+        ],
+        [
+          { value: t.savings },
+          { value: moneyValue(annualSavingsTotal, currency), kind: "currency" },
+          { value: sparkline(annualSavingsByMonth.map((v) => Math.max(v, 0))), kind: "text" }
+        ]
+      ]
+    ),
+    [],
+    [toCellModel(t.monthlyEvolution, "Section", "String", 5)],
+    ...tableRows(
+      [
+        { label: t.month },
+        { label: t.income },
+        { label: t.expense },
+        { label: t.savings },
+        { label: `${t.income} ${t.trend}` },
+        { label: `${t.expense} ${t.trend}` }
+      ],
+      new Array(12).fill(null).map((_, i) => {
+        const income = annualIncomeByMonth[i];
+        const expense = annualExpenseByMonth[i];
+        const savings = income - expense;
+        return [
+          { value: `${monthNameByIndex(i, lang)} ${selectedYear}` },
+          { value: moneyValue(income, currency), kind: "currency" },
+          { value: moneyValue(expense, currency), kind: "currency" },
+          { value: moneyValue(savings, currency), kind: "currency" },
+          { value: barText(income, maxIncome) },
+          { value: barText(expense, maxExpense) }
+        ];
+      })
+    ),
+    [],
+    [toCellModel(t.categoryBreakdown, "Section", "String", 5)],
+    ...tableRows(
+      [
+        { label: t.category },
+        { label: t.amount },
+        { label: t.periodPercent },
+        { label: t.trend }
+      ],
+      categorySummary.map((row) => {
+        const total = Number(row.total || 0);
+        const ratio = total / categoryTotal;
+        return [
+          { value: row.category },
+          { value: moneyValue(total, currency), kind: "currency" },
+          { value: ratio, kind: "percent" },
+          { value: barText(total, maxCategory) }
+        ];
+      })
+    )
   ];
 
-  for (let i = 0; i < 12; i += 1) {
-    const income = annualIncomeByMonth[i];
-    const expense = annualExpenseByMonth[i];
-    summarySheetRows.push([
-      `${monthNameByIndex(i, lang)} ${selectedYear}`,
-      moneyValue(income, currency),
-      moneyValue(expense, currency),
-      moneyValue(income - expense, currency),
-      barText(income, maxIncome),
-      barText(expense, maxExpense)
-    ]);
-  }
+  const monthlyChartRows = tableRows(
+    [
+      { label: t.month },
+      { label: t.income },
+      { label: t.expense },
+      { label: t.savings }
+    ],
+    new Array(12).fill(null).map((_, i) => [
+      { value: `${monthNameByIndex(i, lang)} ${selectedYear}` },
+      { value: moneyValue(annualIncomeByMonth[i], currency), kind: "currency" },
+      { value: moneyValue(annualExpenseByMonth[i], currency), kind: "currency" },
+      { value: moneyValue(annualSavingsByMonth[i], currency), kind: "currency" }
+    ])
+  );
 
-  summarySheetRows.push([], [t.categoryBreakdown], [t.category, t.amount, t.periodPercent, t.trend]);
-  for (const row of categorySummary) {
-    const total = Number(row.total || 0);
-    const pct = Math.round((total / categoryTotal) * 100);
-    summarySheetRows.push([row.category, moneyValue(total, currency), pct, barText(total, maxCategory)]);
-  }
+  const categoryChartRows = tableRows(
+    [
+      { label: t.category },
+      { label: t.amount },
+      { label: t.periodPercent }
+    ],
+    categorySummary.map((row) => {
+      const total = Number(row.total || 0);
+      return [
+        { value: row.category },
+        { value: moneyValue(total, currency), kind: "currency" },
+        { value: total / categoryTotal, kind: "percent" }
+      ];
+    })
+  );
 
-  const monthlyChartRows: unknown[][] = [[t.month, t.income, t.expense, t.savings]];
-  for (let i = 0; i < 12; i += 1) {
-    monthlyChartRows.push([
-      `${monthNameByIndex(i, lang)} ${selectedYear}`,
-      moneyValue(annualIncomeByMonth[i], currency),
-      moneyValue(annualExpenseByMonth[i], currency),
-      moneyValue(annualSavingsByMonth[i], currency)
-    ]);
-  }
+  const movementsRows = tableRows(
+    [
+      { label: t.month },
+      { label: t.type },
+      { label: t.category },
+      { label: t.detail },
+      { label: t.amount },
+      { label: t.date },
+      { label: t.status }
+    ],
+    txRows.map((tx) => [
+      { value: monthShort(tx.transaction_date, lang) },
+      { value: tx.type === "income" ? t.income : t.expense },
+      { value: tx.category },
+      { value: tx.description || "" },
+      { value: tx.amountConverted, kind: "currency" },
+      { value: normalizeDate(tx.transaction_date), kind: "date" },
+      { value: tx.uiStatus === "late" ? t.late : t.paid }
+    ])
+  );
 
-  const categoryChartRows: unknown[][] = [[t.category, t.amount, t.periodPercent]];
-  for (const row of categorySummary) {
-    const total = Number(row.total || 0);
-    const pct = Math.round((total / categoryTotal) * 100);
-    categoryChartRows.push([row.category, moneyValue(total, currency), pct]);
-  }
+  const allTransactionsRows = tableRows(
+    [
+      { label: "ID" },
+      { label: t.date },
+      { label: t.type },
+      { label: t.category },
+      { label: t.detail },
+      { label: t.amount }
+    ],
+    allTxRows.map((tx) => [
+      { value: tx.id, kind: "number" },
+      { value: normalizeDate(tx.transaction_date), kind: "date" },
+      { value: tx.type === "income" ? t.income : t.expense },
+      { value: tx.category },
+      { value: tx.description || "" },
+      { value: moneyValue(Math.abs(Number(tx.amount || 0)), currency), kind: "currency" }
+    ])
+  );
 
-  const sheets = [
-    xmlWorksheet(t.overview, summarySheetRows),
-    xmlWorksheet(lang === "pt-PT" ? "DadosGraficoMensal" : "ChartDataMonthly", monthlyChartRows),
-    xmlWorksheet(lang === "pt-PT" ? "DadosGraficoCategoria" : "ChartDataCategory", categoryChartRows),
-    xmlWorksheet(lang === "pt-PT" ? "Movimentos" : "Movements", rowsFromObjects(txExportRows, [t.month, t.type, t.category, t.detail, t.amount, t.date, t.status])),
-    xmlWorksheet(
-      lang === "pt-PT" ? "TodosMovimentos" : "AllTransactions",
-      rowsFromObjects(
-        allTxRows.map((tx) => ({
-          ID: tx.id,
-          [t.date]: normalizeDate(tx.transaction_date),
-          [t.type]: tx.type === "income" ? t.income : t.expense,
-          [t.category]: tx.category,
-          [t.detail]: tx.description || "",
-          [t.amount]: moneyValue(Math.abs(Number(tx.amount || 0)), currency)
-        })),
-        ["ID", t.date, t.type, t.category, t.detail, t.amount]
-      )
-    ),
-    xmlWorksheet(
-      lang === "pt-PT" ? "Contas" : "Bills",
-      rowsFromObjects(
-        bills.map((row) => ({
-          ID: row.id,
-          Name: row.name,
-          [t.amount]: moneyValue(Number(row.amount || 0), currency),
-          Frequency: formatFrequency(row.frequency, lang),
-          DueDay: Number(row.due_day),
-          AutoPay: row.auto_pay ? "Yes" : "No",
-          [t.status]: row.status
-        })),
-        ["ID", "Name", t.amount, "Frequency", "DueDay", "AutoPay", t.status]
-      )
-    ),
-    xmlWorksheet(
-      lang === "pt-PT" ? "Subscricoes" : "Subscriptions",
-      rowsFromObjects(
-        subscriptions.map((row) => ({
-          ID: row.id,
-          Service: row.service,
-          Cost: moneyValue(Number(row.cost || 0), currency),
-          Cycle: row.billing_cycle,
-          [t.category]: row.category,
-          RenewalDate: normalizeDate(row.renewal_date),
-          [t.status]: row.status
-        })),
-        ["ID", "Service", "Cost", "Cycle", t.category, "RenewalDate", t.status]
-      )
-    ),
-    xmlWorksheet(
-      lang === "pt-PT" ? "Ativos" : "Assets",
-      rowsFromObjects(
-        assets.map((row) => ({
-          ID: row.id,
-          Name: row.name,
-          [t.type]: row.asset_type,
-          [t.value]: moneyValue(Number(row.value || 0), currency),
-          AsOfDate: normalizeDate(row.as_of_date)
-        })),
-        ["ID", "Name", t.type, t.value, "AsOfDate"]
-      )
-    ),
-    xmlWorksheet(
-      lang === "pt-PT" ? "Dividas" : "Debts",
-      rowsFromObjects(
-        debts.map((row) => {
-          const total = Number(row.total_owed || 0);
-          const paid = Number(row.amount_paid || 0);
-          return {
-            ID: row.id,
-            Name: row.name,
-            TotalOwed: moneyValue(total, currency),
-            AmountPaid: moneyValue(paid, currency),
-            Remaining: moneyValue(Math.max(0, total - paid), currency),
-            InterestRate: Number(row.interest_rate || 0),
-            DueDate: normalizeDate(row.due_date)
-          };
-        }),
-        ["ID", "Name", "TotalOwed", "AmountPaid", "Remaining", "InterestRate", "DueDate"]
-      )
-    ),
-    xmlWorksheet(
-      lang === "pt-PT" ? "Orcamentos" : "Budgets",
-      rowsFromObjects(
-        budgets.map((row) => ({
-          ID: row.id,
-          [t.month]: row.budget_month,
-          [t.category]: row.category,
-          Budget: moneyValue(Number(row.budget_amount || 0), currency)
-        })),
-        ["ID", t.month, t.category, "Budget"]
-      )
-    ),
-    xmlWorksheet(
-      lang === "pt-PT" ? "Objetivos" : "Goals",
-      rowsFromObjects(
-        goals.map((row) => ({
-          ID: row.id,
-          Name: row.name,
-          Target: moneyValue(Number(row.target_amount || 0), currency),
-          Saved: moneyValue(Number(row.saved_amount || 0), currency),
-          CompletionPct:
-            Number(row.target_amount || 0) > 0
-              ? Math.round((Number(row.saved_amount || 0) / Number(row.target_amount || 0)) * 100)
-              : 0,
-          Deadline: normalizeDate(row.deadline),
-          [t.status]: row.status
-        })),
-        ["ID", "Name", "Target", "Saved", "CompletionPct", "Deadline", t.status]
-      )
-    )
+  const billsRows = tableRows(
+    [
+      { label: "ID" },
+      { label: "Name" },
+      { label: t.amount },
+      { label: "Frequency" },
+      { label: "DueDay" },
+      { label: "AutoPay" },
+      { label: t.status }
+    ],
+    bills.map((row) => [
+      { value: row.id, kind: "number" },
+      { value: row.name },
+      { value: moneyValue(Number(row.amount || 0), currency), kind: "currency" },
+      { value: formatFrequency(row.frequency, lang) },
+      { value: Number(row.due_day), kind: "number" },
+      { value: row.auto_pay ? "Yes" : "No" },
+      { value: row.status }
+    ])
+  );
+
+  const subscriptionsRows = tableRows(
+    [
+      { label: "ID" },
+      { label: "Service" },
+      { label: "Cost" },
+      { label: "Cycle" },
+      { label: t.category },
+      { label: "RenewalDate" },
+      { label: t.status }
+    ],
+    subscriptions.map((row) => [
+      { value: row.id, kind: "number" },
+      { value: row.service },
+      { value: moneyValue(Number(row.cost || 0), currency), kind: "currency" },
+      { value: row.billing_cycle },
+      { value: row.category },
+      { value: normalizeDate(row.renewal_date), kind: "date" },
+      { value: row.status }
+    ])
+  );
+
+  const assetsRows = tableRows(
+    [
+      { label: "ID" },
+      { label: "Name" },
+      { label: t.type },
+      { label: t.value },
+      { label: "AsOfDate" }
+    ],
+    assets.map((row) => [
+      { value: row.id, kind: "number" },
+      { value: row.name },
+      { value: row.asset_type },
+      { value: moneyValue(Number(row.value || 0), currency), kind: "currency" },
+      { value: normalizeDate(row.as_of_date), kind: "date" }
+    ])
+  );
+
+  const debtsRows = tableRows(
+    [
+      { label: "ID" },
+      { label: "Name" },
+      { label: "TotalOwed" },
+      { label: "AmountPaid" },
+      { label: "Remaining" },
+      { label: "InterestRate" },
+      { label: "DueDate" }
+    ],
+    debts.map((row) => {
+      const total = Number(row.total_owed || 0);
+      const paid = Number(row.amount_paid || 0);
+      return [
+        { value: row.id, kind: "number" },
+        { value: row.name },
+        { value: moneyValue(total, currency), kind: "currency" },
+        { value: moneyValue(paid, currency), kind: "currency" },
+        { value: moneyValue(Math.max(0, total - paid), currency), kind: "currency" },
+        { value: Number(row.interest_rate || 0), kind: "number" },
+        { value: normalizeDate(row.due_date), kind: "date" }
+      ];
+    })
+  );
+
+  const budgetsRows = tableRows(
+    [
+      { label: "ID" },
+      { label: t.month },
+      { label: t.category },
+      { label: "Budget" }
+    ],
+    budgets.map((row) => [
+      { value: row.id, kind: "number" },
+      { value: row.budget_month },
+      { value: row.category },
+      { value: moneyValue(Number(row.budget_amount || 0), currency), kind: "currency" }
+    ])
+  );
+
+  const goalsRows = tableRows(
+    [
+      { label: "ID" },
+      { label: "Name" },
+      { label: "Target" },
+      { label: "Saved" },
+      { label: "CompletionPct" },
+      { label: "Deadline" },
+      { label: t.status }
+    ],
+    goals.map((row) => {
+      const completion =
+        Number(row.target_amount || 0) > 0 ? Number(row.saved_amount || 0) / Number(row.target_amount || 0) : 0;
+      return [
+        { value: row.id, kind: "number" },
+        { value: row.name },
+        { value: moneyValue(Number(row.target_amount || 0), currency), kind: "currency" },
+        { value: moneyValue(Number(row.saved_amount || 0), currency), kind: "currency" },
+        { value: completion, kind: "percent" },
+        { value: normalizeDate(row.deadline), kind: "date" },
+        { value: row.status }
+      ];
+    })
+  );
+
+  const sheets: WorksheetModel[] = [
+    {
+      name: t.overview,
+      rows: overviewRows,
+      columnWidths: [210, 150, 120, 170, 120, 170]
+    },
+    {
+      name: lang === "pt-PT" ? "DadosGraficoMensal" : "ChartDataMonthly",
+      rows: monthlyChartRows,
+      columnWidths: [160, 130, 130, 130],
+      freezeHeaderRow: true
+    },
+    {
+      name: lang === "pt-PT" ? "DadosGraficoCategoria" : "ChartDataCategory",
+      rows: categoryChartRows,
+      columnWidths: [220, 130, 130],
+      freezeHeaderRow: true
+    },
+    {
+      name: lang === "pt-PT" ? "Movimentos" : "Movements",
+      rows: movementsRows,
+      columnWidths: [90, 100, 170, 260, 120, 120, 110],
+      freezeHeaderRow: true
+    },
+    {
+      name: lang === "pt-PT" ? "TodosMovimentos" : "AllTransactions",
+      rows: allTransactionsRows,
+      columnWidths: [70, 120, 100, 170, 260, 120],
+      freezeHeaderRow: true
+    },
+    {
+      name: lang === "pt-PT" ? "Contas" : "Bills",
+      rows: billsRows,
+      columnWidths: [70, 190, 120, 120, 90, 90, 100],
+      freezeHeaderRow: true
+    },
+    {
+      name: lang === "pt-PT" ? "Subscricoes" : "Subscriptions",
+      rows: subscriptionsRows,
+      columnWidths: [70, 190, 120, 100, 160, 120, 110],
+      freezeHeaderRow: true
+    },
+    {
+      name: lang === "pt-PT" ? "Ativos" : "Assets",
+      rows: assetsRows,
+      columnWidths: [70, 220, 140, 120, 120],
+      freezeHeaderRow: true
+    },
+    {
+      name: lang === "pt-PT" ? "Dividas" : "Debts",
+      rows: debtsRows,
+      columnWidths: [70, 210, 120, 120, 120, 110, 120],
+      freezeHeaderRow: true
+    },
+    {
+      name: lang === "pt-PT" ? "Orcamentos" : "Budgets",
+      rows: budgetsRows,
+      columnWidths: [70, 110, 180, 120],
+      freezeHeaderRow: true
+    },
+    {
+      name: lang === "pt-PT" ? "Objetivos" : "Goals",
+      rows: goalsRows,
+      columnWidths: [70, 220, 120, 120, 120, 120, 110],
+      freezeHeaderRow: true
+    }
   ];
 
   const workbookXml = `<?xml version="1.0"?>
@@ -705,15 +931,90 @@ export async function GET(request: Request) {
  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
   <Styles>
     <Style ss:ID="Default" ss:Name="Normal">
-      <Alignment ss:Vertical="Bottom" ss:WrapText="1"/>
+      <Alignment ss:Vertical="Center" ss:WrapText="1"/>
       <Font ss:FontName="Calibri" ss:Size="11"/>
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+      <Borders>
+        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/>
+        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E5E7EB"/>
+      </Borders>
     </Style>
-    <Style ss:ID="Header">
+    <Style ss:ID="Title">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="16" ss:Bold="1" ss:Color="#FFFFFF"/>
+      <Interior ss:Color="#1D4ED8" ss:Pattern="Solid"/>
+      <Borders>
+        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1E40AF"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1E40AF"/>
+        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1E40AF"/>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1E40AF"/>
+      </Borders>
+    </Style>
+    <Style ss:ID="Section">
+      <Font ss:FontName="Calibri" ss:Size="12" ss:Bold="1" ss:Color="#0F172A"/>
+      <Interior ss:Color="#DBEAFE" ss:Pattern="Solid"/>
+      <Borders>
+        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#93C5FD"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#93C5FD"/>
+        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#93C5FD"/>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#93C5FD"/>
+      </Borders>
+    </Style>
+    <Style ss:ID="MetaLabel">
       <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1"/>
-      <Interior ss:Color="#EAF0FF" ss:Pattern="Solid"/>
+      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="MetaValue">
+      <Font ss:FontName="Calibri" ss:Size="11"/>
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="TableHeader">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#FFFFFF"/>
+      <Interior ss:Color="#2563EB" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CellTextEven">
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CellTextOdd">
+      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="CellNumberEven">
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="CellNumberOdd">
+      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="CellCurrencyEven">
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="CellCurrencyOdd">
+      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="#,##0.00"/>
+    </Style>
+    <Style ss:ID="CellPercentEven">
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="0.00%"/>
+    </Style>
+    <Style ss:ID="CellPercentOdd">
+      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="0.00%"/>
+    </Style>
+    <Style ss:ID="CellDateEven">
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="yyyy-mm-dd"/>
+    </Style>
+    <Style ss:ID="CellDateOdd">
+      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="yyyy-mm-dd"/>
     </Style>
   </Styles>
-  ${sheets.join("")}
+  ${sheets.map((sheet) => xmlWorksheet(sheet)).join("")}
 </Workbook>`;
 
   const fileName = `${t.filePrefix}-${selectedMonth}.xls`;
