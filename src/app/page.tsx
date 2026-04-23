@@ -195,7 +195,7 @@ export default function HomePage() {
                 alt="Planqly dashboard preview"
                 width={950}
                 height={620}
-                className="h-auto w-auto max-h-[560px] max-w-full object-contain"
+                className="h-auto w-full max-w-[560px] object-contain mix-blend-multiply"
                 priority
               />
             </div>
