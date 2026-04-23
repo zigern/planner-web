@@ -233,9 +233,6 @@ export default function LoginPage() {
             </button>
           </p>
 
-          <p className="mt-4 text-center text-[11px] font-medium uppercase tracking-wide text-slate-400">
-            Build 2026-04-23 login v2
-          </p>
         </section>
       </div>
     </main>
