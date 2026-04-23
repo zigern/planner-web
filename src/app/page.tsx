@@ -189,13 +189,13 @@ export default function HomePage() {
           <div className="relative">
             <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-blue-200/50 blur-3xl" />
             <div className="absolute -bottom-12 -right-8 h-44 w-44 rounded-full bg-cyan-200/50 blur-3xl" />
-            <div className="relative overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_30px_60px_-25px_rgba(37,99,235,0.35)]">
+            <div className="relative mx-auto flex justify-center">
               <Image
                 src="/images/landing/real/home-hero-replacement-v2.png"
                 alt="Planqly dashboard preview"
                 width={950}
                 height={620}
-                className="h-auto w-full"
+                className="h-auto w-auto max-h-[560px] max-w-full object-contain"
                 priority
               />
             </div>
