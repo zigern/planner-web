@@ -76,14 +76,14 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#eef4ff] via-white to-[#f3f8ff] px-6 py-10">
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#eef4ff] via-white to-[#f3f8ff] px-6 py-8 sm:py-10">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-blue-200/40 blur-3xl" />
         <div className="absolute -bottom-24 right-0 h-72 w-72 rounded-full bg-cyan-200/40 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto w-full max-w-[460px]">
-        <div className="mb-7 flex items-center justify-between">
+      <div className="relative mx-auto w-full max-w-[480px]">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link href="/" className="inline-flex items-center">
             <Image src="/images/site-logo.png" alt="Planqly Assets" width={168} height={40} className="h-auto w-[150px]" priority />
           </Link>
@@ -97,10 +97,10 @@ export default function LoginPage() {
             Secure Login
           </div>
 
-          <div className="mb-5 inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 text-sm font-semibold">
+          <div className="mb-6 grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-50 p-1 text-sm font-semibold">
             <button
               onClick={() => setMode("login")}
-              className={`rounded-lg px-4 py-2 transition ${
+              className={`rounded-lg px-4 py-2.5 transition ${
                 mode === "login" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
               }`}
             >
@@ -108,7 +108,7 @@ export default function LoginPage() {
             </button>
             <button
               onClick={() => setMode("register")}
-              className={`rounded-lg px-4 py-2 transition ${
+              className={`rounded-lg px-4 py-2.5 transition ${
                 mode === "register" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
               }`}
             >
@@ -127,58 +127,42 @@ export default function LoginPage() {
 
           <form onSubmit={onSubmit} className="mt-6">
             <label className="block text-sm font-semibold text-slate-700">Email</label>
-            <div className="relative mt-2">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                @
-              </span>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-9 py-3 text-slate-900 outline-none ring-blue-200 placeholder:text-slate-400 focus:border-blue-400 focus:ring"
-                placeholder="teu@email.com"
-                autoComplete="email"
-              />
-            </div>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none ring-blue-200 focus:border-blue-400 focus:ring"
+              autoComplete="email"
+            />
 
             {mode === "register" ? (
               <>
                 <label className="mt-4 block text-sm font-semibold text-slate-700">Nome a mostrar</label>
-                <div className="relative mt-2">
-                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                    :)
-                  </span>
-                  <input
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-9 py-3 text-slate-900 outline-none ring-blue-200 placeholder:text-slate-400 focus:border-blue-400 focus:ring"
-                    placeholder="Ex: João"
-                    autoComplete="name"
-                  />
-                </div>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none ring-blue-200 focus:border-blue-400 focus:ring"
+                  autoComplete="name"
+                />
               </>
             ) : null}
 
             <label className="mt-4 block text-sm font-semibold text-slate-700">Password</label>
-            <div className="relative mt-2">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                *
-              </span>
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-9 py-3 pr-20 text-slate-900 outline-none ring-blue-200 placeholder:text-slate-400 focus:border-blue-400 focus:ring"
-                placeholder="mínimo 6 caracteres"
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
-              />
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none ring-blue-200 focus:border-blue-400 focus:ring"
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
+            />
+            <div className="mt-2 flex justify-end">
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-blue-600"
+                className="rounded-md px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-blue-600"
               >
-                {showPassword ? "Ocultar" : "Mostrar"}
+                {showPassword ? "Ocultar password" : "Mostrar password"}
               </button>
             </div>
 
@@ -189,8 +173,7 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none ring-blue-200 placeholder:text-slate-400 focus:border-blue-400 focus:ring"
-                  placeholder="repete a password"
+                  className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none ring-blue-200 focus:border-blue-400 focus:ring"
                   autoComplete="new-password"
                 />
               </>
