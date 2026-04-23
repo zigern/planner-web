@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { PwaInstallButton } from '@/components/pwa-install-button'
 
 const features = [
   {
@@ -172,6 +173,7 @@ export default function HomePage() {
                 Live Demo
               </a>
             </div>
+            <PwaInstallButton />
 
             <div className="mt-7 flex items-center gap-4 text-sm text-slate-500">
               <div className="flex -space-x-2">
