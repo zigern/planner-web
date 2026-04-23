@@ -191,7 +191,7 @@ export default function HomePage() {
             <div className="absolute -bottom-12 -right-8 h-44 w-44 rounded-full bg-cyan-200/50 blur-3xl" />
             <div className="relative overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_30px_60px_-25px_rgba(37,99,235,0.35)]">
               <Image
-                src="/images/landing/real/home-hero-replacement.png"
+                src="/images/landing/real/home-hero-replacement-v2.png"
                 alt="Planqly dashboard preview"
                 width={950}
                 height={620}
