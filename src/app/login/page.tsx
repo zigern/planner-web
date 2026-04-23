@@ -52,20 +52,34 @@ export default function LoginPage() {
     }
   }
 
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void submit();
+  }
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#f4f7ff] via-white to-[#f8fbff] px-6 py-10">
-      <div className="mx-auto w-full max-w-[440px]">
-        <div className="mb-8 flex items-center justify-between">
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#eef4ff] via-white to-[#f3f8ff] px-6 py-10">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-blue-200/40 blur-3xl" />
+        <div className="absolute -bottom-24 right-0 h-72 w-72 rounded-full bg-cyan-200/40 blur-3xl" />
+      </div>
+
+      <div className="relative mx-auto w-full max-w-[460px]">
+        <div className="mb-7 flex items-center justify-between">
           <Link href="/" className="inline-flex items-center">
-            <Image src="/images/site-logo.png" alt="Planqly Assets" width={160} height={40} className="h-auto w-[145px]" priority />
+            <Image src="/images/site-logo.png" alt="Planqly Assets" width={168} height={40} className="h-auto w-[150px]" priority />
           </Link>
-          <Link href="/" className="text-sm font-semibold text-slate-600 hover:text-blue-600">
-            Voltar
+          <Link href="/" className="rounded-lg px-2 py-1 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-blue-600">
+            ← Voltar
           </Link>
         </div>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-[0_30px_60px_-35px_rgba(37,99,235,0.5)] sm:p-8">
-          <div className="mb-6 inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 text-sm font-semibold">
+        <section className="rounded-3xl border border-slate-200/90 bg-white/95 p-7 shadow-[0_35px_70px_-35px_rgba(37,99,235,0.45)] backdrop-blur sm:p-8">
+          <div className="mb-4 inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+            Secure Login
+          </div>
+
+          <div className="mb-5 inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 text-sm font-semibold">
             <button
               onClick={() => setMode("login")}
               className={`rounded-lg px-4 py-2 transition ${
@@ -84,55 +98,79 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">
+          <h1 className="text-3xl font-black tracking-tight text-slate-900">
             {mode === "login" ? "Acede à tua conta" : "Cria a tua conta"}
           </h1>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">
             {mode === "login"
               ? "Entra para continuar no teu dashboard financeiro."
               : "Regista-te para começares a gerir as tuas finanças."}
           </p>
 
-          <label className="mt-7 block text-sm font-semibold text-slate-700">Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none ring-blue-200 placeholder:text-slate-400 focus:border-blue-400 focus:ring"
-            placeholder="teu@email.com"
-            autoComplete="email"
-          />
+          <form onSubmit={onSubmit} className="mt-6">
+            <label className="block text-sm font-semibold text-slate-700">Email</label>
+            <div className="relative mt-2">
+              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                @
+              </span>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 bg-white px-9 py-3 text-slate-900 outline-none ring-blue-200 placeholder:text-slate-400 focus:border-blue-400 focus:ring"
+                placeholder="teu@email.com"
+                autoComplete="email"
+              />
+            </div>
 
-          <label className="mt-4 block text-sm font-semibold text-slate-700">Password</label>
-          <div className="relative mt-2">
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 pr-12 text-slate-900 outline-none ring-blue-200 placeholder:text-slate-400 focus:border-blue-400 focus:ring"
-              placeholder="mínimo 6 caracteres"
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
-            />
+            <label className="mt-4 block text-sm font-semibold text-slate-700">Password</label>
+            <div className="relative mt-2">
+              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                *
+              </span>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 bg-white px-9 py-3 pr-20 text-slate-900 outline-none ring-blue-200 placeholder:text-slate-400 focus:border-blue-400 focus:ring"
+                placeholder="mínimo 6 caracteres"
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-blue-600"
+              >
+                {showPassword ? "Ocultar" : "Mostrar"}
+              </button>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between text-sm">
+              <label className="inline-flex items-center gap-2 text-slate-600">
+                <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                Lembrar-me
+              </label>
+              <button type="button" className="font-medium text-blue-600 transition hover:text-blue-700">
+                Esqueci a password
+              </button>
+            </div>
+
             <button
-              type="button"
-              onClick={() => setShowPassword((s) => !s)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-500 hover:text-blue-600"
+              type="submit"
+              disabled={loading || !isValid}
+              className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 text-base font-semibold text-white shadow-lg shadow-blue-200 transition hover:from-blue-700 hover:to-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {showPassword ? "Ocultar" : "Mostrar"}
+              {loading ? "A processar..." : mode === "login" ? "Entrar" : "Criar conta"}
             </button>
+
+            {message ? (
+              <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{message}</p>
+            ) : null}
+          </form>
+
+          <div className="mt-5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+            Dados protegidos e sessão segura.
           </div>
-
-          <button
-            onClick={submit}
-            disabled={loading || !isValid}
-            className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 text-base font-semibold text-white shadow-lg shadow-blue-200 transition hover:from-blue-700 hover:to-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {loading ? "A processar..." : mode === "login" ? "Entrar" : "Criar conta"}
-          </button>
-
-          {message ? (
-            <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{message}</p>
-          ) : null}
 
           <p className="mt-6 text-center text-sm text-slate-600">
             {mode === "login" ? "Ainda não tens conta? " : "Já tens conta? "}
