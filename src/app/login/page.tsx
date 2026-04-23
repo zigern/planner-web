@@ -8,8 +8,10 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -19,7 +21,13 @@ export default function LoginPage() {
     if (requestedMode === "register") setMode("register");
   }, []);
 
-  const isValid = useMemo(() => email.trim().length > 5 && password.length >= 6, [email, password]);
+  const isValid = useMemo(() => {
+    if (email.trim().length <= 5 || password.length < 6) return false;
+    if (mode === "register") {
+      return displayName.trim().length >= 2 && confirmPassword.length >= 6;
+    }
+    return true;
+  }, [confirmPassword.length, displayName, email, mode, password.length]);
 
   async function submit() {
     if (!isValid || loading) return;
@@ -27,13 +35,23 @@ export default function LoginPage() {
     setLoading(true);
     setMessage(null);
 
+    if (mode === "register" && password !== confirmPassword) {
+      setMessage("As passwords não coincidem.");
+      setLoading(false);
+      return;
+    }
+
     const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/register";
+    const payload =
+      mode === "login"
+        ? { email: email.trim(), password }
+        : { email: email.trim(), password, displayName: displayName.trim() };
 
     try {
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password })
+        body: JSON.stringify(payload)
       });
 
       const json = (await res.json()) as { error?: string };
@@ -123,6 +141,25 @@ export default function LoginPage() {
               />
             </div>
 
+            {mode === "register" ? (
+              <>
+                <label className="mt-4 block text-sm font-semibold text-slate-700">Nome a mostrar</label>
+                <div className="relative mt-2">
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                    :)
+                  </span>
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-9 py-3 text-slate-900 outline-none ring-blue-200 placeholder:text-slate-400 focus:border-blue-400 focus:ring"
+                    placeholder="Ex: João"
+                    autoComplete="name"
+                  />
+                </div>
+              </>
+            ) : null}
+
             <label className="mt-4 block text-sm font-semibold text-slate-700">Password</label>
             <div className="relative mt-2">
               <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
@@ -144,6 +181,20 @@ export default function LoginPage() {
                 {showPassword ? "Ocultar" : "Mostrar"}
               </button>
             </div>
+
+            {mode === "register" ? (
+              <>
+                <label className="mt-4 block text-sm font-semibold text-slate-700">Confirmar password</label>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none ring-blue-200 placeholder:text-slate-400 focus:border-blue-400 focus:ring"
+                  placeholder="repete a password"
+                  autoComplete="new-password"
+                />
+              </>
+            ) : null}
 
             <div className="mt-4 flex items-center justify-between text-sm">
               <label className="inline-flex items-center gap-2 text-slate-600">
