@@ -103,7 +103,6 @@ const plans = [
   }
 ]
 
-const partnerLogos = ['Google', 'Microsoft', 'Notion', 'Stripe', 'Dropbox', 'Revolut']
 const navLinks = [
   { href: '#features', label: 'Features' },
   { href: '#pricing', label: 'Pricing' },
@@ -178,16 +177,7 @@ export default function HomePage() {
 
       <div className="mx-auto max-w-[1200px] px-4 pb-14 pt-5 sm:px-6 md:px-8 md:pb-16 md:pt-6 lg:px-10">
         <header className="flex flex-wrap items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-3">
-            <Image src="/images/site-logo.png" alt="Planqly Assets" width={170} height={42} className="h-auto w-[136px] sm:w-[150px]" priority />
-          </Link>
-          <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 lg:flex">
-            {navLinks.map((item) => (
-              <a key={item.href} href={item.href} className="transition hover:text-blue-600">{item.label}</a>
-            ))}
-            <Link href="/download" className="transition hover:text-blue-600">Download</Link>
-          </nav>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
@@ -198,6 +188,17 @@ export default function HomePage() {
                 <path d="M4 7h16M4 12h16M4 17h16" />
               </svg>
             </button>
+            <Link href="/" className="flex items-center gap-3">
+              <Image src="/images/site-logo.png" alt="Planqly Assets" width={170} height={42} className="h-auto w-[136px] sm:w-[150px]" priority />
+            </Link>
+          </div>
+          <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 lg:flex">
+            {navLinks.map((item) => (
+              <a key={item.href} href={item.href} className="transition hover:text-blue-600">{item.label}</a>
+            ))}
+            <Link href="/download" className="transition hover:text-blue-600">Download</Link>
+          </nav>
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link href="/login" className="hidden text-sm font-semibold text-slate-600 hover:text-blue-600 sm:inline-flex">
               Log in
             </Link>
@@ -320,17 +321,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="border-y border-slate-200 bg-white/90 py-8">
-        <div className="mx-auto max-w-[1200px] px-4 text-center sm:px-6 md:px-8 lg:px-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-600">Trusted by thousands</p>
-          <div className="hide-scrollbar mt-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-0 pb-2 text-sm font-semibold text-slate-500 sm:grid sm:grid-cols-3 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 sm:text-lg lg:grid-cols-6">
-            {partnerLogos.map((brand) => (
-              <div key={brand} className="min-w-[120px] snap-start rounded-xl border border-slate-100 bg-white px-4 py-3 sm:min-w-0 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">{brand}</div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section id="features" className="mx-auto max-w-[1200px] px-4 py-14 sm:px-6 sm:py-16 md:px-8 lg:px-10">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Powerful Features</p>
@@ -338,9 +328,9 @@ export default function HomePage() {
             Everything you need to <span className="text-blue-600">manage your money</span>
           </h2>
         </div>
-        <div className="hide-scrollbar mt-10 -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:gap-4 md:overflow-visible md:px-0 md:pb-0 md:grid-cols-2 lg:grid-cols-5">
+        <div className="mobile-slider-hint hide-scrollbar mt-10 -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:gap-4 md:overflow-visible md:px-0 md:pb-0 md:grid-cols-2 lg:grid-cols-5">
           {features.map((feature) => (
-            <article key={feature.title} className="min-w-[260px] snap-start rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:min-w-0">
+            <article key={feature.title} className="mobile-slide-card min-w-[85%] snap-start rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:min-w-0">
               <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                 {feature.icon}
               </span>
@@ -399,9 +389,9 @@ export default function HomePage() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">What users say</p>
           <h2 className="mt-3 text-3xl font-black leading-tight text-slate-900">Loved by people who take control</h2>
         </div>
-        <div className="hide-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:gap-5 md:overflow-visible md:px-0 md:pb-0 md:grid-cols-3">
+        <div className="mobile-slider-hint hide-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:gap-5 md:overflow-visible md:px-0 md:pb-0 md:grid-cols-3">
           {testimonials.map((item) => (
-            <article key={item.name} className="min-w-[280px] snap-start rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:min-w-0">
+            <article key={item.name} className="mobile-slide-card min-w-[85%] snap-start rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:min-w-0">
               <p className="mb-4 text-yellow-500">★★★★★</p>
               <p className="text-slate-700">“{item.quote}”</p>
               <p className="mt-6 font-semibold text-slate-900">{item.name}</p>
@@ -416,11 +406,11 @@ export default function HomePage() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Simple Pricing</p>
           <h2 className="mt-3 text-3xl font-black leading-tight text-slate-900">Choose the plan that&apos;s right for you</h2>
         </div>
-        <div className="hide-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:gap-5 md:overflow-visible md:px-0 md:pb-0 md:grid-cols-3">
+        <div className="mobile-slider-hint hide-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:gap-5 md:overflow-visible md:px-0 md:pb-0 md:grid-cols-3">
           {plans.map((plan) => (
             <article
               key={plan.name}
-              className={`min-w-[290px] snap-start rounded-2xl border bg-white p-6 shadow-sm md:min-w-0 ${
+              className={`mobile-slide-card min-w-[85%] snap-start rounded-2xl border bg-white p-6 shadow-sm md:min-w-0 ${
                 plan.featured ? 'border-blue-500 shadow-[0_20px_40px_-20px_rgba(37,99,235,0.45)]' : 'border-slate-200'
               }`}
             >
