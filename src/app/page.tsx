@@ -116,6 +116,7 @@ export default function HomePage() {
             <a href="#pricing" className="transition hover:text-blue-600">Pricing</a>
             <a href="#testimonials" className="transition hover:text-blue-600">Testimonials</a>
             <a href="#about" className="transition hover:text-blue-600">About</a>
+            <Link href="/download" className="transition hover:text-blue-600">Download</Link>
           </nav>
           <div className="flex items-center gap-3">
             <Link href="/login" className="hidden text-sm font-semibold text-slate-600 hover:text-blue-600 sm:inline-flex">
@@ -172,6 +173,12 @@ export default function HomePage() {
               >
                 Live Demo
               </a>
+              <Link
+                href="/download"
+                className="inline-flex min-w-[190px] items-center justify-center rounded-2xl border border-blue-300 bg-white px-6 py-3.5 text-base font-semibold text-blue-600"
+              >
+                Download App
+              </Link>
             </div>
             <PwaInstallButton />
 
