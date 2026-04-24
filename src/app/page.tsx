@@ -105,10 +105,10 @@ const partnerLogos = ['Google', 'Microsoft', 'Notion', 'Stripe', 'Dropbox', 'Rev
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#f7f9ff] via-white to-[#f9fbff] text-slate-900">
-      <div className="mx-auto max-w-[1200px] px-6 pb-16 pt-6 md:px-8 lg:px-10">
+      <div className="mx-auto max-w-[1200px] px-4 pb-14 pt-5 sm:px-6 md:px-8 md:pb-16 md:pt-6 lg:px-10">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-3">
-            <Image src="/images/site-logo.png" alt="Planqly Assets" width={170} height={42} className="h-auto w-[150px]" priority />
+            <Image src="/images/site-logo.png" alt="Planqly Assets" width={170} height={42} className="h-auto w-[136px] sm:w-[150px]" priority />
           </Link>
           <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 lg:flex">
             <a href="#features" className="transition hover:text-blue-600">Features</a>
@@ -131,20 +131,28 @@ export default function HomePage() {
           </div>
         </header>
 
-        <section className="grid gap-10 pb-16 pt-14 lg:grid-cols-[1.03fr_1fr] lg:items-center">
+        <nav className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1 text-xs font-semibold text-slate-600 lg:hidden">
+          <a href="#features" className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5">Features</a>
+          <a href="#pricing" className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5">Pricing</a>
+          <a href="#testimonials" className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5">Testimonials</a>
+          <a href="#about" className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5">About</a>
+          <Link href="/download" className="whitespace-nowrap rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-blue-700">Download</Link>
+        </nav>
+
+        <section className="grid gap-9 pb-14 pt-8 sm:pt-10 md:pb-16 md:pt-12 lg:grid-cols-[1.03fr_1fr] lg:items-center lg:pt-14">
           <div>
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-blue-700">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-blue-700 sm:mb-5 sm:px-4 sm:py-2 sm:text-xs">
               <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white">↗</span>
               Financial Planner Dashboard
             </div>
-            <h1 className="max-w-xl text-4xl font-black leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
+            <h1 className="max-w-xl text-[2.25rem] font-black leading-[1.05] tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
               Take control of your <span className="bg-gradient-to-r from-blue-600 to-sky-500 bg-clip-text text-transparent">financial future.</span>
             </h1>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-600">
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:mt-6 sm:text-lg">
               All your finances in one intelligent dashboard. Plan, track and achieve your goals with total clarity.
             </p>
 
-            <ul className="mt-7 space-y-3 text-base text-slate-700">
+            <ul className="mt-6 space-y-2.5 text-[15px] text-slate-700 sm:mt-7 sm:space-y-3 sm:text-base">
               {[
                 'Track income, expenses and savings in real-time',
                 'Set goals and build better financial habits',
@@ -158,23 +166,23 @@ export default function HomePage() {
               ))}
             </ul>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-7 grid gap-3 sm:mt-8 sm:flex sm:flex-wrap">
               <Link
                 href="/login"
-                className="inline-flex min-w-[190px] items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-blue-200"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-blue-200 sm:min-w-[190px] sm:w-auto"
               >
                 Get the Dashboard
                 <span aria-hidden>→</span>
               </Link>
               <a
                 href="#features"
-                className="inline-flex min-w-[190px] items-center justify-center rounded-2xl border border-blue-300 bg-white px-6 py-3.5 text-base font-semibold text-blue-600"
+                className="inline-flex w-full items-center justify-center rounded-2xl border border-blue-300 bg-white px-6 py-3.5 text-base font-semibold text-blue-600 sm:min-w-[190px] sm:w-auto"
               >
                 Live Demo
               </a>
             </div>
 
-            <div className="mt-7 flex items-center gap-4 text-sm text-slate-500">
+            <div className="mt-7 flex flex-col items-start gap-3 text-sm text-slate-500 sm:flex-row sm:items-center sm:gap-4">
               <div className="flex -space-x-2">
                 {[0, 1, 2, 3].map((avatar) => (
                   <div
@@ -190,13 +198,13 @@ export default function HomePage() {
           <div className="relative">
             <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-blue-200/50 blur-3xl" />
             <div className="absolute -bottom-12 -right-8 h-44 w-44 rounded-full bg-cyan-200/50 blur-3xl" />
-            <div className="relative mx-auto flex justify-center">
+            <div className="relative mx-auto flex max-w-[560px] justify-center lg:max-w-[680px]">
               <Image
                 src="/images/landing/real/home-hero-replacement-v4.png"
                 alt="Planqly dashboard preview"
                 width={1366}
                 height={1151}
-                className="h-auto w-full max-w-[680px] object-contain"
+                className="h-auto w-full object-contain"
                 priority
               />
             </div>
@@ -205,12 +213,12 @@ export default function HomePage() {
       </div>
 
       <section className="border-y border-blue-100 bg-gradient-to-r from-blue-50 via-white to-cyan-50 py-6">
-        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-4 px-6 md:px-8 lg:px-10">
+        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-4 px-4 sm:px-6 md:px-8 lg:px-10">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">Mobile App</p>
-            <p className="mt-1 text-lg font-bold text-slate-900">Download for Android and iPhone directly from this website</p>
+            <p className="mt-1 text-base font-bold text-slate-900 sm:text-lg">Download for Android and iPhone directly from this website</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-wrap items-center gap-2.5 sm:w-auto sm:gap-3">
             <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
               Android
             </span>
@@ -219,7 +227,7 @@ export default function HomePage() {
             </span>
             <Link
               href="/download"
-              className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+              className="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 sm:w-auto"
             >
               View install steps
             </Link>
@@ -228,7 +236,7 @@ export default function HomePage() {
       </section>
 
       <section className="border-y border-slate-200 bg-white/90 py-8">
-        <div className="mx-auto max-w-[1200px] px-6 text-center md:px-8 lg:px-10">
+        <div className="mx-auto max-w-[1200px] px-4 text-center sm:px-6 md:px-8 lg:px-10">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-600">Trusted by thousands</p>
           <div className="mt-5 grid grid-cols-2 gap-5 text-lg font-semibold text-slate-500 sm:grid-cols-3 lg:grid-cols-6">
             {partnerLogos.map((brand) => (
@@ -238,7 +246,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="features" className="mx-auto max-w-[1200px] px-6 py-16 md:px-8 lg:px-10">
+      <section id="features" className="mx-auto max-w-[1200px] px-4 py-14 sm:px-6 sm:py-16 md:px-8 lg:px-10">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Powerful Features</p>
           <h2 className="mt-3 text-3xl font-black leading-tight text-slate-900 sm:text-4xl">
@@ -258,7 +266,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="about" className="mx-auto grid max-w-[1200px] gap-10 px-6 pb-16 md:px-8 lg:grid-cols-[1fr_0.95fr] lg:items-center lg:px-10">
+      <section id="about" className="mx-auto grid max-w-[1200px] gap-8 px-4 pb-14 sm:px-6 sm:pb-16 md:px-8 lg:grid-cols-[1fr_0.95fr] lg:items-center lg:px-10">
         <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <Image
             src="/images/landing/real/live-capture-1.png"
@@ -301,7 +309,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="testimonials" className="mx-auto max-w-[1200px] px-6 pb-16 md:px-8 lg:px-10">
+      <section id="testimonials" className="mx-auto max-w-[1200px] px-4 pb-14 sm:px-6 sm:pb-16 md:px-8 lg:px-10">
         <div className="mb-8 max-w-lg">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">What users say</p>
           <h2 className="mt-3 text-3xl font-black leading-tight text-slate-900">Loved by people who take control</h2>
@@ -318,7 +326,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="pricing" className="mx-auto max-w-[1200px] px-6 pb-16 md:px-8 lg:px-10">
+      <section id="pricing" className="mx-auto max-w-[1200px] px-4 pb-14 sm:px-6 sm:pb-16 md:px-8 lg:px-10">
         <div className="mb-8 max-w-lg">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Simple Pricing</p>
           <h2 className="mt-3 text-3xl font-black leading-tight text-slate-900">Choose the plan that&apos;s right for you</h2>
@@ -366,14 +374,14 @@ export default function HomePage() {
       </section>
 
       <section className="bg-gradient-to-r from-blue-700 to-blue-500 py-10 text-white">
-        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-6 px-6 md:px-8 lg:px-10">
-          <div>
-            <p className="text-2xl font-black">Ready to take control of your financial future?</p>
+        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-6 px-4 sm:px-6 md:px-8 lg:px-10">
+          <div className="max-w-2xl">
+            <p className="text-2xl font-black leading-tight">Ready to take control of your financial future?</p>
             <p className="mt-2 text-blue-100">Join thousands of users already managing money smarter.</p>
           </div>
           <Link
             href="/login"
-            className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-semibold text-blue-700"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 font-semibold text-blue-700 sm:w-auto"
           >
             Get the Dashboard
             <span aria-hidden>→</span>
@@ -382,7 +390,7 @@ export default function HomePage() {
       </section>
 
       <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto grid max-w-[1200px] gap-10 px-6 py-12 md:px-8 lg:grid-cols-[1.2fr_1fr_1fr_1fr] lg:px-10">
+        <div className="mx-auto grid max-w-[1200px] gap-10 px-4 py-12 sm:px-6 md:px-8 lg:grid-cols-[1.2fr_1fr_1fr_1fr] lg:px-10">
           <div>
             <Image src="/images/site-logo.png" alt="Planqly Assets" width={170} height={42} className="h-auto w-[150px]" />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-600">
@@ -410,7 +418,7 @@ export default function HomePage() {
           <div>
             <h4 className="text-sm font-bold text-slate-900">Stay Updated</h4>
             <p className="mt-3 text-sm text-slate-600">Get tips and updates to manage your money better.</p>
-            <div className="mt-4 flex gap-2">
+            <div className="mt-4 grid gap-2 sm:flex">
               <input
                 type="email"
                 placeholder="Your email"

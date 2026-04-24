@@ -21,14 +21,14 @@ function AppleIcon() {
 export default function DownloadPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#f7f9ff] via-white to-[#f9fbff] text-slate-900">
-      <div className="mx-auto max-w-[980px] px-6 py-10 md:px-8">
+      <div className="mx-auto max-w-[980px] px-4 py-8 sm:px-6 sm:py-10 md:px-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Install Planqly on your phone</h1>
+          <h1 className="text-2xl font-black tracking-tight sm:text-4xl">Install Planqly on your phone</h1>
           <Link href="/" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-white">
             Back to website
           </Link>
         </div>
-        <p className="mt-4 max-w-3xl text-lg text-slate-600">
+        <p className="mt-4 max-w-3xl text-base text-slate-600 sm:text-lg">
           You can install directly from this website and use Planqly like a native mobile app.
         </p>
 

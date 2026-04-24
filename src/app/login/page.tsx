@@ -76,7 +76,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#eef4ff] via-white to-[#f3f8ff] px-6 py-8 sm:py-10">
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#eef4ff] via-white to-[#f3f8ff] px-4 py-6 sm:px-6 sm:py-10">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-blue-200/40 blur-3xl" />
         <div className="absolute -bottom-24 right-0 h-72 w-72 rounded-full bg-cyan-200/40 blur-3xl" />
@@ -85,14 +85,14 @@ export default function LoginPage() {
       <div className="relative mx-auto w-full max-w-[480px]">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link href="/" className="inline-flex items-center">
-            <Image src="/images/site-logo.png" alt="Planqly Assets" width={168} height={40} className="h-auto w-[150px]" priority />
+            <Image src="/images/site-logo.png" alt="Planqly Assets" width={168} height={40} className="h-auto w-[140px] sm:w-[150px]" priority />
           </Link>
           <Link href="/" className="rounded-lg px-2 py-1 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-blue-600">
             ← Voltar
           </Link>
         </div>
 
-        <section className="rounded-3xl border border-slate-200/90 bg-white/95 p-7 shadow-[0_35px_70px_-35px_rgba(37,99,235,0.45)] backdrop-blur sm:p-8">
+        <section className="rounded-3xl border border-slate-200/90 bg-white/95 p-5 shadow-[0_35px_70px_-35px_rgba(37,99,235,0.45)] backdrop-blur sm:p-8">
           <div className="mb-4 inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
             Secure Login
           </div>
@@ -100,7 +100,7 @@ export default function LoginPage() {
           <div className="mb-6 grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-50 p-1 text-sm font-semibold">
             <button
               onClick={() => setMode("login")}
-              className={`rounded-lg px-4 py-2.5 transition ${
+              className={`rounded-lg px-3 py-2.5 transition sm:px-4 ${
                 mode === "login" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
               }`}
             >
@@ -108,7 +108,7 @@ export default function LoginPage() {
             </button>
             <button
               onClick={() => setMode("register")}
-              className={`rounded-lg px-4 py-2.5 transition ${
+              className={`rounded-lg px-3 py-2.5 transition sm:px-4 ${
                 mode === "register" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
               }`}
             >
@@ -116,7 +116,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">
+          <h1 className="text-[2rem] font-black tracking-tight text-slate-900 sm:text-3xl">
             {mode === "login" ? "Acede à tua conta" : "Cria a tua conta"}
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
