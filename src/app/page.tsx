@@ -1,6 +1,5 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { PwaInstallButton } from '@/components/pwa-install-button'
 
 const features = [
   {
@@ -173,14 +172,7 @@ export default function HomePage() {
               >
                 Live Demo
               </a>
-              <Link
-                href="/download"
-                className="inline-flex min-w-[190px] items-center justify-center rounded-2xl border border-blue-300 bg-white px-6 py-3.5 text-base font-semibold text-blue-600"
-              >
-                Download App
-              </Link>
             </div>
-            <PwaInstallButton />
 
             <div className="mt-7 flex items-center gap-4 text-sm text-slate-500">
               <div className="flex -space-x-2">
@@ -211,6 +203,29 @@ export default function HomePage() {
           </div>
         </section>
       </div>
+
+      <section className="border-y border-blue-100 bg-gradient-to-r from-blue-50 via-white to-cyan-50 py-6">
+        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-4 px-6 md:px-8 lg:px-10">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">Mobile App</p>
+            <p className="mt-1 text-lg font-bold text-slate-900">Download para Android e iPhone diretamente pelo site</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+              Android
+            </span>
+            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+              iOS
+            </span>
+            <Link
+              href="/download"
+              className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              Ver passos de instalação
+            </Link>
+          </div>
+        </div>
+      </section>
 
       <section className="border-y border-slate-200 bg-white/90 py-8">
         <div className="mx-auto max-w-[1200px] px-6 text-center md:px-8 lg:px-10">
