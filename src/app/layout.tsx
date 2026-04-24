@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import type { Viewport } from "next";
 import { PwaRegister } from "@/components/pwa-register";
+import { CacheResetPopup } from "@/components/cache-reset-popup";
 
 export const metadata: Metadata = {
   title: "Planqly Assets",
@@ -26,6 +27,7 @@ export default function RootLayout({
       <body>
         <PwaRegister />
         {children}
+        <CacheResetPopup />
       </body>
     </html>
   );
