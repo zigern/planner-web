@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PwaInstallButton } from "@/components/pwa-install-button";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -205,9 +204,6 @@ export default function LoginPage() {
 
           <div className="mt-5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-500">
             Dados protegidos e sessão segura.
-          </div>
-          <div className="mt-4">
-            <PwaInstallButton />
           </div>
 
           <p className="mt-6 text-center text-sm text-slate-600">
