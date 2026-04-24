@@ -17,3 +17,12 @@ body {
 body {
   @apply bg-slate-50 text-slate-900;
 }
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}

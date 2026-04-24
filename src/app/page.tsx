@@ -1,5 +1,8 @@
+"use client";
+
 import Image from 'next/image'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
 const features = [
   {
@@ -101,23 +104,100 @@ const plans = [
 ]
 
 const partnerLogos = ['Google', 'Microsoft', 'Notion', 'Stripe', 'Dropbox', 'Revolut']
+const navLinks = [
+  { href: '#features', label: 'Features' },
+  { href: '#pricing', label: 'Pricing' },
+  { href: '#testimonials', label: 'Testimonials' },
+  { href: '#about', label: 'About' }
+]
 
 export default function HomePage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [mobileMenuOpen])
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#f7f9ff] via-white to-[#f9fbff] text-slate-900">
+      {mobileMenuOpen ? (
+        <button
+          type="button"
+          aria-label="Close menu"
+          onClick={() => setMobileMenuOpen(false)}
+          className="fixed inset-0 z-40 bg-slate-900/40 lg:hidden"
+        />
+      ) : null}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-[82vw] max-w-[330px] border-r border-slate-200 bg-white p-5 shadow-2xl transition-transform duration-300 lg:hidden ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="mb-5 flex items-center justify-between">
+          <Image src="/images/site-logo.png" alt="Planqly Assets" width={170} height={42} className="h-auto w-[140px]" />
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(false)}
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600"
+          >
+            Close
+          </button>
+        </div>
+        <nav className="grid gap-2">
+          {navLinks.map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              onClick={() => setMobileMenuOpen(false)}
+              className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              {item.label}
+            </a>
+          ))}
+          <Link
+            href="/download"
+            onClick={() => setMobileMenuOpen(false)}
+            className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700"
+          >
+            Download
+          </Link>
+          <Link
+            href="/login"
+            onClick={() => setMobileMenuOpen(false)}
+            className="mt-2 inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white"
+          >
+            Get the Dashboard
+          </Link>
+        </nav>
+      </aside>
+
       <div className="mx-auto max-w-[1200px] px-4 pb-14 pt-5 sm:px-6 md:px-8 md:pb-16 md:pt-6 lg:px-10">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-3">
             <Image src="/images/site-logo.png" alt="Planqly Assets" width={170} height={42} className="h-auto w-[136px] sm:w-[150px]" priority />
           </Link>
           <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 lg:flex">
-            <a href="#features" className="transition hover:text-blue-600">Features</a>
-            <a href="#pricing" className="transition hover:text-blue-600">Pricing</a>
-            <a href="#testimonials" className="transition hover:text-blue-600">Testimonials</a>
-            <a href="#about" className="transition hover:text-blue-600">About</a>
+            {navLinks.map((item) => (
+              <a key={item.href} href={item.href} className="transition hover:text-blue-600">{item.label}</a>
+            ))}
             <Link href="/download" className="transition hover:text-blue-600">Download</Link>
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 lg:hidden"
+              aria-label="Open menu"
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
+            </button>
             <Link href="/login" className="hidden text-sm font-semibold text-slate-600 hover:text-blue-600 sm:inline-flex">
               Log in
             </Link>
@@ -132,14 +212,6 @@ export default function HomePage() {
           </div>
         </header>
 
-        <nav className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1 text-xs font-semibold text-slate-600 lg:hidden">
-          <a href="#features" className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5">Features</a>
-          <a href="#pricing" className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5">Pricing</a>
-          <a href="#testimonials" className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5">Testimonials</a>
-          <a href="#about" className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5">About</a>
-          <Link href="/download" className="whitespace-nowrap rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-blue-700">Download</Link>
-        </nav>
-
         <section className="grid gap-9 pb-14 pt-8 sm:pt-10 md:pb-16 md:pt-12 lg:grid-cols-[1.03fr_1fr] lg:items-center lg:pt-14">
           <div>
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-blue-700 sm:mb-5 sm:px-4 sm:py-2 sm:text-xs">
@@ -149,6 +221,18 @@ export default function HomePage() {
             <h1 className="max-w-xl text-[2.25rem] font-black leading-[1.05] tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
               Take control of your <span className="bg-gradient-to-r from-blue-600 to-sky-500 bg-clip-text text-transparent">financial future.</span>
             </h1>
+            <div className="relative mt-5 lg:hidden">
+              <div className="relative mx-auto flex max-w-[520px] justify-center">
+                <Image
+                  src="/images/landing/real/home-hero-replacement-v4.png"
+                  alt="Planqly dashboard preview"
+                  width={1366}
+                  height={1151}
+                  className="h-auto w-full object-contain"
+                  priority
+                />
+              </div>
+            </div>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:mt-6 sm:text-lg">
               All your finances in one intelligent dashboard. Plan, track and achieve your goals with total clarity.
             </p>
@@ -196,7 +280,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="relative">
+          <div className="relative hidden lg:block">
             <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-blue-200/50 blur-3xl" />
             <div className="absolute -bottom-12 -right-8 h-44 w-44 rounded-full bg-cyan-200/50 blur-3xl" />
             <div className="relative mx-auto flex max-w-[560px] justify-center lg:max-w-[680px]">
@@ -239,9 +323,9 @@ export default function HomePage() {
       <section className="border-y border-slate-200 bg-white/90 py-8">
         <div className="mx-auto max-w-[1200px] px-4 text-center sm:px-6 md:px-8 lg:px-10">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-600">Trusted by thousands</p>
-          <div className="mt-5 grid grid-cols-2 gap-5 text-lg font-semibold text-slate-500 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="hide-scrollbar mt-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-0 pb-2 text-sm font-semibold text-slate-500 sm:grid sm:grid-cols-3 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 sm:text-lg lg:grid-cols-6">
             {partnerLogos.map((brand) => (
-              <div key={brand}>{brand}</div>
+              <div key={brand} className="min-w-[120px] snap-start rounded-xl border border-slate-100 bg-white px-4 py-3 sm:min-w-0 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">{brand}</div>
             ))}
           </div>
         </div>
@@ -254,9 +338,9 @@ export default function HomePage() {
             Everything you need to <span className="text-blue-600">manage your money</span>
           </h2>
         </div>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="hide-scrollbar mt-10 -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:gap-4 md:overflow-visible md:px-0 md:pb-0 md:grid-cols-2 lg:grid-cols-5">
           {features.map((feature) => (
-            <article key={feature.title} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <article key={feature.title} className="min-w-[260px] snap-start rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:min-w-0">
               <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                 {feature.icon}
               </span>
@@ -315,9 +399,9 @@ export default function HomePage() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">What users say</p>
           <h2 className="mt-3 text-3xl font-black leading-tight text-slate-900">Loved by people who take control</h2>
         </div>
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="hide-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:gap-5 md:overflow-visible md:px-0 md:pb-0 md:grid-cols-3">
           {testimonials.map((item) => (
-            <article key={item.name} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <article key={item.name} className="min-w-[280px] snap-start rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:min-w-0">
               <p className="mb-4 text-yellow-500">★★★★★</p>
               <p className="text-slate-700">“{item.quote}”</p>
               <p className="mt-6 font-semibold text-slate-900">{item.name}</p>
@@ -332,11 +416,11 @@ export default function HomePage() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Simple Pricing</p>
           <h2 className="mt-3 text-3xl font-black leading-tight text-slate-900">Choose the plan that&apos;s right for you</h2>
         </div>
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="hide-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:gap-5 md:overflow-visible md:px-0 md:pb-0 md:grid-cols-3">
           {plans.map((plan) => (
             <article
               key={plan.name}
-              className={`rounded-2xl border bg-white p-6 shadow-sm ${
+              className={`min-w-[290px] snap-start rounded-2xl border bg-white p-6 shadow-sm md:min-w-0 ${
                 plan.featured ? 'border-blue-500 shadow-[0_20px_40px_-20px_rgba(37,99,235,0.45)]' : 'border-slate-200'
               }`}
             >
