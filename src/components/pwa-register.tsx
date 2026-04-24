@@ -8,7 +8,13 @@ export function PwaRegister() {
 
     const registerServiceWorker = async () => {
       try {
-        await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.update()));
+
+        const registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: "SKIP_WAITING" });
+        }
       } catch (error) {
         console.error("pwa.sw.register.error", error);
       }

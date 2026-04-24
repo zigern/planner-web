@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "Planqly Assets",
   "short_name": "Planqly",
   "description": "Personal budget planner",
@@ -6,9 +7,23 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "background_color": "#f8fbff",
   "theme_color": "#2563eb",
   "orientation": "portrait-primary",
+  "categories": ["finance", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Entrar",
+      "short_name": "Login",
+      "url": "/login"
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "url": "/dashboard"
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -25,6 +40,14 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/images/landing/real/home-hero-replacement-v3.png",
+      "sizes": "950x620",
+      "type": "image/png",
+      "form_factor": "wide"
     }
   ]
 }

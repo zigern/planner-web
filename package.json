@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "mobile:sync": "npx @capacitor/cli sync",
+    "mobile:open:android": "npx @capacitor/cli open android",
+    "mobile:open:ios": "npx @capacitor/cli open ios"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
