@@ -125,7 +125,8 @@ export default function HomePage() {
               href="/login"
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-200 transition hover:from-blue-700 hover:to-blue-600"
             >
-              Get the Dashboard
+              <span className="sm:hidden">Get App</span>
+              <span className="hidden sm:inline">Get the Dashboard</span>
               <span aria-hidden>→</span>
             </Link>
           </div>
