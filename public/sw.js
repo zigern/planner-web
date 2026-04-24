@@ -1,4 +1,4 @@
-/* planqly stability worker: remove legacy caches/sw and unregister */
+/* planqly pwa worker: network-first with no app-level cache */
 self.addEventListener("install", (event) => {
   event.waitUntil(self.skipWaiting());
 });
@@ -6,14 +6,13 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
-      const keys = await caches.keys();
-      await Promise.all(keys.map((key) => caches.delete(key)));
       await self.clients.claim();
-      await self.registration.unregister();
     })()
   );
 });
 
-self.addEventListener("fetch", () => {
-  // Intentionally no fetch handling: browser network only.
+self.addEventListener("fetch", (event) => {
+  // Keep runtime deterministic: always prefer network and never write custom caches.
+  if (event.request.method !== "GET") return;
+  event.respondWith(fetch(event.request));
 });

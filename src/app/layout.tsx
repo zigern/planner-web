@@ -1,7 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import type { Viewport } from "next";
-import { SwDisable } from "@/components/sw-disable";
+import { PwaRegister } from "@/components/pwa-register";
 
 export const metadata: Metadata = {
   title: "Planqly Assets",
@@ -19,9 +19,9 @@ export default function RootLayout({
   children
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <SwDisable />
+        <PwaRegister />
         {children}
       </body>
     </html>

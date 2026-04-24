@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DownloadInstallActions } from "@/components/download-install-actions";
 
 function AndroidIcon() {
   return (
@@ -22,14 +23,16 @@ export default function DownloadPage() {
     <main className="min-h-screen bg-gradient-to-b from-[#f7f9ff] via-white to-[#f9fbff] text-slate-900">
       <div className="mx-auto max-w-[980px] px-6 py-10 md:px-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Instalar Planqly no telemóvel</h1>
+          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Install Planqly on your phone</h1>
           <Link href="/" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-white">
-            Voltar ao site
+            Back to website
           </Link>
         </div>
         <p className="mt-4 max-w-3xl text-lg text-slate-600">
-          Podes instalar diretamente pelo website. Não precisas de Play Store nem App Store para usar como app.
+          You can install directly from this website and use Planqly like a native mobile app.
         </p>
+
+        <DownloadInstallActions />
 
         <div className="mt-8 grid gap-5 md:grid-cols-2">
           <section className="rounded-3xl border border-emerald-200 bg-white p-6 shadow-sm">
@@ -38,10 +41,10 @@ export default function DownloadPage() {
               Android
             </div>
             <ol className="space-y-3 text-slate-700">
-              <li>1. Abre o site no Chrome: `mediumpurple-starling-116558.hostingersite.com`</li>
-              <li>2. Clica no botão `Instalar App`</li>
-              <li>3. Confirma em `Instalar`</li>
-              <li>4. A app fica no ecrã inicial e abre em modo app</li>
+              <li>1. Open this website in Chrome.</li>
+              <li>2. Tap the button Install on Android (or browser menu).</li>
+              <li>3. Confirm Install.</li>
+              <li>4. The app will appear on your home screen.</li>
             </ol>
           </section>
 
@@ -51,17 +54,17 @@ export default function DownloadPage() {
               iPhone (iOS)
             </div>
             <ol className="space-y-3 text-slate-700">
-              <li>1. Abre o site no Safari</li>
-              <li>2. Carrega em `Partilhar`</li>
-              <li>3. Escolhe `Adicionar ao ecrã principal`</li>
-              <li>4. Confirma em `Adicionar`</li>
+              <li>1. Open this website in Safari.</li>
+              <li>2. Tap Share.</li>
+              <li>3. Select Add to Home Screen.</li>
+              <li>4. Tap Add to install.</li>
             </ol>
           </section>
         </div>
 
         <section className="mt-8 rounded-2xl border border-blue-200 bg-blue-50 p-5">
           <p className="text-sm text-blue-900">
-            Dica: se vires uma versão antiga do site, fecha a página e abre novamente por este link direto:
+            Tip: if your browser still shows an old version, close all tabs for this site and open it again:
             {" "}
             <a href="https://mediumpurple-starling-116558.hostingersite.com/" className="font-semibold underline">
               mediumpurple-starling-116558.hostingersite.com

@@ -60,7 +60,18 @@ export function middleware(request: NextRequest) {
     if (limited) return limited;
   }
 
-  return withSecurity(NextResponse.next());
+  const response = withSecurity(NextResponse.next());
+
+  // Avoid stale HTML shell versions on browsers/proxies after deploys.
+  const accept = request.headers.get("accept") ?? "";
+  const isDocumentRequest = accept.includes("text/html");
+  if (!isApi && isDocumentRequest) {
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+    response.headers.set("Pragma", "no-cache");
+    response.headers.set("Expires", "0");
+  }
+
+  return response;
 }
 
 export const config = {

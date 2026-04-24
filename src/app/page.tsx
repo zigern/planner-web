@@ -208,7 +208,7 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-4 px-6 md:px-8 lg:px-10">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-600">Mobile App</p>
-            <p className="mt-1 text-lg font-bold text-slate-900">Download para Android e iPhone diretamente pelo site</p>
+            <p className="mt-1 text-lg font-bold text-slate-900">Download for Android and iPhone directly from this website</p>
           </div>
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
@@ -221,7 +221,7 @@ export default function HomePage() {
               href="/download"
               className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
             >
-              Ver passos de instalação
+              View install steps
             </Link>
           </div>
         </div>
